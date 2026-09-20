@@ -6,7 +6,7 @@ BodySlide 自带的 Group Manager 只有一个服装平铺列表，不知道哪�
 
 界面为 WPF，自带**暗色 / 亮色**两套主题，支持**中文 / English / Русский / Français** 四种界面语言切换（菜单栏顶层的「界面主题」「语言」即时生效）。
 
-**运行要求**：Windows x64 + [.NET 10 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/10.0)。发布包为**框架依赖**版（6 个文件、约 0.6 MB），不含运行时，首次使用请先安装上面的运行时。
+**运行要求**：Windows x64 + [.NET 8 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/8.0)。发布包为**框架依赖**版（6 个文件、约 0.6 MB），不含运行时，首次使用请先安装上面的运行时。
 
 ## 使用方法
 
@@ -55,6 +55,10 @@ BodySlide 自带的 Group Manager 只有一个服装平铺列表，不知道哪�
 
 **MO2 正在运行时能用吗？** 能。工具读取的是磁盘上的 `ModOrganizer.ini` / `modlist.txt`（MO2 退出时才回写设置，运行中改动可能略有滞后）；写出后需重启 BodySlide，必要时重启 MO2 以刷新虚拟文件系统。
 
+**能从 MO2 里启动它吗？** 能，但**没必要**——工具与 MO2 只有磁盘读写关系，不需要虚拟文件系统，双击即用。想顺手一点就在 MO2 右下的「执行文件」下拉 → **配置…** → 添加，选 `BSGroupGenerator.exe`，参数留空（程序不读命令行）。**不要把它装成模组**：它不是游戏数据，装成模组只会让它经由虚拟文件系统启动。
+
+**为什么是 .NET 8 而不是更新的版本？** 实测：.NET 10 的 `BSGroupGenerator.exe` 从 MO2 启动**必崩**——MO2 会往子进程注入 `usvfs_x64.dll` 挂钩文件 API，.NET 10 的引导层在这种注入下 100% 触发访问违例（`0xc0000005`，故障模块 unknown，进程还没加载 coreclr 就死了），而同一份程序改成 net8 目标就正常。四种发布形态（框架依赖/自包含 × 多文件/单文件）都救不了 net10。所以 `TargetFramework` 钉在 `net8.0-windows`，**升回 net10 之前务必先在 MO2 里点一次验证**。
+
 **生成的组在 BodySlide 里看不到？** 1) 确认重启了 BodySlide/MO2；2) 在工具「**工具 → 诊断信息**」里检查「有效项目路径」和「写出目标」是否对应同一个目录——BodySlide 只从有效项目路径的 `SliderGroups` 读分组。
 
 **支持哪些游戏？** 全部——分组机制与游戏无关（天际 SE/AE、辐射4 等都适用），跟随 MO2 实例与 BodySlide 安装自动适配。
@@ -67,8 +71,8 @@ BodySlide 自带的 Group Manager 只有一个服装平铺列表，不知道哪�
 dotnet build src/BSGroupGenerator.Wpf/BSGroupGenerator.Wpf.csproj
 dotnet test tests/BSGroupGenerator.Tests/BSGroupGenerator.Tests.csproj
 dotnet test tests/BSGroupGenerator.Wpf.Tests/BSGroupGenerator.Wpf.Tests.csproj
-publish.ps1                  # 生成 dist-wpf\（框架依赖，6 个文件约 0.6 MB，需 .NET 10 Desktop Runtime）
-publish.ps1 -SelfContained   # 生成 dist-wpf\（自包含，约 133 MB，用户无需安装任何依赖）
+publish.ps1                  # 生成 dist\（框架依赖，6 个文件约 0.6 MB，需 .NET 8 Desktop Runtime）
+publish.ps1 -SelfContained   # 生成 dist\（自包含，约 133 MB，用户无需安装任何依赖）
 
 python tools/verify_l10n.py src/BSGroupGenerator.Wpf   # 语言文件键一致性 / Core 层不得出现中文字面量 / 菜单访问键（CI 门禁）
 python tools/verify_contrast.py                        # 两套色板按 WCAG 2.1 逐对算对比度（CI 门禁）

@@ -1,9 +1,11 @@
 bin/
 obj/
 dist/
-dist-wpf/
 .vs/
 *.user
 
 # 本地截图（含个人模组列表，不入库）
 *.png
+
+# 本机验收记录（HTML 报告内嵌截图，画面含个人模组列表，同 *.png 理由不入库）
+.records/

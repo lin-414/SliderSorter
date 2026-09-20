@@ -1,6 +1,6 @@
-# Publish BS Group Generator (WPF).
-# Default: multi-file framework-dependent folder into dist-wpf\ (零件摊开，
-#   requires .NET 10 Desktop Runtime); add -SelfContained to bundle the
+﻿# Publish BS Group Generator (WPF).
+# Default: multi-file framework-dependent folder into dist\ (零件摊开，
+#   requires .NET 8 Desktop Runtime); add -SelfContained to bundle the
 #   runtime (no prerequisites), and/or -SingleFile to bundle everything
 #   back into one exe (compressed, ~61MB).
 param(
@@ -10,8 +10,14 @@ param(
 
 $ErrorActionPreference = "Stop"
 $root = $PSScriptRoot
-$out = Join-Path $root "dist-wpf"
+$out = Join-Path $root "dist"
 $project = Join-Path $root "src\BSGroupGenerator.Wpf\BSGroupGenerator.Wpf.csproj"
+
+# dotnet publish 只覆盖同名文件、不删多余文件。换发布形态（自包含 ↔ 框架依赖）后旧文件
+# 会原地留下，目录里同时有 246 项和 6 项，看着发布成功实则混杂，故先清空。
+if (Test-Path $out) {
+    Remove-Item $out -Recurse -Force
+}
 
 $dotnetArgs = @(
     "publish", $project,

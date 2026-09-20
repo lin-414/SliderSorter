@@ -60,7 +60,7 @@ CJK = re.compile(r"[\u3400-\u9fff\uf900-\ufaff\U00020000-\U0002ffff]")
 # Core 项目名（与 WPF 项目同级）；找不到就跳过第 7 节
 CORE_PROJECT_NAME = "BSGroupGenerator"
 
-SKIP_DIRS = {"obj", "bin", ".git", ".vs", "node_modules", "dist", "dist-wpf"}
+SKIP_DIRS = {"obj", "bin", ".git", ".vs", "node_modules", "dist"}
 SRC_EXT = (".cs", ".xaml")
 
 
