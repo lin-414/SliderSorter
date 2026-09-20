@@ -11,7 +11,10 @@
                    Text="{DynamicResource L.RuleGroup_Explainer}" />
         <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" HorizontalAlignment="Right" Margin="10,8,10,10">
             <Button x:Name="PresetButton" Content="{DynamicResource L.RuleGroup_SavePresetBtn}" Click="SavePreset_Click" MinWidth="96" MinHeight="28" Margin="0,0,8,0" />
-            <Button Content="{DynamicResource L.Btn_Close}" IsCancel="True" MinWidth="84" MinHeight="28" Margin="0,0,8,0" />
+            <!-- 「关闭」必须显式处理点击：本窗口是 Show() 出来的非模态窗口，而 IsCancel 只在
+                 ShowDialog() 的窗口上才有"关掉自己"的语义（WPF 的 DialogCancelCommand 对非模态窗口
+                 什么都不做）。只挂 IsCancel 的后果就是按钮点下去毫无反应，只能用标题栏的 × 关。 -->
+            <Button Content="{DynamicResource L.Btn_Close}" Click="Close_Click" MinWidth="84" MinHeight="28" Margin="0,0,8,0" />
             <Button Content="{DynamicResource L.Btn_Apply}" Style="{StaticResource PrimaryButton}" Click="Apply_Click" MinWidth="96" MinHeight="28" />
         </StackPanel>
         <Grid Margin="12,8,12,4">

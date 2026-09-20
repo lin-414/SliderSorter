@@ -260,14 +260,16 @@
     <!-- 规则预设 -->
     <sys:String x:Key="L.RulePresets_Title">规则预设</sys:String>
     <sys:String x:Key="L.RulePresets_Head">预设 = 一条可复用的自动归组规则。</sys:String>
-    <sys:String x:Key="L.RulePresets_Steps" xml:space="preserve">① 点「新建预设…」：选目标组、填关键字，预览确认后点「存为预设」。&#x0a;② 再次扫描发现新装模组时，弹窗里点「按预设分组」会依次执行全部预设，自动完成归组。&#x0a;③ 这里用于查看和删除；在规则归组里保存同名预设即可覆盖更新。</sys:String>
+    <sys:String x:Key="L.RulePresets_Steps" xml:space="preserve">① 点「新建预设…」：选目标组、填关键字，预览确认后点「存为预设」。&#x0a;② 再次扫描发现新装模组时，弹窗里点「按预设分组」会依次执行全部预设，自动完成归组。&#x0a;③ 选中一条后点「编辑所选…」（双击该行也行）即可修改；名称会预填原名，直接确定就是覆盖更新。</sys:String>
     <sys:String x:Key="L.RulePresets_New">新建预设…</sys:String>
+    <sys:String x:Key="L.RulePresets_Edit">编辑所选…</sys:String>
     <sys:String x:Key="L.RulePresets_Delete">删除所选</sys:String>
     <sys:String x:Key="L.RulePresets_Empty">还没有预设。点下方「新建预设…」创建第一条自动归组规则。</sys:String>
     <sys:String x:Key="L.RulePresets_RowTitle">{0}　→ {1}组「{2}」</sys:String>
     <sys:String x:Key="L.RulePresets_RowDetail">模组关键字：{0}　·　服装关键字：{1}　·　排除：{2}</sys:String>
     <sys:String x:Key="L.RulePresets_UnassignedSuffix" xml:space="preserve">　·　仅未分配</sys:String>
     <sys:String x:Key="L.RulePresets_SelectToDelete">请先选中要删除的预设。</sys:String>
+    <sys:String x:Key="L.RulePresets_SelectToEdit">请先选中要编辑的预设。</sys:String>
 
     <!-- 保存成功 -->
     <sys:String x:Key="L.SaveOk_Title">完成</sys:String>

@@ -257,27 +257,32 @@ public partial class MainWindow : Window
         }
     }
 
-    /// <summary>打开规则归组编辑器（非模态；规则预设窗口的「新建预设」也走这里）。</summary>
-    private void OpenRuleEditor()
+    /// <summary>打开规则归组编辑器（非模态；规则预设窗口的「新建预设」「编辑所选」也走这里）。
+    /// 返回编辑器是否已就绪——规则预设窗口据此决定要不要关掉自己，没就绪就得留着，免得点了没反应。
+    /// <paramref name="presetToEdit"/> 非空时把该预设载入各控件，同名保存即覆盖。</summary>
+    private bool OpenRuleEditor(Core.RulePreset? presetToEdit = null)
     {
         if (_ruleWindow is { } existing && existing.IsLoaded)
         {
+            if (presetToEdit is not null)
+                existing.LoadPreset(presetToEdit);
             existing.Activate(); // 已打开时不再叠加新窗口（两个窗口叠在一起会互相干扰点击）
-            return;
+            return true;
         }
         if (_vm.Store.Count == 0)
         {
             Notify.Info(this, L10n.Tr("L.Title_Tip"), L10n.Tr("L.Msg_NeedGroupFirst"));
-            return;
+            return false;
         }
         if (_vm.Scan is null || _vm.Scan.Outfits.Count == 0)
         {
             Notify.Info(this, L10n.Tr("L.Title_Tip"), L10n.Tr("L.Msg_NoOutfits"));
-            return;
+            return false;
         }
         var ownerMap = _vm.OwnerByOutfit();
         RuleGroupWindow? window = null;
-        window = new RuleGroupWindow(_vm.Store.Groups, _vm.Store.Current?.Name, _vm.GetTreeDisplayStructure(),
+        window = new RuleGroupWindow(_vm.Store.Groups, presetToEdit?.GroupName ?? _vm.Store.Current?.Name,
+            _vm.GetTreeDisplayStructure(),
             (modInclude, outfitInclude, outfitExclude, unassignedOnly) =>
                 _vm.RuleMatchPreview(ownerMap, modInclude, outfitInclude, outfitExclude, unassignedOnly),
             onApply: () =>
@@ -292,11 +297,13 @@ public partial class MainWindow : Window
                 _vm.RefreshTree();
                 window.UpdatePreview();
             },
-            onSavePreset: preset => _vm.SaveRulePreset(preset))
+            onSavePreset: preset => _vm.SaveRulePreset(preset),
+            presetToEdit: presetToEdit)
         { Owner = this };
         _ruleWindow = window;
         window.Closed += (_, _) => { if (ReferenceEquals(_ruleWindow, window)) _ruleWindow = null; };
         window.Show();
+        return true;
     }
 
     private void Groups_DoubleClick(object sender, System.Windows.Input.MouseButtonEventArgs e) =>

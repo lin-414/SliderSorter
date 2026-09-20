@@ -255,14 +255,16 @@
     <!-- Rule presets -->
     <sys:String x:Key="L.RulePresets_Title">Шаблоны правил</sys:String>
     <sys:String x:Key="L.RulePresets_Head">Шаблон = одно переиспользуемое правило авто-группировки.</sys:String>
-    <sys:String x:Key="L.RulePresets_Steps" xml:space="preserve">① Нажмите «Новый шаблон…»: выберите целевую группу, заполните ключевые слова, проверьте предпросмотр и нажмите «Сохранить как шаблон».&#x0a;② При обнаружении новых установленных модов нажмите «Применить шаблоны» во всплывающем окне, чтобы запустить все шаблоны автоматически.&#x0a;③ Просматривайте и удаляйте их здесь; сохранение шаблона с тем же именем перезаписывает его.</sys:String>
+    <sys:String x:Key="L.RulePresets_Steps" xml:space="preserve">① Нажмите «Новый шаблон…»: выберите целевую группу, заполните ключевые слова, проверьте предпросмотр и нажмите «Сохранить как шаблон».&#x0a;② При обнаружении новых установленных модов нажмите «Применить шаблоны» во всплывающем окне, чтобы запустить все шаблоны автоматически.&#x0a;③ Выберите шаблон и нажмите «Изменить выбранный…» (или дважды щёлкните строку), чтобы изменить его; имя подставляется, поэтому подтверждение перезаписывает шаблон.</sys:String>
     <sys:String x:Key="L.RulePresets_New">Новый шаблон…</sys:String>
+    <sys:String x:Key="L.RulePresets_Edit">Изменить выбранный…</sys:String>
     <sys:String x:Key="L.RulePresets_Delete">Удалить выбранные</sys:String>
     <sys:String x:Key="L.RulePresets_Empty">Шаблонов пока нет. Нажмите «Новый шаблон…» ниже, чтобы создать первое правило авто-группировки.</sys:String>
     <sys:String x:Key="L.RulePresets_RowTitle">{0} → {1} «{2}»</sys:String>
     <sys:String x:Key="L.RulePresets_RowDetail">Ключевые слова модов: {0} · Ключевые слова комплектов: {1} · Исключено: {2}</sys:String>
     <sys:String x:Key="L.RulePresets_UnassignedSuffix" xml:space="preserve"> · только без группы</sys:String>
     <sys:String x:Key="L.RulePresets_SelectToDelete">Сначала выберите шаблон для удаления.</sys:String>
+    <sys:String x:Key="L.RulePresets_SelectToEdit">Сначала выберите шаблон для изменения.</sys:String>
 
     <!-- Save success -->
     <sys:String x:Key="L.SaveOk_Title">Готово</sys:String>

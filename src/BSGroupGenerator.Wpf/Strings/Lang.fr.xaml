@@ -255,14 +255,16 @@
     <!-- Rule presets -->
     <sys:String x:Key="L.RulePresets_Title">Préréglages de règles</sys:String>
     <sys:String x:Key="L.RulePresets_Head">Un préréglage = une règle de groupement automatique réutilisable.</sys:String>
-    <sys:String x:Key="L.RulePresets_Steps" xml:space="preserve">① Cliquez sur « Nouveau préréglage… » : choisissez le groupe cible, saisissez les mots-clés, vérifiez l'aperçu, puis « Enregistrer comme préréglage ».&#x0a;② À la détection de nouveaux mods installés, cliquez sur « Appliquer les préréglages » dans la fenêtre pour exécuter tous les préréglages automatiquement.&#x0a;③ Consultez-les et supprimez-les ici ; enregistrer un préréglage du même nom l'écrase.</sys:String>
+    <sys:String x:Key="L.RulePresets_Steps" xml:space="preserve">① Cliquez sur « Nouveau préréglage… » : choisissez le groupe cible, saisissez les mots-clés, vérifiez l'aperçu, puis « Enregistrer comme préréglage ».&#x0a;② À la détection de nouveaux mods installés, cliquez sur « Appliquer les préréglages » dans la fenêtre pour exécuter tous les préréglages automatiquement.&#x0a;③ Sélectionnez-en un et cliquez sur « Modifier la sélection… » (ou double-cliquez la ligne) pour le modifier ; le nom est prérempli, donc confirmer l'écrase.</sys:String>
     <sys:String x:Key="L.RulePresets_New">Nouveau préréglage…</sys:String>
+    <sys:String x:Key="L.RulePresets_Edit">Modifier la sélection…</sys:String>
     <sys:String x:Key="L.RulePresets_Delete">Supprimer la sélection</sys:String>
     <sys:String x:Key="L.RulePresets_Empty">Aucun préréglage. Cliquez sur « Nouveau préréglage… » ci-dessous pour créer votre première règle de groupement automatique.</sys:String>
     <sys:String x:Key="L.RulePresets_RowTitle">{0} → {1} « {2} »</sys:String>
     <sys:String x:Key="L.RulePresets_RowDetail">Mots-clés de mods : {0} · Mots-clés de tenues : {1} · Exclus : {2}</sys:String>
     <sys:String x:Key="L.RulePresets_UnassignedSuffix" xml:space="preserve"> · non attribuées uniquement</sys:String>
     <sys:String x:Key="L.RulePresets_SelectToDelete">Sélectionnez d'abord un préréglage à supprimer.</sys:String>
+    <sys:String x:Key="L.RulePresets_SelectToEdit">Sélectionnez d'abord un préréglage à modifier.</sys:String>
 
     <!-- Save success -->
     <sys:String x:Key="L.SaveOk_Title">Terminé</sys:String>

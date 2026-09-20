@@ -20,10 +20,14 @@ public partial class RuleGroupWindow : Window
     private readonly Action _onApply;
     private readonly Action<RulePreset>? _onSavePreset;
 
+    /// <summary>当前正在编辑的预设名（新建时为空）。「存为预设」把这个名字预填进输入框，
+    /// 于是直接确定＝同名覆盖，改成别的名字＝另存为一条新预设。</summary>
+    private string _editingName = "";
+
     public RuleGroupWindow(IReadOnlyList<SliderGroup> groups, string? preselectGroupName,
         List<(string? Separator, string Owner, List<string> Outfits)> structure,
         Func<string, string, string, bool, List<string>> preview, Action onApply,
-        Action<RulePreset>? onSavePreset = null)
+        Action<RulePreset>? onSavePreset = null, RulePreset? presetToEdit = null)
     {
         InitializeComponent();
         _preview = preview;
@@ -52,6 +56,30 @@ public partial class RuleGroupWindow : Window
         Closed += (_, _) => _previewDebounce.Stop();
         if (_onSavePreset is null)
             PresetButton.Visibility = Visibility.Collapsed;
+        if (presetToEdit is null)
+            UpdatePreview();
+        else
+            LoadPreset(presetToEdit); // 里面已经刷过预览
+    }
+
+    /// <summary>把一条已有预设载入各控件（「编辑所选」用）。
+    /// 已打开的编辑器复用同一个窗口时也走这里，所以末尾要显式刷一次预览：
+    /// 只有文本框/复选框挂了防抖，目标组与方向的下拉框变化不会自己触发重算。</summary>
+    public void LoadPreset(RulePreset preset)
+    {
+        _editingName = preset.Name;
+
+        var groups = GroupCombo.ItemsSource?.Cast<SliderGroup>().ToList() ?? [];
+        var index = groups.FindIndex(g => g.Name == preset.GroupName);
+        // 预设指向的组已被删除时落到第一个组：下拉框上看得见，不会悄悄改成别的组
+        GroupCombo.SelectedIndex = index >= 0 ? index : (groups.Count > 0 ? 0 : -1);
+        DirectionCombo.SelectedIndex = preset.Add ? 0 : 1;
+        ModIncludeBox.Text = preset.ModInclude;
+        OutfitIncludeBox.Text = preset.OutfitInclude;
+        OutfitExcludeBox.Text = preset.OutfitExclude;
+        UnassignedCheck.IsChecked = preset.UnassignedOnly;
+
+        _previewDebounce.Stop(); // 上面的赋值会启动防抖，这里立刻算并停掉
         UpdatePreview();
     }
 
@@ -164,12 +192,15 @@ public partial class RuleGroupWindow : Window
         UpdatePreview();
     }
 
+    private void Close_Click(object sender, RoutedEventArgs e) => Close();
+
     private void SavePreset_Click(object sender, RoutedEventArgs e)
     {
         if (_onSavePreset is null)
             return;
         var name = InputWindow.Show(this, L10n.Tr("L.RuleGroup_SavePresetTitle"),
-            L10n.TrF("L.RuleGroup_SavePresetPrompt", GroupName.Length == 0 ? L10n.Tr("L.Word_Unselected") : GroupName));
+            L10n.TrF("L.RuleGroup_SavePresetPrompt", GroupName.Length == 0 ? L10n.Tr("L.Word_Unselected") : GroupName),
+            _editingName);
         if (string.IsNullOrEmpty(name))
             return;
         _onSavePreset.Invoke(CapturePreset(name));

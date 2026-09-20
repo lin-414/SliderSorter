@@ -8,6 +8,8 @@
         <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" HorizontalAlignment="Right" Margin="10">
             <Button Content="{DynamicResource L.RulePresets_New}" Click="NewPreset_Click" MinWidth="96" MinHeight="28"
                     Margin="0,0,8,0" Style="{StaticResource PrimaryButton}" />
+            <Button Content="{DynamicResource L.RulePresets_Edit}" Click="Edit_Click" MinWidth="96" MinHeight="28"
+                    Margin="0,0,8,0" />
             <Button Content="{DynamicResource L.RulePresets_Delete}" Click="Delete_Click" MinWidth="90" MinHeight="28" Margin="0,0,8,0" />
             <Button Content="{DynamicResource L.Btn_Close}" IsCancel="True" MinWidth="84" MinHeight="28" />
         </StackPanel>
@@ -20,6 +22,7 @@
         </StackPanel>
         <Grid Margin="12,0,12,10">
             <ListBox x:Name="List" BorderBrush="{DynamicResource B.Border}" BorderThickness="1"
+                     MouseDoubleClick="List_DoubleClick"
                      ScrollViewer.HorizontalScrollBarVisibility="Disabled">
                 <ListBox.ItemTemplate>
                     <DataTemplate>

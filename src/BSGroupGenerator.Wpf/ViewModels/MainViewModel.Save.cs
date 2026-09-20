@@ -313,11 +313,15 @@ public partial class MainViewModel
         return applied;
     }
 
-    /// <summary>保存规则预设（重名覆盖）。</summary>
+    /// <summary>保存规则预设（重名覆盖）。覆盖时**原地替换**：改一条预设不该把它挪到列表末尾，
+    /// 否则用户刚编辑过的那条会跳走，看着像被删了又新建了一条。</summary>
     public void SaveRulePreset(RulePreset preset)
     {
-        Settings.RulePresets.RemoveAll(p => string.Equals(p.Name, preset.Name, StringComparison.Ordinal));
-        Settings.RulePresets.Add(preset);
+        var index = Settings.RulePresets.FindIndex(p => string.Equals(p.Name, preset.Name, StringComparison.Ordinal));
+        if (index >= 0)
+            Settings.RulePresets[index] = preset;
+        else
+            Settings.RulePresets.Add(preset);
         Settings.Save();
         Log(L10n.TrF("L.Log_PresetSaved", preset.Name, preset.GroupName.Length == 0 ? L10n.Tr("L.Word_Unselected") : preset.GroupName, Settings.RulePresets.Count));
     }

@@ -260,14 +260,16 @@ Open the release page to download?</sys:String>
     <!-- Rule presets -->
     <sys:String x:Key="L.RulePresets_Title">Rule presets</sys:String>
     <sys:String x:Key="L.RulePresets_Head">A preset = one reusable auto-grouping rule.</sys:String>
-    <sys:String x:Key="L.RulePresets_Steps" xml:space="preserve">① Click "New preset…": choose the target group, fill in keywords, confirm the preview, then "Save as preset".&#x0a;② When newly installed mods are found, click "Apply presets" in the popup to run all presets automatically.&#x0a;③ View and delete them here; saving a preset with the same name overwrites it.</sys:String>
+    <sys:String x:Key="L.RulePresets_Steps" xml:space="preserve">① Click "New preset…": choose the target group, fill in keywords, confirm the preview, then "Save as preset".&#x0a;② When newly installed mods are found, click "Apply presets" in the popup to run all presets automatically.&#x0a;③ Select one and click "Edit selected…" (or double-click the row) to change it; the name is pre-filled, so confirming overwrites it.</sys:String>
     <sys:String x:Key="L.RulePresets_New">New preset…</sys:String>
+    <sys:String x:Key="L.RulePresets_Edit">Edit selected…</sys:String>
     <sys:String x:Key="L.RulePresets_Delete">Delete selected</sys:String>
     <sys:String x:Key="L.RulePresets_Empty">No presets yet. Click "New preset…" below to create your first auto-grouping rule.</sys:String>
     <sys:String x:Key="L.RulePresets_RowTitle">{0} → {1} group "{2}"</sys:String>
     <sys:String x:Key="L.RulePresets_RowDetail">Mod keywords: {0} · Outfit keywords: {1} · Excluded: {2}</sys:String>
     <sys:String x:Key="L.RulePresets_UnassignedSuffix" xml:space="preserve"> · unassigned only</sys:String>
     <sys:String x:Key="L.RulePresets_SelectToDelete">Select a preset to delete first.</sys:String>
+    <sys:String x:Key="L.RulePresets_SelectToEdit">Select a preset to edit first.</sys:String>
 
     <!-- Save success -->
     <sys:String x:Key="L.SaveOk_Title">Done</sys:String>
