@@ -14,6 +14,7 @@
     <sys:String x:Key="L.Menu_Diagnostics">Diagnostics…(_D)</sys:String>
     <sys:String x:Key="L.Menu_CleanupStale">Clean stale outfits…(_C)</sys:String>
     <sys:String x:Key="L.Menu_RulePresets">Rule presets…(_P)</sys:String>
+    <sys:String x:Key="L.Menu_OutputConflicts" xml:space="preserve">Output conflicts…(_O)</sys:String>
     <sys:String x:Key="L.Menu_Theme">Theme(_M)</sys:String>
     <sys:String x:Key="L.Theme_Dark">Dark</sys:String>
     <sys:String x:Key="L.Theme_Light">Light</sys:String>
@@ -235,6 +236,48 @@ Open the release page to download?</sys:String>
     <sys:String x:Key="L.NewMods_SelectFirst">Tick what to group first (tick a mod or a separator to select in bulk).</sys:String>
     <sys:String x:Key="L.NewMods_SelectTarget">Pick a target group first.</sys:String>
     <sys:String x:Key="L.NewMods_AddSelected">Add selected</sys:String>
+    <sys:String x:Key="L.Conflict_Title" xml:space="preserve">Output conflicts: which mod builds each outfit file</sys:String>
+    <sys:String x:Key="L.Conflict_Intro" xml:space="preserve">{0} outfits are written to the same output file by more than one mod ({1} groups in total counting several presets of one mod sharing a file). Pick which one to build; for a group you leave unset, BodySlide asks again during batch build.</sys:String>
+    <sys:String x:Key="L.Conflict_Filter" xml:space="preserve">Filter output path / outfit / mod…</sys:String>
+    <sys:String x:Key="L.Conflict_OnlyCrossMod" xml:space="preserve">Only conflicts between mods</sys:String>
+    <sys:String x:Key="L.Conflict_SameModOnly" xml:space="preserve">same mod only</sys:String>
+    <sys:String x:Key="L.Conflict_FilterCount" xml:space="preserve">Showing {0} of {1} groups</sys:String>
+    <sys:String x:Key="L.Conflict_AutoAll" xml:space="preserve">Follow mod priority</sys:String>
+    <sys:String x:Key="L.Conflict_AutoAllTip" xml:space="preserve">For every group listed, pick the mod with the highest priority — the one the game loads anyway</sys:String>
+    <sys:String x:Key="L.Conflict_ClearAll" xml:space="preserve">Clear all</sys:String>
+    <sys:String x:Key="L.Conflict_ClearAllTip" xml:space="preserve">Clear the choice for every group listed and let BodySlide ask again</sys:String>
+    <sys:String x:Key="L.Conflict_Export" xml:space="preserve">Write to BodySlide…</sys:String>
+    <sys:String x:Key="L.Conflict_ExportTip" xml:space="preserve">Writes the choices into BuildSelection.xml in the BodySlide folder; the previous file is kept as .bak</sys:String>
+    <sys:String x:Key="L.Conflict_StatusChosen" xml:space="preserve">Chosen: {0}</sys:String>
+    <sys:String x:Key="L.Conflict_StatusUnresolved" xml:space="preserve">unset</sys:String>
+    <sys:String x:Key="L.Conflict_CandidateCount" xml:space="preserve">{0} candidates</sys:String>
+    <sys:String x:Key="L.Conflict_Target" xml:space="preserve">Output file: {0}</sys:String>
+    <sys:String x:Key="L.Conflict_NoneSelected" xml:space="preserve">Select a conflict on the left to list its candidate outfits.</sys:String>
+    <sys:String x:Key="L.Conflict_RowInfo" xml:space="preserve">{0} · layer {1}</sys:String>
+    <sys:String x:Key="L.Conflict_InGroup" xml:space="preserve">in a group</sys:String>
+    <sys:String x:Key="L.Conflict_Strongest" xml:space="preserve">highest priority</sys:String>
+    <sys:String x:Key="L.Conflict_AskMeAgain" xml:space="preserve">Leave unset (let BodySlide ask)</sys:String>
+    <sys:String x:Key="L.Preview_Reset" xml:space="preserve">Reset view</sys:String>
+    <sys:String x:Key="L.Preview_Loading" xml:space="preserve">Reading mesh…</sys:String>
+    <sys:String x:Key="L.Preview_NoSource" xml:space="preserve">This set has no resolvable source mesh (BodySlide's .nif is not in ShapeData)</sys:String>
+    <sys:String x:Key="L.Preview_Stats" xml:space="preserve">{0} triangles · {1} shapes</sys:String>
+    <sys:String x:Key="L.Conflict_PreviewTip" xml:space="preserve">Click a row to see its 3D model; right-click a row to make it the winner. Drag to orbit, scroll to zoom.</sys:String>
+    <sys:String x:Key="L.Conflict_OpenTip" xml:space="preserve">Opens the winner picker. Choices stay in this tool until you press 'Write to BodySlide...'</sys:String>
+    <sys:String x:Key="L.Confirm_ExportBuildSel" xml:space="preserve">Write {0} choices to:
+{1}
+The existing file is backed up as BuildSelection.xml.bak. BodySlide stops asking about these groups after the next start. Continue?</sys:String>
+    <sys:String x:Key="L.Msg_NoConflicts" xml:space="preserve">No output file conflicts in this scan: every outfit file has a single source.</sys:String>
+    <sys:String x:Key="L.Msg_NoBodySlideDir" xml:space="preserve">No BodySlide installation is selected, so BuildSelection.xml has nowhere to go.</sys:String>
+    <sys:String x:Key="L.Msg_ConflictNothingToExport" xml:space="preserve">No conflict group has a chosen winner yet, so there is nothing to write.</sys:String>
+    <sys:String x:Key="L.Msg_ExportFail" xml:space="preserve">Failed to write BuildSelection.xml.</sys:String>
+    <sys:String x:Key="L.Msg_BuildSelWritten" xml:space="preserve">{0} entries written, {1} removed. Restart BodySlide to pick them up.</sys:String>
+    <sys:String x:Key="L.Log_OutputConflictsFound" xml:space="preserve">{0} outfits are written to the same output file by more than one mod; {1} groups in total counting one mod's own presets, {2} of them still unset — pick winners under Tools → Output conflicts…</sys:String>
+    <sys:String x:Key="L.Log_BuildSelWritten" xml:space="preserve">Wrote BuildSelection.xml: {0} added/changed, {1} removed → {2}</sys:String>
+    <sys:String x:Key="L.Vm_ConflictsInline" xml:space="preserve">output conflicts: {0} ({1} unset)</sys:String>
+    <sys:String x:Key="L.Diag_SecConflicts" xml:space="preserve">Output file conflicts</sys:String>
+    <sys:String x:Key="L.Diag_NoConflicts" xml:space="preserve">No output file conflicts.</sys:String>
+    <sys:String x:Key="L.Diag_ConflictLine" xml:space="preserve">{0} groups ({1} across mods), {2} with a chosen winner</sys:String>
+    <sys:String x:Key="L.Diag_ConflictMore" xml:space="preserve">({0} further groups omitted)</sys:String>
 
     <!-- Rule grouping -->
     <sys:String x:Key="L.RuleGroup_Title">Rule grouping</sys:String>
@@ -377,6 +420,7 @@ One file per group, named after the group: {1}{2} ({3}).
 
     <!-- Tree node text (composed in code, not bound in XAML) -->
     <sys:String x:Key="L.Tree_ConflictSuffix" xml:space="preserve"> (name conflict)</sys:String>
+    <sys:String x:Key="L.Tree_OutputConfSuffix" xml:space="preserve"> (output conflict)</sys:String>
     <sys:String x:Key="L.Tree_InGroupBadge">{0} [in group {1}/{2}]</sys:String>
     <sys:String x:Key="L.Tree_MatchHeader">{0} (matched {1}/{2})</sys:String>
     <sys:String x:Key="L.Tree_NoMatchingMods">(no mods match the filters)</sys:String>
@@ -409,6 +453,15 @@ One file per group, named after the group: {1}{2} ({3}).
     <sys:String x:Key="L.Core_ScanEnumFail">failed to enumerate {0}: {1}</sys:String>
     <sys:String x:Key="L.Core_ScanLayerFiles" xml:space="preserve">  layer {0}: {1} files</sys:String>
     <sys:String x:Key="L.Core_ScanParseFail">cannot parse {0}: {1}</sys:String>
+    <sys:String x:Key="L.Core_OutputConf_Weighted" xml:space="preserve">{0}_0.nif (and _1.nif)</sys:String>
+    <sys:String x:Key="L.Core_OutputConf_Single" xml:space="preserve">{0}.nif</sys:String>
+    <sys:String x:Key="L.Core_BuildSelParseFail" xml:space="preserve">cannot parse {0}: {1}</sys:String>
+    <sys:String x:Key="L.Core_BuildSelBadRoot" xml:space="preserve">root element is not BuildSelection (found {0}); the file was left untouched</sys:String>
+    <sys:String x:Key="L.Core_BuildSelWriteFail" xml:space="preserve">write failed: {0}</sys:String>
+    <sys:String x:Key="L.Core_NifTooBig" xml:space="preserve">mesh too large (over {0} triangles) to preview</sys:String>
+    <sys:String x:Key="L.Core_NifLoadFail" xml:space="preserve">cannot read this mesh: {0}</sys:String>
+    <sys:String x:Key="L.Core_NifLoadRejected" xml:space="preserve">the file is not a recognisable mesh format</sys:String>
+    <sys:String x:Key="L.Core_NifNoGeometry" xml:space="preserve">the file contains no readable triangle mesh</sys:String>
     <sys:String x:Key="L.Core_ConfigRootMissing">not a valid BodySlide Config.xml (missing the &lt;Config&gt; root element)</sys:String>
     <sys:String x:Key="L.Core_GroupEmptyName">The group name cannot be empty.</sys:String>
     <sys:String x:Key="L.Core_GroupDuplicate">A group with that name already exists (case-insensitive).</sys:String>

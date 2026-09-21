@@ -45,6 +45,12 @@ public class AppSettings
     /// <summary>用户在提示框里勾过「不再提示」的项目（如更新提示）。键由调用方定义，仅做等值比较。</summary>
     public List<string> SuppressedPrompts { get; set; } = new();
 
+    /// <summary>输出文件冲突的赢家选择：BodySlide 口径的输出路径（反斜杠、不含扩展名）→ slider set 名。
+    /// 与 BodySlide 的 BuildSelection.xml 用同一套键、同样逐字节区分大小写，也不按实例分区——
+    /// BodySlide 自己就只有一份全局的 BuildSelection.xml。写回时只提交当前扫描仍然确认存在的冲突，
+    /// 所以别的实例留下的条目既不会被误用、也不会被误删。</summary>
+    public Dictionary<string, string> OutputChoices { get; set; } = new();
+
     private static string? _directoryOverride;
 
     /// <summary>设置目录覆盖（null = 真实 <c>%APPDATA%\BSGroupGenerator</c>）。

@@ -14,6 +14,7 @@
     <sys:String x:Key="L.Menu_Diagnostics">Диагностика…(_Д)</sys:String>
     <sys:String x:Key="L.Menu_CleanupStale">Удалить устаревшие комплекты…(_У)</sys:String>
     <sys:String x:Key="L.Menu_RulePresets">Шаблоны правил…(_Ш)</sys:String>
+    <sys:String x:Key="L.Menu_OutputConflicts" xml:space="preserve">Конфликты вывода…(_К)</sys:String>
     <sys:String x:Key="L.Menu_Theme">Тема(_Т)</sys:String>
     <sys:String x:Key="L.Theme_Dark">Тёмная</sys:String>
     <sys:String x:Key="L.Theme_Light">Светлая</sys:String>
@@ -230,6 +231,48 @@
     <sys:String x:Key="L.NewMods_SelectFirst">Сначала отметьте, что группировать (отметьте мод или разделитель, чтобы выбрать всё сразу).</sys:String>
     <sys:String x:Key="L.NewMods_SelectTarget">Сначала выберите целевую группу.</sys:String>
     <sys:String x:Key="L.NewMods_AddSelected">Добавить выбранные</sys:String>
+    <sys:String x:Key="L.Conflict_Title" xml:space="preserve">Конфликты вывода: какой мод строит файл одежды</sys:String>
+    <sys:String x:Key="L.Conflict_Intro" xml:space="preserve">{0} групп пишутся разными модами в один и тот же выходной файл (всего {1} групп, считая несколько наборов одного мода). Выберите, какой набор строить; про группы без выбора BodySlide спросит сам при пакетной сборке.</sys:String>
+    <sys:String x:Key="L.Conflict_Filter" xml:space="preserve">Фильтр пути / одежды / мода…</sys:String>
+    <sys:String x:Key="L.Conflict_OnlyCrossMod" xml:space="preserve">Только конфликты между модами</sys:String>
+    <sys:String x:Key="L.Conflict_SameModOnly" xml:space="preserve">внутри одного мода</sys:String>
+    <sys:String x:Key="L.Conflict_FilterCount" xml:space="preserve">Показано групп: {0} из {1}</sys:String>
+    <sys:String x:Key="L.Conflict_AutoAll" xml:space="preserve">По приоритету модов</sys:String>
+    <sys:String x:Key="L.Conflict_AutoAllTip" xml:space="preserve">Для каждой показанной группы взять мод с наивысшим приоритетом — тот, который игра загружает и так</sys:String>
+    <sys:String x:Key="L.Conflict_ClearAll" xml:space="preserve">Сбросить всё</sys:String>
+    <sys:String x:Key="L.Conflict_ClearAllTip" xml:space="preserve">Снять выбор во всех показанных группах и позволить BodySlide спрашивать снова</sys:String>
+    <sys:String x:Key="L.Conflict_Export" xml:space="preserve">Записать в BodySlide…</sys:String>
+    <sys:String x:Key="L.Conflict_ExportTip" xml:space="preserve">Сохраняет выбор в BuildSelection.xml в папке BodySlide; прежний файл сохраняется как .bak</sys:String>
+    <sys:String x:Key="L.Conflict_StatusChosen" xml:space="preserve">Выбрано: {0}</sys:String>
+    <sys:String x:Key="L.Conflict_StatusUnresolved" xml:space="preserve">не задано</sys:String>
+    <sys:String x:Key="L.Conflict_CandidateCount" xml:space="preserve">вариантов: {0}</sys:String>
+    <sys:String x:Key="L.Conflict_Target" xml:space="preserve">Выходной файл: {0}</sys:String>
+    <sys:String x:Key="L.Conflict_NoneSelected" xml:space="preserve">Выберите группу слева, чтобы увидеть её варианты.</sys:String>
+    <sys:String x:Key="L.Conflict_RowInfo" xml:space="preserve">{0} · слой {1}</sys:String>
+    <sys:String x:Key="L.Conflict_InGroup" xml:space="preserve">в группе</sys:String>
+    <sys:String x:Key="L.Conflict_Strongest" xml:space="preserve">наивысший приоритет</sys:String>
+    <sys:String x:Key="L.Conflict_AskMeAgain" xml:space="preserve">Не задавать (спросит BodySlide)</sys:String>
+    <sys:String x:Key="L.Preview_Reset" xml:space="preserve">Сброс вида</sys:String>
+    <sys:String x:Key="L.Preview_Loading" xml:space="preserve">Чтение сетки…</sys:String>
+    <sys:String x:Key="L.Preview_NoSource" xml:space="preserve">У этого набора нет исходной сетки (файл .nif не найден в ShapeData)</sys:String>
+    <sys:String x:Key="L.Preview_Stats" xml:space="preserve">треугольников: {0} · форм: {1}</sys:String>
+    <sys:String x:Key="L.Conflict_PreviewTip" xml:space="preserve">Клик по строке — показать 3D-модель; правый клик — сделать её победителем. Вращение мышью, зум колесом.</sys:String>
+    <sys:String x:Key="L.Conflict_OpenTip" xml:space="preserve">Открывает выбор победителя. Выбор хранится этой утилитой, пока вы не нажмёте «Записать в BodySlide…»</sys:String>
+    <sys:String x:Key="L.Confirm_ExportBuildSel" xml:space="preserve">Записать {0} выборов в:
+{1}
+Существующий файл будет сохранён как BuildSelection.xml.bak. После перезапуска BodySlide перестанет спрашивать про эти группы. Продолжить?</sys:String>
+    <sys:String x:Key="L.Msg_NoConflicts" xml:space="preserve">Конфликтов вывода в этом сканировании нет: у каждого файла одежды один источник.</sys:String>
+    <sys:String x:Key="L.Msg_NoBodySlideDir" xml:space="preserve">Установка BodySlide не выбрана — записывать BuildSelection.xml некуда.</sys:String>
+    <sys:String x:Key="L.Msg_ConflictNothingToExport" xml:space="preserve">Ни в одной группе не выбран победитель — записывать нечего.</sys:String>
+    <sys:String x:Key="L.Msg_ExportFail" xml:space="preserve">Не удалось записать BuildSelection.xml.</sys:String>
+    <sys:String x:Key="L.Msg_BuildSelWritten" xml:space="preserve">Записано записей: {0}, удалено: {1}. Перезапустите BodySlide.</sys:String>
+    <sys:String x:Key="L.Log_OutputConflictsFound" xml:space="preserve">{0} групп пишутся разными модами в один выходной файл; всего {1} группа (включая наборы одного мода), без выбора: {2} — победителя можно выбрать: Инструменты → Конфликты вывода…</sys:String>
+    <sys:String x:Key="L.Log_BuildSelWritten" xml:space="preserve">Записан BuildSelection.xml: добавлено/изменено {0}, удалено {1} → {2}</sys:String>
+    <sys:String x:Key="L.Vm_ConflictsInline" xml:space="preserve">конфликты вывода: {0} (без выбора {1})</sys:String>
+    <sys:String x:Key="L.Diag_SecConflicts" xml:space="preserve">Конфликты вывода</sys:String>
+    <sys:String x:Key="L.Diag_NoConflicts" xml:space="preserve">Конфликтов вывода нет.</sys:String>
+    <sys:String x:Key="L.Diag_ConflictLine" xml:space="preserve">групп: {0} (между модами: {1}), с выбранным победителем: {2}</sys:String>
+    <sys:String x:Key="L.Diag_ConflictMore" xml:space="preserve">(ещё {0} групп опущено)</sys:String>
 
     <!-- Rule grouping -->
     <sys:String x:Key="L.RuleGroup_Title">Группировка по правилам</sys:String>
@@ -372,6 +415,7 @@
 
     <!-- Tree node text (composed in code, not bound in XAML) -->
     <sys:String x:Key="L.Tree_ConflictSuffix" xml:space="preserve"> (конфликт имён)</sys:String>
+    <sys:String x:Key="L.Tree_OutputConfSuffix" xml:space="preserve"> (конфликт вывода)</sys:String>
     <sys:String x:Key="L.Tree_InGroupBadge">{0} [в группе {1}/{2}]</sys:String>
     <sys:String x:Key="L.Tree_MatchHeader">{0} (совпадений {1}/{2})</sys:String>
     <sys:String x:Key="L.Tree_NoMatchingMods">(нет модов, подходящих под фильтры)</sys:String>
@@ -404,6 +448,15 @@
     <sys:String x:Key="L.Core_ScanEnumFail">не удалось перечислить {0}: {1}</sys:String>
     <sys:String x:Key="L.Core_ScanLayerFiles" xml:space="preserve">  слой {0}: файлов {1}</sys:String>
     <sys:String x:Key="L.Core_ScanParseFail">не удалось разобрать {0}: {1}</sys:String>
+    <sys:String x:Key="L.Core_OutputConf_Weighted" xml:space="preserve">{0}_0.nif (и _1.nif)</sys:String>
+    <sys:String x:Key="L.Core_OutputConf_Single" xml:space="preserve">{0}.nif</sys:String>
+    <sys:String x:Key="L.Core_BuildSelParseFail" xml:space="preserve">не удалось разобрать {0}: {1}</sys:String>
+    <sys:String x:Key="L.Core_BuildSelBadRoot" xml:space="preserve">корневой элемент не BuildSelection (найдено {0}); файл оставлен без изменений</sys:String>
+    <sys:String x:Key="L.Core_BuildSelWriteFail" xml:space="preserve">ошибка записи: {0}</sys:String>
+    <sys:String x:Key="L.Core_NifTooBig" xml:space="preserve">сетка слишком большая (более {0} треугольников) — предпросмотр невозможен</sys:String>
+    <sys:String x:Key="L.Core_NifLoadFail" xml:space="preserve">не удалось прочитать сетку: {0}</sys:String>
+    <sys:String x:Key="L.Core_NifLoadRejected" xml:space="preserve">файл не является распознаваемым форматом сетки</sys:String>
+    <sys:String x:Key="L.Core_NifNoGeometry" xml:space="preserve">в файле нет читаемой треугольной сетки</sys:String>
     <sys:String x:Key="L.Core_ConfigRootMissing">не является допустимым BodySlide Config.xml (отсутствует корневой элемент &lt;Config&gt;)</sys:String>
     <sys:String x:Key="L.Core_GroupEmptyName">Имя группы не может быть пустым.</sys:String>
     <sys:String x:Key="L.Core_GroupDuplicate">Группа с таким именем уже существует (без учёта регистра).</sys:String>

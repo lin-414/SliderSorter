@@ -241,9 +241,8 @@ public partial class MainViewModel
                 {
                     var member = group is not null && group.Members.Contains(outfit.OutfitName, StringComparer.Ordinal);
                     // 成员标记由视图的独立徽标呈现（绑定 IsMember），文本里不再拼 "✔ "
-                    var targetText = outfit.HasConflict
-                        ? outfit.OutfitName + L10n.Tr("L.Tree_ConflictSuffix")
-                        : outfit.OutfitName;
+                    var targetText = OutfitNodeVM.FormatText(outfit.OutfitName, outfit.HasConflict,
+                        outfit.HasOutputConflict);
                     if (node.Text != targetText)
                         node.Text = targetText;
                     node.IsMember = member;

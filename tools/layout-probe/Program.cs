@@ -47,7 +47,7 @@ internal static class Program
     private static readonly string[] EventAttrs =
     [
         "Click", "MouseDoubleClick", "MouseLeftButtonUp", "MouseLeftButtonDown", "MouseRightButtonUp",
-        "MouseDown", "MouseUp", "MouseMove", "DragDelta", "DragStarted", "DragCompleted",
+        "MouseWheel", "MouseDown", "MouseUp", "MouseMove", "DragDelta", "DragStarted", "DragCompleted",
         "DragOver", "DragEnter", "DragLeave", "Drop", "Checked", "Unchecked", "Indeterminate",
         "SelectionChanged", "TextChanged", "KeyDown", "KeyUp", "PreviewKeyDown", "GotFocus",
         "LostFocus", "Loaded", "Unloaded", "Closing", "Closed", "SizeChanged", "IsVisibleChanged",

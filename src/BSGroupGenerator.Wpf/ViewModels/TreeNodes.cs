@@ -172,14 +172,16 @@ public sealed class SeparatorNodeVM : NodeVM
 
 public sealed class OutfitNodeVM : NodeVM
 {
-    public OutfitNodeVM(string outfitName, bool hasConflict, bool isMember, bool isChecked)
+    public OutfitNodeVM(string outfitName, bool hasConflict, bool isMember, bool isChecked,
+        bool hasOutputConflict = false)
         : base(NodeKind.Outfit)
     {
         OutfitName = outfitName;
         HasConflict = hasConflict;
+        HasOutputConflict = hasOutputConflict;
         // 「已在组内」不再拼成 "✔ " 文本前缀：它由视图里的独立徽标呈现（可单独设色/对齐），
         // 也就不会和「（同名冲突）」后缀混在同一个字符串里
-        Text = hasConflict ? outfitName + L10n.Tr("L.Tree_ConflictSuffix") : outfitName;
+        Text = FormatText(outfitName, hasConflict, hasOutputConflict);
         IsMember = isMember;
         IsConflict = hasConflict;
         IsChecked = isChecked;
@@ -187,6 +189,20 @@ public sealed class OutfitNodeVM : NodeVM
 
     public string OutfitName { get; }
     public bool HasConflict { get; }
+
+    /// <summary>还有别的模组的服装写同一个输出文件（BodySlide 的输出文件冲突）。</summary>
+    public bool HasOutputConflict { get; }
+
+    /// <summary>树里服装行的文本：两种冲突各带一个后缀，措辞在 Lang.*.xaml 里。
+    /// <see cref="MainViewModel"/> 刷新成员标记时也走这里，两处判定不会漂开。</summary>
+    public static string FormatText(string outfitName, bool hasConflict, bool hasOutputConflict)
+    {
+        if (hasConflict)
+            outfitName += L10n.Tr("L.Tree_ConflictSuffix");
+        if (hasOutputConflict)
+            outfitName += L10n.Tr("L.Tree_OutputConfSuffix");
+        return outfitName;
+    }
 }
 
 /// <summary>模组节点：懒加载——挂一个空占位子节点让展开箭头出现，首次展开才物化服装行。</summary>
@@ -223,7 +239,8 @@ public sealed class ModNodeVM : NodeVM
         _materialized = true;
         Children.Clear();
         foreach (var outfit in Outfits)
-            Children.Add(new OutfitNodeVM(outfit.Name, outfit.HasConflict, _isMember(outfit.Name), IsChecked == true)
+            Children.Add(new OutfitNodeVM(outfit.Name, outfit.HasConflict, _isMember(outfit.Name), IsChecked == true,
+                outfit.HasOutputConflict)
             {
                 Parent = this,
             });

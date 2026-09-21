@@ -14,4 +14,8 @@
     <Description>读取 Mod Organizer 2 安装的模组，为 BodySlide 批量生成服装分组（SliderGroups）文件。</Description>
   </PropertyGroup>
 
+  <ItemGroup>
+    <PackageReference Include="Nifly" Version="1.1.0" />
+  </ItemGroup>
+
 </Project>

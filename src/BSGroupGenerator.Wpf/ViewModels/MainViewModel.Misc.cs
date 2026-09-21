@@ -70,6 +70,28 @@ public partial class MainViewModel
             sb.AppendLine(L10n.TrF("L.Diag_OutputDir",
                 ResolveWriteTarget()?.Dir ?? L10n.Tr("L.Diag_OutputUndetermined")));
         }
+
+        sb.AppendLine();
+        sb.AppendLine(L10n.Tr("L.Diag_SecConflicts"));
+        if (OutputConflictCount == 0)
+        {
+            sb.AppendLine(L10n.Tr("L.Diag_NoConflicts"));
+        }
+        else
+        {
+            sb.AppendLine(L10n.TrF("L.Diag_ConflictLine", ConflictGroups.Count, OutputConflictCount,
+                ConflictGroups.Count(g => g.Chosen is not null)));
+            foreach (var group in ConflictGroups.Take(60))
+            {
+                var winner = group.Chosen?.Name ?? L10n.Tr("L.Conflict_StatusUnresolved");
+                sb.AppendLine($"  {group.OutputFilePath} → {winner}" +
+                              (group.CrossMod ? "" : $"  [{L10n.Tr("L.Conflict_SameModOnly")}]"));
+                foreach (var candidate in group.Candidates)
+                    sb.AppendLine($"    [{candidate.LayerIndex}] {candidate.Name} ← {candidate.OwnerLabel}");
+            }
+            if (OutputConflictCount > 60)
+                sb.AppendLine(L10n.TrF("L.Diag_ConflictMore", OutputConflictCount - 60));
+        }
         return sb.ToString();
     }
 }

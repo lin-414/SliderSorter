@@ -35,6 +35,7 @@ public partial class MainWindow : Window
         _vm.FolderPicker = description => PickFolder(description);
         _vm.FilePicker = _ => PickImportFile();
         _vm.NewModsDetected += request => Dispatcher.Invoke(() => ShowNewMods(request));
+        _vm.ConflictsRequested += request => Dispatcher.Invoke(() => ShowConflicts(request));
         _vm.SaveCompleted += (dir, bsAppDir) => Dispatcher.Invoke(() => ShowSaveSuccess(dir, bsAppDir));
         // 更新提示不在这里订阅：CheckForUpdatesAsync 内部用 SuppressibleConfirmHandler 弹确认框并打开下载页
 
@@ -151,6 +152,11 @@ public partial class MainWindow : Window
         var window = new NewModsWindow(request) { Owner = this };
         window.ShowDialog();
     }
+
+    private void ShowConflicts(ConflictRequest request) =>
+        new OutputConflictWindow(request) { Owner = this }.ShowDialog();
+
+    private void Conflicts_Click(object sender, MouseButtonEventArgs e) => _vm.OpenConflictsCommand.Execute(null);
 
     private void ShowHelp() => new HelpWindow { Owner = this }.ShowDialog();
 

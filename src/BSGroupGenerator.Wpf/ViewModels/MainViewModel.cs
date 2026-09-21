@@ -240,6 +240,7 @@ public partial class MainViewModel : ObservableObject
         RaiseLogSummary();
         RefreshTransferState();
         UpdateMembershipMarks(); // 树节点文本也是代码拼的（同名冲突 / [组内 x/y]），一并换语言
+        RefreshConflictText();
         UpdateCounts();
         UpdateGroupInfo();
         UpdateTitle();
@@ -406,6 +407,7 @@ public partial class MainViewModel : ObservableObject
             Resolution = null;
             Scan = null;
             InfoLine = L10n.Tr("L.Vm_NotScanned");
+            RefreshConflictsFromScan(); // 没选中 BodySlide = 没有扫描结果，冲突清单与状态栏计数一并清空
             RebuildTree();
             return;
         }
@@ -542,6 +544,7 @@ public partial class MainViewModel : ObservableObject
         if (outcome.Resolution is null)
         {
             InfoLine = L10n.Tr("L.Info_Unresolved");
+            RefreshConflictsFromScan();
             RebuildTree();
             return;
         }
@@ -569,6 +572,7 @@ public partial class MainViewModel : ObservableObject
 
         RefreshGroupsList();
         RefreshTree();
+        RefreshConflictsFromScan();
         LogWriteTarget();
     }
 

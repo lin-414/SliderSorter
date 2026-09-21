@@ -51,6 +51,7 @@
             </MenuItem>
             <MenuItem Header="{DynamicResource L.Menu_Tools}">
                 <MenuItem Header="{DynamicResource L.Menu_RulePresets}" Click="RulePresets_Click" />
+                <MenuItem Header="{DynamicResource L.Menu_OutputConflicts}" Command="{Binding OpenConflictsCommand}" />
                 <MenuItem Header="{DynamicResource L.Menu_CleanupStale}" Command="{Binding CleanupStaleMembersCommand}" />
                 <Separator />
                 <MenuItem Header="{DynamicResource L.Menu_Diagnostics}" Click="Diagnostics_Click" />
@@ -501,6 +502,13 @@
                    Foreground="{DynamicResource B.Text}" BorderThickness="0,1,0,0">
             <StatusBarItem>
                 <TextBlock Text="{Binding StatusCounts}" TextTrimming="CharacterEllipsis" ToolTip="{Binding StatusCounts}" />
+            </StatusBarItem>
+            <!-- 输出文件冲突计数：可点，直接进冲突窗口。只在真有冲突时占位（无冲突时状态栏不必多一行噪声） -->
+            <StatusBarItem>
+                <TextBlock Text="{Binding ConflictStatusText}" Foreground="{DynamicResource B.Conflict}"
+                           TextTrimming="CharacterEllipsis" ToolTip="{DynamicResource L.Conflict_OpenTip}"
+                           MouseLeftButtonUp="Conflicts_Click" Cursor="Hand"
+                           Visibility="{Binding HasOutputConflicts, Converter={StaticResource BoolToVis}}" />
             </StatusBarItem>
             <StatusBarItem HorizontalAlignment="Right">
                 <TextBlock x:Name="OutputLink" Text="{Binding OutputText}" Foreground="{DynamicResource B.AccentText}"

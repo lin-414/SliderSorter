@@ -14,6 +14,7 @@
     <sys:String x:Key="L.Menu_Diagnostics">诊断信息(_D)</sys:String>
     <sys:String x:Key="L.Menu_CleanupStale">清理失效服装(_C)…</sys:String>
     <sys:String x:Key="L.Menu_RulePresets">规则预设(_P)…</sys:String>
+    <sys:String x:Key="L.Menu_OutputConflicts" xml:space="preserve">输出冲突与选择(_O)…</sys:String>
     <sys:String x:Key="L.Menu_Theme">界面主题(_M)</sys:String>
     <sys:String x:Key="L.Theme_Dark">暗色</sys:String>
     <sys:String x:Key="L.Theme_Light">亮色</sys:String>
@@ -235,6 +236,48 @@
     <sys:String x:Key="L.NewMods_SelectFirst">请先勾选要归组的内容（可勾选模组或分隔符批量全选）。</sys:String>
     <sys:String x:Key="L.NewMods_SelectTarget">请先选择目标组。</sys:String>
     <sys:String x:Key="L.NewMods_AddSelected">加入所选组</sys:String>
+    <sys:String x:Key="L.Conflict_Title" xml:space="preserve">输出冲突：同一个服装文件由谁生成</sys:String>
+    <sys:String x:Key="L.Conflict_Intro" xml:space="preserve">{0} 组服装会被不同模组写进同一个输出文件（连同一模组内部多个预设共用一个输出文件的算上共 {1} 组）。为每组选定由谁来生成；不选的组，BodySlide 批建时会再问你。</sys:String>
+    <sys:String x:Key="L.Conflict_Filter" xml:space="preserve">过滤输出路径 / 服装名 / 模组名…</sys:String>
+    <sys:String x:Key="L.Conflict_OnlyCrossMod" xml:space="preserve">只看跨模组冲突</sys:String>
+    <sys:String x:Key="L.Conflict_SameModOnly" xml:space="preserve">同模组内部</sys:String>
+    <sys:String x:Key="L.Conflict_FilterCount" xml:space="preserve">显示 {0} 组 / 共 {1} 组</sys:String>
+    <sys:String x:Key="L.Conflict_AutoAll" xml:space="preserve">全部按模组优先级</sys:String>
+    <sys:String x:Key="L.Conflict_AutoAllTip" xml:space="preserve">对当前列出的每一组都选模组优先级最高的那一个——也就是游戏本来就会读到的那一个</sys:String>
+    <sys:String x:Key="L.Conflict_ClearAll" xml:space="preserve">全部清除</sys:String>
+    <sys:String x:Key="L.Conflict_ClearAllTip" xml:space="preserve">清除当前列出的每一组的选择，交回 BodySlide 询问</sys:String>
+    <sys:String x:Key="L.Conflict_Export" xml:space="preserve">写入 BodySlide…</sys:String>
+    <sys:String x:Key="L.Conflict_ExportTip" xml:space="preserve">把选定结果写进 BodySlide 目录下的 BuildSelection.xml；原文件先备份成 .bak</sys:String>
+    <sys:String x:Key="L.Conflict_StatusChosen" xml:space="preserve">已选：{0}</sys:String>
+    <sys:String x:Key="L.Conflict_StatusUnresolved" xml:space="preserve">未指定</sys:String>
+    <sys:String x:Key="L.Conflict_CandidateCount" xml:space="preserve">{0} 个候选</sys:String>
+    <sys:String x:Key="L.Conflict_Target" xml:space="preserve">输出文件：{0}</sys:String>
+    <sys:String x:Key="L.Conflict_NoneSelected" xml:space="preserve">先在左边选一组冲突，这里会列出它的候选服装。</sys:String>
+    <sys:String x:Key="L.Conflict_RowInfo" xml:space="preserve">{0} · 第 {1} 层</sys:String>
+    <sys:String x:Key="L.Conflict_InGroup" xml:space="preserve">已在组内</sys:String>
+    <sys:String x:Key="L.Conflict_Strongest" xml:space="preserve">优先级最高</sys:String>
+    <sys:String x:Key="L.Conflict_AskMeAgain" xml:space="preserve">不指定（让 BodySlide 再问我）</sys:String>
+    <sys:String x:Key="L.Preview_Reset" xml:space="preserve">复位视角</sys:String>
+    <sys:String x:Key="L.Preview_Loading" xml:space="preserve">正在读网格…</sys:String>
+    <sys:String x:Key="L.Preview_NoSource" xml:space="preserve">这个 set 没有可解析的源网格（ShapeData 里找不到 BodySlide 要读的那个 .nif）</sys:String>
+    <sys:String x:Key="L.Preview_Stats" xml:space="preserve">{0} 个三角形 · {1} 个形状</sys:String>
+    <sys:String x:Key="L.Conflict_PreviewTip" xml:space="preserve">左键点一行 = 看它的 3D 模型；右键点一行 = 把它设为赢家。拖动转视角，滚轮缩放。</sys:String>
+    <sys:String x:Key="L.Conflict_OpenTip" xml:space="preserve">点开选定由哪个模组生成。选择先存在本工具里，按下「写入 BodySlide…」才会被 BodySlide 读到</sys:String>
+    <sys:String x:Key="L.Confirm_ExportBuildSel" xml:space="preserve">将把 {0} 条选择写入：
+{1}
+原有文件会先备份成 BuildSelection.xml.bak。BodySlide 下次启动后就不再询问这些组。继续？</sys:String>
+    <sys:String x:Key="L.Msg_NoConflicts" xml:space="preserve">本次扫描没有输出文件冲突：每个服装文件都只有一个来源。</sys:String>
+    <sys:String x:Key="L.Msg_NoBodySlideDir" xml:space="preserve">还没选中 BodySlide 安装，无处可写 BuildSelection.xml。</sys:String>
+    <sys:String x:Key="L.Msg_ConflictNothingToExport" xml:space="preserve">还没有为任何冲突组选定赢家，无需写入。</sys:String>
+    <sys:String x:Key="L.Msg_ExportFail" xml:space="preserve">写入 BuildSelection.xml 失败。</sys:String>
+    <sys:String x:Key="L.Msg_BuildSelWritten" xml:space="preserve">已写入 {0} 条、删除 {1} 条。重启 BodySlide 后生效。</sys:String>
+    <sys:String x:Key="L.Log_OutputConflictsFound" xml:space="preserve">发现 {0} 组服装被不同模组写入同一个输出文件；连同一模组内部共用的算上一共 {1} 组，其中 {2} 组还没指定由谁生成——可在「工具 → 输出冲突与选择…」里选定</sys:String>
+    <sys:String x:Key="L.Log_BuildSelWritten" xml:space="preserve">已写出 BuildSelection.xml：新增/改动 {0} 条，删除 {1} 条 → {2}</sys:String>
+    <sys:String x:Key="L.Vm_ConflictsInline" xml:space="preserve">输出冲突 {0} 组（未指定 {1}）</sys:String>
+    <sys:String x:Key="L.Diag_SecConflicts" xml:space="preserve">输出文件冲突</sys:String>
+    <sys:String x:Key="L.Diag_NoConflicts" xml:space="preserve">没有输出文件冲突。</sys:String>
+    <sys:String x:Key="L.Diag_ConflictLine" xml:space="preserve">{0} 组（其中 {1} 组跨模组），已指定赢家 {2} 组</sys:String>
+    <sys:String x:Key="L.Diag_ConflictMore" xml:space="preserve">（其余 {0} 组省略）</sys:String>
 
     <!-- 规则归组 -->
     <sys:String x:Key="L.RuleGroup_Title">规则归组</sys:String>
@@ -377,6 +420,7 @@
 
     <!-- 模组树节点文本（代码拼接，非 XAML 绑定） -->
     <sys:String x:Key="L.Tree_ConflictSuffix">（同名冲突）</sys:String>
+    <sys:String x:Key="L.Tree_OutputConfSuffix" xml:space="preserve">（输出冲突）</sys:String>
     <sys:String x:Key="L.Tree_InGroupBadge">{0}　[组内 {1}/{2}]</sys:String>
     <sys:String x:Key="L.Tree_MatchHeader">{0}（匹配 {1}/{2}）</sys:String>
     <sys:String x:Key="L.Tree_NoMatchingMods">（没有符合过滤条件的模组）</sys:String>
@@ -409,6 +453,15 @@
     <sys:String x:Key="L.Core_ScanEnumFail">枚举 {0} 失败：{1}</sys:String>
     <sys:String x:Key="L.Core_ScanLayerFiles" xml:space="preserve">  层 {0}: {1} 个文件</sys:String>
     <sys:String x:Key="L.Core_ScanParseFail">无法解析 {0}：{1}</sys:String>
+    <sys:String x:Key="L.Core_OutputConf_Weighted" xml:space="preserve">{0}_0.nif（以及 _1.nif）</sys:String>
+    <sys:String x:Key="L.Core_OutputConf_Single" xml:space="preserve">{0}.nif</sys:String>
+    <sys:String x:Key="L.Core_BuildSelParseFail" xml:space="preserve">无法解析 {0}：{1}</sys:String>
+    <sys:String x:Key="L.Core_BuildSelBadRoot" xml:space="preserve">根元素不是 BuildSelection（实际是 {0}），该文件保持不变</sys:String>
+    <sys:String x:Key="L.Core_BuildSelWriteFail" xml:space="preserve">写入失败：{0}</sys:String>
+    <sys:String x:Key="L.Core_NifTooBig" xml:space="preserve">网格过大（超过 {0} 个三角形），预览不了</sys:String>
+    <sys:String x:Key="L.Core_NifLoadFail" xml:space="preserve">读不了这个网格：{0}</sys:String>
+    <sys:String x:Key="L.Core_NifLoadRejected" xml:space="preserve">文件不是能识别的网格格式</sys:String>
+    <sys:String x:Key="L.Core_NifNoGeometry" xml:space="preserve">这个文件里没有可读的三角形网格</sys:String>
     <sys:String x:Key="L.Core_ConfigRootMissing">不是有效的 BodySlide Config.xml（缺少 &lt;Config&gt; 根元素）</sys:String>
     <sys:String x:Key="L.Core_GroupEmptyName">组名不能为空。</sys:String>
     <sys:String x:Key="L.Core_GroupDuplicate">已存在同名组（忽略大小写）。</sys:String>

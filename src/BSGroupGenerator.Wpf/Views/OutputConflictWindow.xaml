@@ -1,0 +1,142 @@
+<Window x:Class="BSGroupGenerator.Wpf.Views.OutputConflictWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:ui="clr-namespace:BSGroupGenerator.Wpf.Services"
+        Title="{DynamicResource L.Conflict_Title}" Width="1180" Height="680"
+        MinWidth="940" MinHeight="460" WindowStartupLocation="CenterOwner"
+        ShowInTaskbar="False" Background="{DynamicResource B.Window}"
+        FontFamily="{StaticResource AppFont}" FontSize="13" Style="{StaticResource AppWindow}">
+    <DockPanel>
+        <TextBlock x:Name="IntroLabel" DockPanel.Dock="Top" Margin="10,10,10,4" TextWrapping="Wrap"
+                   Foreground="{DynamicResource B.Text}" />
+        <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" HorizontalAlignment="Right" Margin="10,6,10,10">
+            <Button x:Name="AutoButton" Content="{DynamicResource L.Conflict_AutoAll}" Click="Auto_Click"
+                    MinWidth="150" MinHeight="28" Margin="0,0,8,0" />
+            <Button x:Name="ClearButton" Content="{DynamicResource L.Conflict_ClearAll}" Click="Clear_Click"
+                    MinWidth="120" MinHeight="28" Margin="0,0,8,0" />
+            <Button x:Name="ExportButton" Content="{DynamicResource L.Conflict_Export}" Click="Export_Click"
+                    Style="{StaticResource PrimaryButton}" MinWidth="150" MinHeight="28" Margin="0,0,8,0" />
+            <Button Content="{DynamicResource L.Btn_Close}" IsCancel="True" MinWidth="84" MinHeight="28" />
+        </StackPanel>
+        <Grid Margin="10,0,10,4">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="320" MinWidth="200" />
+                <ColumnDefinition Width="10" />
+                <ColumnDefinition Width="*" MinWidth="240" />
+                <ColumnDefinition Width="12" />
+                <ColumnDefinition Width="400" MinWidth="240" />
+            </Grid.ColumnDefinitions>
+            <DockPanel Grid.Column="0">
+                <TextBox x:Name="FilterBox" DockPanel.Dock="Top" Margin="0,0,0,4"
+                         ui:Watermark.Text="{DynamicResource L.Conflict_Filter}" />
+                <!-- 同一模组内部的多个预设共用一个输出文件（一件衣服几百个配色）也是冲突，
+                     但那不是"多个模组改了同一件衣服"，默认先藏起来 -->
+                <CheckBox x:Name="OnlyCrossCheck" DockPanel.Dock="Top" Margin="0,0,0,4"
+                          Content="{DynamicResource L.Conflict_OnlyCrossMod}"
+                          Checked="OnlyCross_Changed" Unchecked="OnlyCross_Changed" />
+                <TextBlock x:Name="FilterCountLabel" DockPanel.Dock="Top" Margin="0,0,0,4" Visibility="Collapsed"
+                           Style="{StaticResource DimLabel}" TextTrimming="CharacterEllipsis" />
+                <ListBox x:Name="GroupList" SelectionChanged="GroupList_SelectionChanged"
+                         ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <StackPanel Margin="2,3,2,3">
+                                <TextBlock Text="{Binding Target}" TextWrapping="Wrap"
+                                           Foreground="{DynamicResource B.Text}" />
+                                <TextBlock Text="{Binding Status}" TextTrimming="CharacterEllipsis">
+                                    <TextBlock.Style>
+                                        <!-- 未指定用警示色：一眼看出还有哪些组没处理完 -->
+                                        <Style TargetType="TextBlock" BasedOn="{StaticResource DimLabel}">
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding Resolved}" Value="False">
+                                                    <Setter Property="Foreground" Value="{DynamicResource B.Conflict}" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                            </StackPanel>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+            </DockPanel>
+            <DockPanel Grid.Column="2">
+                <TextBlock x:Name="TargetLabel" DockPanel.Dock="Top" Margin="0,3,0,6" TextWrapping="Wrap"
+                           Style="{StaticResource SectionHeader}" />
+                <ListBox x:Name="CandidateList" ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                         SelectionChanged="CandidateList_SelectionChanged">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <!-- 名字列吃剩余宽度并截断：横向 StackPanel 会让长服装名把右边的徽标挤出窗口，
+                                 而徽标正是"这条能不能选它"的关键信息 -->
+                            <Grid Margin="2,3,2,3" Background="Transparent" MouseRightButtonUp="Row_RightClick">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" MinWidth="90" />
+                                    <ColumnDefinition Width="2*" MinWidth="60" />
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <RadioButton Grid.Column="0" GroupName="ConflictWinner"
+                                             IsChecked="{Binding IsWinner, Mode=OneWay}"
+                                             Click="Winner_Click" VerticalAlignment="Center" Margin="0,0,6,0" />
+                                <TextBlock Grid.Column="1" Text="{Binding Label}" VerticalAlignment="Center"
+                                           Foreground="{DynamicResource B.Text}" TextTrimming="CharacterEllipsis" />
+                                <TextBlock Grid.Column="2" Text="{Binding Info}" VerticalAlignment="Center"
+                                           Margin="8,0,0,0" Style="{StaticResource DimLabel}"
+                                           TextTrimming="CharacterEllipsis" />
+                                <Border Grid.Column="3" Background="{DynamicResource B.AccentSoft}" CornerRadius="4"
+                                        Padding="6,1,6,2" Margin="8,0,0,0" Visibility="{Binding GroupedVisibility}">
+                                    <TextBlock Text="{DynamicResource L.Conflict_InGroup}"
+                                               Foreground="{DynamicResource B.AccentText}" />
+                                </Border>
+                                <Border Grid.Column="4" Background="{DynamicResource B.WarnSoft}" CornerRadius="4"
+                                        Padding="6,1,6,2" Margin="6,0,0,0" Visibility="{Binding StrongestVisibility}">
+                                    <TextBlock Text="{DynamicResource L.Conflict_Strongest}"
+                                               Foreground="{DynamicResource B.WarnText}" />
+                                </Border>
+                            </Grid>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+            </DockPanel>
+            <!-- 3D 预览：读该 set 的源网格（BodySlide 建它时读的同一个 .nif）。只读不改，
+                 拖动转视角、滚轮缩放、右键一行即把该模组设为赢家 -->
+            <Border Grid.Column="4" BorderBrush="{DynamicResource B.Border}" BorderThickness="1" CornerRadius="6"
+                    Background="{DynamicResource B.Card}">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" MinHeight="120" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <TextBlock Grid.Row="0" x:Name="PreviewTitle" Margin="8,6,8,4" TextTrimming="CharacterEllipsis"
+                               Foreground="{DynamicResource B.Text}" />
+                    <Grid Grid.Row="1" x:Name="ViewportHost" Background="Transparent"
+                          MouseLeftButtonDown="Viewport_DragStart" MouseMove="Viewport_Drag"
+                          MouseLeftButtonUp="Viewport_DragEnd" MouseWheel="Viewport_Zoom">
+                        <Grid.ToolTip>
+                            <TextBlock Text="{DynamicResource L.Conflict_PreviewTip}" TextWrapping="Wrap" MaxWidth="360" />
+                        </Grid.ToolTip>
+                        <Viewport3D x:Name="Preview">
+                            <Viewport3D.Camera>
+                                <PerspectiveCamera x:Name="Camera" FieldOfView="32" />
+                            </Viewport3D.Camera>
+                            <ModelVisual3D x:Name="LightVisual" />
+                            <ModelVisual3D x:Name="MeshVisual" />
+                        </Viewport3D>
+                        <TextBlock x:Name="PreviewStatus" Margin="8" HorizontalAlignment="Center"
+                                   VerticalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap"
+                                   Style="{StaticResource DimLabel}" />
+                    </Grid>
+                    <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="8,4,8,6">
+                        <Button x:Name="ResetButton" Content="{DynamicResource L.Preview_Reset}" Click="Reset_Click"
+                                MinWidth="80" MinHeight="24" Padding="8,2" />
+                        <TextBlock x:Name="MeshStats" Margin="8,0,0,0" VerticalAlignment="Center"
+                                   Style="{StaticResource DimLabel}" TextTrimming="CharacterEllipsis" />
+                    </StackPanel>
+                </Grid>
+            </Border>
+        </Grid>
+    </DockPanel>
+</Window>
