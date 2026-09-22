@@ -9,11 +9,16 @@ Themes/Controls.xaml 里 TargetType="Window" 的隐式样式会兜住；实际�
 于是主窗口退回系统默认白底，暗色主题下整窗发白。
 
 检查项：
-  §1 每个 Views/*.xaml 的根 <Window> 是否显式套用了 AppWindow 样式（否则前景/字体/渲染选项全丢）
+  §1 每个 Views/**/*.xaml 的根 <Window> 是否显式套用了 AppWindow 样式（否则前景/字体/渲染选项全丢）
   §2 每个根 <Window> 是否显式声明了 Background（兜底；本地值优先于样式 setter）
   §3 两套色板的 B.* 键集合是否完全一致（少一个键 → 某个主题下 DynamicResource 静默解析为空）
   §4 XAML 里引用的每个 B.* 键是否在两套色板里都存在
   §5 每个 B.* 画刷引用的 C.* 颜色是否真的定义了
+  §6 Views/Pages 下的每份页面是否真的被壳（Views/MainWindow.xaml）引用
+
+§1/§2 只作用于根 <Window>：Views/Pages 下的页面根是 <UserControl>，背景/前景/字体由壳继承而来，
+套窗口样式既无对应 TargetType 也无意义。但扫描必须是**递归**的——以前只扫 Views/*.xaml，
+页面放进 Views/Pages/ 会被静默跳过，等于新增界面悄悄退出门禁；那比误报严重得多。
 
 用法：python tools/verify_theme.py [仓库根目录]
 退出码 0 = 全部通过，1 = 有命中。
@@ -41,6 +46,9 @@ COMMENT = re.compile(r"<!--.*?-->", re.S)
 
 APP_WINDOW = 'Style="{StaticResource AppWindow}"'
 
+# 页面根：不是窗口，由壳提供背景/前景/字体，因此 §1/§2 对它们不适用。
+PAGE_ROOTS = ("UserControl", "Page")
+
 
 def find_repo_root() -> str | None:
     """从脚本位置向上找含 src/BSGroupGenerator.Wpf/Views 的目录。"""
@@ -61,24 +69,27 @@ def read(path: str) -> str:
         return COMMENT.sub("", f.read())
 
 
-def root_window_tag(text: str) -> str | None:
-    """取出根 <Window ...> 的完整开标签（属性可跨行；跳过引号内的 >）。"""
-    start = text.find("<Window")
-    if start < 0:
-        return None
-    quote = None
-    i = start
-    while i < len(text):
-        ch = text[i]
-        if quote:
-            if ch == quote:
-                quote = None
-        elif ch in "\"'":
-            quote = ch
-        elif ch == ">":
-            return text[start : i + 1]
-        i += 1
-    return None
+ROOT_START = re.compile(r"<([A-Za-z_][\w.]*)")
+
+
+def root_open_tag(text: str) -> tuple[str | None, str | None]:
+    """根元素的（名字, 完整开标签）。属性可跨行，引号内的 > 不算结束；
+    注释已由 read() 剥掉，`<?xml?>` 处理指令被 ROOT_START 排除。"""
+    for m in ROOT_START.finditer(text):
+        start = m.start()
+        quote = None
+        i = start
+        while i < len(text):
+            ch = text[i]
+            if quote:
+                if ch == quote:
+                    quote = None
+            elif ch in "\"'":
+                quote = ch
+            elif ch == ">":
+                return m.group(1), text[start : i + 1]
+            i += 1
+    return None, None
 
 
 def main() -> int:
@@ -89,7 +100,7 @@ def main() -> int:
         return 2
 
     wpf = os.path.join(repo, "src", "BSGroupGenerator.Wpf")
-    views = sorted(glob.glob(os.path.join(wpf, "Views", "*.xaml")))
+    views = sorted(glob.glob(os.path.join(wpf, "Views", "**", "*.xaml"), recursive=True))
     themes = os.path.join(wpf, "Themes")
     light_path = os.path.join(themes, "Palette.Light.xaml")
     bout_path = os.path.join(themes, "Palette.Boutique.xaml")
@@ -103,26 +114,34 @@ def main() -> int:
     # ── §1 / §2 根窗口必须显式套样式、显式给背景 ──
     print("§1 根 <Window> 是否显式套用 AppWindow 样式")
     print("§2 根 <Window> 是否显式声明 Background")
-    missing_style, missing_bg = [], []
+    missing_style, missing_bg, odd_root = [], [], []
+    win_n = page_n = 0
     for path in views:
-        tag = root_window_tag(read(path))
-        name = os.path.basename(path)
-        if tag is None:
-            missing_style.append((name, "找不到根 <Window> 开标签"))
-            continue
-        if APP_WINDOW not in tag:
-            missing_style.append((name, "缺 " + APP_WINDOW))
-        if not re.search(r'\bBackground="', tag):
-            missing_bg.append((name, "缺 Background="))
+        name = os.path.relpath(path, wpf)
+        tag_name, tag = root_open_tag(read(path))
+        if tag_name is None:
+            odd_root.append((name, "找不到根元素开标签"))
+        elif tag_name in PAGE_ROOTS:
+            page_n += 1  # 页面壳：背景/前景/字体由宿主窗口继承，§1/§2 不适用
+        elif tag_name == "Window":
+            win_n += 1
+            if APP_WINDOW not in tag:
+                missing_style.append((name, "缺 " + APP_WINDOW))
+            if not re.search(r'\bBackground="', tag):
+                missing_bg.append((name, "缺 Background="))
+        else:
+            odd_root.append((name, f"根元素是 <{tag_name}>，既不是 Window 也不是页面"))
     for name, why in missing_style:
         print(f"  [命中] §1 {name}: {why}")
     for name, why in missing_bg:
         print(f"  [命中] §2 {name}: {why}")
+    for name, why in odd_root:
+        print(f"  [命中] §1/§2 {name}: {why}")
     if not missing_style:
-        print(f"  通过（{len(views)} 个窗口全部显式套用）")
+        print(f"  通过（{win_n} 个窗口全部显式套用；另有 {page_n} 份页面根为 {'/'.join(sorted(PAGE_ROOTS))}，不适用）")
     if not missing_bg:
-        print(f"  通过（{len(views)} 个窗口全部显式声明）")
-    failures += len(missing_style) + len(missing_bg)
+        print(f"  通过（{win_n} 个窗口全部显式声明）")
+    failures += len(missing_style) + len(missing_bg) + len(odd_root)
 
     # ── §3 两套色板键集合一致 ──
     print("\n§3 两套色板 B.* 键集合是否一致")
@@ -174,6 +193,26 @@ def main() -> int:
     if not bad_color:
         print("  通过（所有画刷的 C.* 引用均已定义）")
     failures += bad_color
+
+    # ── §6 页面必须被壳引用 ──
+    # 挡的是"页面写了却没接进 TabControl"：这种文件编译得过、门禁查得到，运行时却永远不出现。
+    print("\n§6 Views/Pages 下的页面是否被 Views/MainWindow.xaml 引用")
+    shell_path = os.path.join(wpf, "Views", "MainWindow.xaml")
+    pages = sorted(glob.glob(os.path.join(wpf, "Views", "Pages", "*.xaml")))
+    if not pages:
+        print("  跳过：Views/Pages 下暂无页面")
+    elif not os.path.isfile(shell_path):
+        print("  [命中] 找不到壳 Views/MainWindow.xaml，无从判断页面是否被引用")
+        failures += 1
+    else:
+        shell_txt = read(shell_path)  # 注释已剥掉：在注释里提一嘴不算接上
+        orphans = [os.path.splitext(os.path.basename(p))[0] for p in pages
+                   if os.path.splitext(os.path.basename(p))[0] not in shell_txt]
+        for stem in orphans:
+            print(f"  [命中] Views/Pages/{stem}.xaml 未被壳引用（TabControl 里没有它）")
+        if not orphans:
+            print(f"  通过（{len(pages)} 份页面全部被壳引用）")
+        failures += len(orphans)
 
     print()
     if failures:

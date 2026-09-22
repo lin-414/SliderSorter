@@ -5,25 +5,27 @@
     <sys:String x:Key="L.App_Title" xml:space="preserve">BS Group Generator — outil de groupes BodySlide</sys:String>
 
     <!-- Menu -->
-    <sys:String x:Key="L.Menu_File">Fichier(_F)</sys:String>
-    <sys:String x:Key="L.Menu_Save">Enregistrer les fichiers de groupes(_E)</sys:String>
     <sys:String x:Key="L.Menu_ImportGroups">Importer des fichiers de groupes…(_I)</sys:String>
-    <sys:String x:Key="L.Menu_Edit">Édition(_É)</sys:String>
     <sys:String x:Key="L.Menu_Undo">Annuler(_A)</sys:String>
-    <sys:String x:Key="L.Menu_Tools">Outils(_O)</sys:String>
-    <sys:String x:Key="L.Menu_Diagnostics">Diagnostic…(_D)</sys:String>
-    <sys:String x:Key="L.Menu_CleanupStale">Supprimer les tenues obsolètes…(_S)</sys:String>
-    <sys:String x:Key="L.Menu_RulePresets">Préréglages de règles…(_P)</sys:String>
-    <sys:String x:Key="L.Menu_OutputConflicts" xml:space="preserve">Conflits de sortie…(_O)</sys:String>
-    <sys:String x:Key="L.Menu_Theme">Thème(_T)</sys:String>
     <sys:String x:Key="L.Theme_Dark">Sombre</sys:String>
     <sys:String x:Key="L.Theme_Light">Clair</sys:String>
-    <sys:String x:Key="L.Menu_Language">Langue(_L)</sys:String>
-    <sys:String x:Key="L.Menu_CheckUpdate">Rechercher des mises à jour…(_R)</sys:String>
-    <sys:String x:Key="L.Menu_Help">Aide(_A)</sys:String>
-    <sys:String x:Key="L.Menu_Manual">Guide d'utilisation(_G)</sys:String>
-    <sys:String x:Key="L.Menu_About">À propos…(_P)</sys:String>
-    <sys:String x:Key="L.Menu_Exit">Quitter(_Q)</sys:String>
+
+    <!-- Tabs & settings page. Deliberately not L.Menu_*: the l10n gate demands an (_X) access key
+         on every L.Menu_* value, and that convention would render a literal underscore in a tab header. -->
+    <sys:String x:Key="L.Tab_Generate">Groupes</sys:String>
+    <sys:String x:Key="L.Tab_Conflicts" xml:space="preserve">Conflits de sortie</sys:String>
+    <sys:String x:Key="L.Tab_Settings">Paramètres</sys:String>
+    <sys:String x:Key="L.Settings_Workspace">Environnement</sys:String>
+    <sys:String x:Key="L.Settings_Output">Paramètres de sortie</sys:String>
+    <sys:String x:Key="L.Settings_CleanupStale" xml:space="preserve">Supprimer les tenues obsolètes…</sys:String>
+    <sys:String x:Key="L.Conflict_Rescan" xml:space="preserve">Rescanner</sys:String>    <sys:String x:Key="L.Conflict_NoRequest" xml:space="preserve">Rien à afficher pour l’instant. Lancez d’abord une analyse dans l’onglet Groupes — il est aussi possible qu’aucun conflit de sortie n’ait été trouvé.</sys:String>
+    <sys:String x:Key="L.Settings_Appearance">Apparence</sys:String>
+    <sys:String x:Key="L.Settings_Theme">Thème de l’interface</sys:String>
+    <sys:String x:Key="L.Settings_Language">Langue de l’interface</sys:String>
+    <sys:String x:Key="L.Settings_Help">Aide et à propos</sys:String>
+    <sys:String x:Key="L.Settings_CheckUpdate">Rechercher des mises à jour</sys:String>
+    <sys:String x:Key="L.Settings_UpdateChecking">Recherche de mises à jour…</sys:String>
+    <sys:String x:Key="L.Settings_Manual">Guide d’utilisation</sys:String>
 
     <!-- Main window -->
     <sys:String x:Key="L.Main_Instance">Instance MO2</sys:String>
@@ -231,10 +233,18 @@
     <sys:String x:Key="L.NewMods_SelectFirst">Cochez d'abord ce qu'il faut grouper (cochez un mod ou un séparateur pour tout sélectionner).</sys:String>
     <sys:String x:Key="L.NewMods_SelectTarget">Choisissez d'abord un groupe cible.</sys:String>
     <sys:String x:Key="L.NewMods_AddSelected">Ajouter la sélection</sys:String>
-    <sys:String x:Key="L.Conflict_Title" xml:space="preserve">Conflits de sortie : quel mod construit chaque fichier de tenue</sys:String>
-    <sys:String x:Key="L.Conflict_Intro" xml:space="preserve">{0} tenues sont écrites dans le même fichier de sortie par plusieurs mods ({1} groupes au total en comptant plusieurs préréglages d'un même mod). Choisissez laquelle construire ; sans choix, BodySlide le demandera lors de la construction par lots.</sys:String>
+    <sys:String x:Key="L.Conflict_Intro" xml:space="preserve">Un seul mod peut construire chaque fichier de sortie. L'analyse a trouvé {0} conflits entre mods et {1} groupes partageant un fichier au sein d'un même mod ; BodySlide redemandera pour un groupe laissé sans choix.</sys:String>
+    <sys:String x:Key="L.Conflict_Progress" xml:space="preserve">{0} groupes sur {1} choisis</sys:String>
+    <sys:String x:Key="L.Conflict_UnresolvedSuffix" xml:space="preserve">· {0} sans choix</sys:String>
+    <sys:String x:Key="L.Conflict_GroupsHeader" xml:space="preserve">Conflits</sys:String>
+    <sys:String x:Key="L.Conflict_GroupCount" xml:space="preserve">{0} groupes</sys:String>
+    <sys:String x:Key="L.Conflict_CandidatesHeader" xml:space="preserve">Construit par</sys:String>
+    <sys:String x:Key="L.Conflict_PreviewHeader" xml:space="preserve">Aperçu</sys:String>
+    <sys:String x:Key="L.Conflict_BatchScope" xml:space="preserve">Pour les {0} groupes listés :</sys:String>
     <sys:String x:Key="L.Conflict_Filter" xml:space="preserve">Filtrer le chemin / la tenue / le mod…</sys:String>
     <sys:String x:Key="L.Conflict_OnlyCrossMod" xml:space="preserve">Seulement les conflits entre mods</sys:String>
+    <sys:String x:Key="L.Conflict_OnlyCrossModTip" xml:space="preserve">{0} conflits entre mods, {1} groupes partageant un fichier au sein d'un même mod. Des centaines de variantes de couleur d'une tenue partageant un fichier sont normales pour un mod ; cochez pour ne plus les voir.</sys:String>
+    <sys:String x:Key="L.Conflict_RescanTip" xml:space="preserve">Relancer l'analyse des mods et des tenues et reconstruire cette liste de conflits. Les choix faits sur cette page ne changent que les réglages de cet outil et ne relancent pas l'analyse.</sys:String>
     <sys:String x:Key="L.Conflict_SameModOnly" xml:space="preserve">même mod seulement</sys:String>
     <sys:String x:Key="L.Conflict_FilterCount" xml:space="preserve">{0} groupes affichés sur {1}</sys:String>
     <sys:String x:Key="L.Conflict_AutoAll" xml:space="preserve">Suivre la priorité des mods</sys:String>
@@ -243,6 +253,7 @@
     <sys:String x:Key="L.Conflict_ClearAllTip" xml:space="preserve">Effacer le choix de chaque groupe affiché et laisser BodySlide demander à nouveau</sys:String>
     <sys:String x:Key="L.Conflict_Export" xml:space="preserve">Écrire pour BodySlide…</sys:String>
     <sys:String x:Key="L.Conflict_ExportTip" xml:space="preserve">Écrit les choix dans BuildSelection.xml du dossier de BodySlide ; l'ancien fichier est sauvegardé en .bak</sys:String>
+    <sys:String x:Key="L.Conflict_ExportHint" xml:space="preserve">Écrit BuildSelection.xml ; l'ancien fichier part en .bak</sys:String>
     <sys:String x:Key="L.Conflict_StatusChosen" xml:space="preserve">Choisi : {0}</sys:String>
     <sys:String x:Key="L.Conflict_StatusUnresolved" xml:space="preserve">non défini</sys:String>
     <sys:String x:Key="L.Conflict_CandidateCount" xml:space="preserve">{0} candidats</sys:String>
@@ -253,10 +264,16 @@
     <sys:String x:Key="L.Conflict_Strongest" xml:space="preserve">prioritaire</sys:String>
     <sys:String x:Key="L.Conflict_AskMeAgain" xml:space="preserve">Ne rien fixer (BodySlide demandera)</sys:String>
     <sys:String x:Key="L.Preview_Reset" xml:space="preserve">Réinitialiser la vue</sys:String>
-    <sys:String x:Key="L.Preview_Loading" xml:space="preserve">Lecture du maillage…</sys:String>
+    <sys:String x:Key="L.Preview_Loading" xml:space="preserve">Lecture du maillage et des textures…</sys:String>
     <sys:String x:Key="L.Preview_NoSource" xml:space="preserve">Ce set n'a pas de maillage source résolvable (le .nif de BodySlide est absent de ShapeData)</sys:String>
-    <sys:String x:Key="L.Preview_Stats" xml:space="preserve">{0} triangles · {1} formes</sys:String>
-    <sys:String x:Key="L.Conflict_PreviewTip" xml:space="preserve">Clic sur une ligne : voir son modèle 3D ; clic droit : en faire le gagnant. Glisser pour orbiter, molette pour zoomer.</sys:String>
+    <sys:String x:Key="L.Preview_Stats" xml:space="preserve">{0} triangles · {1} formes · {2} texturées</sys:String>
+    <sys:String x:Key="L.Preview_Truncated" xml:space="preserve">{0} formes supplémentaires hors budget, non dessinées</sys:String>
+    <sys:String x:Key="L.Preview_Body" xml:space="preserve">Corps</sys:String>
+    <sys:String x:Key="L.Preview_BodyAuto" xml:space="preserve">Auto</sys:String>
+    <sys:String x:Key="L.Preview_BodyFemale" xml:space="preserve">Féminin</sys:String>
+    <sys:String x:Key="L.Preview_BodyMale" xml:space="preserve">Masculin</sys:String>
+    <sys:String x:Key="L.Preview_BodyNone" xml:space="preserve">Aucun</sys:String>
+    <sys:String x:Key="L.Conflict_PreviewTip" xml:space="preserve">Clic sur une ligne : voir son modèle 3D ; clic droit : en faire le gagnant. Glisser (clic gauche) : orbiter ; glisser (clic droit) : déplacer ; molette : zoomer.</sys:String>
     <sys:String x:Key="L.Conflict_OpenTip" xml:space="preserve">Ouvre la sélection du gagnant. Les choix restent dans cet outil tant que vous n'avez pas cliqué « Écrire pour BodySlide… »</sys:String>
     <sys:String x:Key="L.Confirm_ExportBuildSel" xml:space="preserve">Écrire {0} choix dans :
 {1}
@@ -341,13 +358,12 @@ Un fichier par groupe, nommé d'après le groupe : {1}{2} ({3}).
     <sys:String x:Key="L.Diag_OutputUndetermined">(indéterminé)</sys:String>
 
     <!-- About -->
-    <sys:String x:Key="L.About_Title">À propos de BS Group Generator</sys:String>
     <sys:String x:Key="L.About_Desc">Lit les mods installés via Mod Organizer 2, permet d'attribuer en lot les jeux de curseurs BodySlide à des groupes et génère les fichiers de groupes au format natif de BodySlide. Fonctionne avec tout jeu pris en charge par BodySlide, comme Skyrim SE/AE et Fallout 4.</sys:String>
     <sys:String x:Key="L.About_Author">Auteur : lin-414</sys:String>
+    <sys:String x:Key="L.About_Repo" xml:space="preserve">GitHub : github.com/lin-414/BSGroupGenerator</sys:String>
     <sys:String x:Key="L.About_Compat">Les fichiers de groupes sont entièrement compatibles avec BodySlide ; chaque groupe devient son propre fichier nommé d'après le groupe, stocké dans le dossier SliderGroups de BodySlide.</sys:String>
 
     <!-- Help -->
-    <sys:String x:Key="L.Help_Title">Aide — BS Group Generator</sys:String>
     <sys:String x:Key="L.Help_H1">1. Tâches courantes</sys:String>
     <sys:String x:Key="L.Help_01">Cet outil lit les mods installés via Mod Organizer 2 (MO2), permet d'attribuer en lot des tenues (jeux de curseurs BodySlide) à des groupes et génère les fichiers de groupes au format natif de BodySlide, un fichier par groupe.</sys:String>
     <sys:String x:Key="L.Help_02">1. Choisissez l'instance MO2 et le profil — les instances globales et les installations portables sont détectées automatiquement ; le profil par défaut est le dernier utilisé.</sys:String>

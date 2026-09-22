@@ -255,6 +255,62 @@
         </Setter>
     </Style>
 
+    <!-- 单选钮：全项目只有「输出冲突与选择」页在用（候选服装里挑一个），原先一直走系统默认模板——
+         默认模板的圆环与圆心取自系统色，暗色主题下是一枚浅灰圆环压在深色卡面上，看着像别人的控件。
+         形态与 CheckBox 对齐（16×16、B.Card 底、B.CheckBorder 边、选中转 Accent），
+         区别只在选中标记是一枚实心圆点而不是对勾。 -->
+    <Style TargetType="RadioButton">
+        <Setter Property="Foreground" Value="{DynamicResource B.Text}" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="RadioButton">
+                    <StackPanel Orientation="Horizontal" Background="Transparent">
+                        <Border x:Name="bd" Width="16" Height="16" CornerRadius="8"
+                                Background="{DynamicResource B.Card}"
+                                BorderBrush="{DynamicResource B.CheckBorder}" BorderThickness="1.5"
+                                VerticalAlignment="Center">
+                            <Ellipse x:Name="dot" Width="7" Height="7" Visibility="Collapsed"
+                                     Fill="{DynamicResource B.CheckMark}" HorizontalAlignment="Center"
+                                     VerticalAlignment="Center" />
+                        </Border>
+                        <ContentPresenter Margin="6,0,0,0" VerticalAlignment="Center"
+                                          RecognizesAccessKey="True">
+                            <ContentPresenter.Resources>
+                                <Style TargetType="AccessText">
+                                    <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+                                </Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+                                </Style>
+                            </ContentPresenter.Resources>
+                        </ContentPresenter>
+                    </StackPanel>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter TargetName="dot" Property="Visibility" Value="Visible" />
+                            <Setter TargetName="bd" Property="BorderBrush" Value="{DynamicResource B.AccentBorder}" />
+                            <Setter TargetName="bd" Property="Background" Value="{DynamicResource B.AccentSoft}" />
+                        </Trigger>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="bd" Property="BorderBrush" Value="{DynamicResource B.AccentBorder}" />
+                        </Trigger>
+                        <MultiTrigger>
+                            <MultiTrigger.Conditions>
+                                <Condition Property="IsMouseOver" Value="True" />
+                                <Condition Property="IsChecked" Value="False" />
+                            </MultiTrigger.Conditions>
+                            <Setter TargetName="bd" Property="Background" Value="{DynamicResource B.Hover}" />
+                        </MultiTrigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Opacity" Value="0.5" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
     <!-- ── 树：去虚线、舒展行、自绘 chevron、双击展开 ── -->
     <Style TargetType="TreeView">
         <Setter Property="Background" Value="{DynamicResource B.Card}" />
@@ -800,5 +856,134 @@
         <Setter Property="FontWeight" Value="Bold" />
         <Setter Property="HorizontalAlignment" Value="Center" />
         <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+
+    <!-- ── 表单字段 ──
+         原先是 MainWindow.xaml 顶部设置区 Grid.Resources 里的 RowLabel/FieldCombo，作用域只有那一个 Grid。
+         环境设置区整块搬进设置页后两处都要用，提到 app 级。 -->
+    <Style x:Key="FieldLabel" TargetType="TextBlock">
+        <Setter Property="Foreground" Value="{DynamicResource B.Text}" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="Margin" Value="0,0,10,0" />
+    </Style>
+
+    <!-- BasedOn 必须跟着搬：到了 app 级再省略它，就等于把隐式 ComboBox 模板整个丢掉 -->
+    <Style x:Key="FieldCombo" TargetType="ComboBox" BasedOn="{StaticResource {x:Type ComboBox}}">
+        <Setter Property="Height" Value="30" />
+        <Setter Property="Margin" Value="0,3" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+    </Style>
+
+    <!-- 设置页的分组卡片。项目此前没有卡片样式，各处手搓 Border，这里补一个共用表面：
+         底色 B.Card + 1px B.Border，与日志框、下拉面板同一套表面语言。
+         Padding 取四周等宽的 12、Margin 底部 12：对齐 boutique 的 GroupBox 表面
+         （它是 Template 里 Padding=8 加每处用法 Padding="12" Margin="0,0,0,12"），
+         节间距与节内行距同为一档，卡片叠起来才有节奏而不是一片糊。 -->
+    <Style x:Key="SettingCard" TargetType="Border">
+        <Setter Property="Background" Value="{DynamicResource B.Card}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource B.Border}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="6" />
+        <Setter Property="Padding" Value="12" />
+        <Setter Property="Margin" Value="0,0,0,12" />
+    </Style>
+
+    <!-- ── 设置页的三级字阶：页标题 → 段标题 → 字段标签 ──
+         页标题 18 是全页最大字号，所以「关于」里那颗应用名字号压到 16，不与之争。 -->
+    <Style x:Key="PageHeading" TargetType="TextBlock">
+        <Setter Property="Foreground" Value="{DynamicResource B.Text}" />
+        <Setter Property="FontSize" Value="18" />
+        <Setter Property="FontWeight" Value="Bold" />
+        <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+    </Style>
+
+    <!-- 段标题即 boutique GroupBox 的头：SemiBold、比正文大一号。
+         另开一个键而不是改 SectionHeader——分组生成页与输出冲突页也在用它，
+         改字号会连带挪动那两页的观感，而它们不属于这次重构。 -->
+    <Style x:Key="SettingSectionHeader" TargetType="TextBlock" BasedOn="{StaticResource SectionHeader}">
+        <Setter Property="FontSize" Value="14" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Margin" Value="0,0,0,10" />
+    </Style>
+
+    <!-- 折叠条（使用说明 / 诊断信息）：本文件没有 Expander 的样式，沿用「箭头 + 标题」的 Button。
+         Padding 收窄到 4,3 让箭头与卡片左边界齐平，而不是缩进一颗按钮的内边距。 -->
+    <Style x:Key="DisclosureToggle" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+        <Setter Property="Padding" Value="4,3" />
+        <Setter Property="HorizontalAlignment" Value="Left" />
+        <Setter Property="HorizontalContentAlignment" Value="Left" />
+    </Style>
+
+    <!-- ── 标签页（主窗口顶部标签条）──
+         全项目原先没有任何 TabControl/TabItem 样式，默认 Aero 标签在暗色主题下就是一块白，
+         而对比度门禁只读色板、主题门禁只查 B.* 引用是否存在——漏了没人会红，只能两套主题截图看。
+         形态：标签头排在 B.Panel 条上，选中项用 B.Accent 下沿标记（不加粗：选中变字重会把标签撑宽）。 -->
+    <Style TargetType="TabControl">
+        <Setter Property="Background" Value="{DynamicResource B.Window}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource B.BorderSoft}" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="TabControl">
+                    <Grid KeyboardNavigation.TabNavigation="Local">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+                        <Border Background="{DynamicResource B.Panel}"
+                                BorderBrush="{DynamicResource B.BorderSoft}" BorderThickness="0,0,0,1">
+                            <TabPanel IsItemsHost="True" Margin="8,0,0,0" KeyboardNavigation.TabIndex="1" />
+                        </Border>
+                        <Border Grid.Row="1" Background="{TemplateBinding Background}">
+                            <ContentPresenter ContentSource="SelectedContent" />
+                        </Border>
+                    </Grid>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style TargetType="TabItem">
+        <Setter Property="Foreground" Value="{DynamicResource B.TextDim}" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Padding" Value="14,7" />
+        <Setter Property="SnapsToDevicePixels" Value="True" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="TabItem">
+                    <!-- 文字色必须显式挂到 TextElement.Foreground：Header 是纯字符串时 ContentPresenter
+                         会现场造一个 TextBlock，只靠继承链拿不到 TabItem.Foreground 的触发器结果。 -->
+                    <Border x:Name="bd" Background="{TemplateBinding Background}"
+                            TextElement.Foreground="{TemplateBinding Foreground}"
+                            BorderBrush="Transparent" BorderThickness="0,0,0,2"
+                            Margin="0,0,2,0" Padding="{TemplateBinding Padding}">
+                        <ContentPresenter ContentSource="Header" RecognizesAccessKey="True"
+                                          HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="bd" Property="Background" Value="{DynamicResource B.Hover}" />
+                            <Setter Property="Foreground" Value="{DynamicResource B.Text}" />
+                        </Trigger>
+                        <Trigger Property="IsSelected" Value="True">
+                            <Setter TargetName="bd" Property="BorderBrush" Value="{DynamicResource B.Accent}" />
+                            <Setter Property="Foreground" Value="{DynamicResource B.Text}" />
+                        </Trigger>
+                        <MultiTrigger>
+                            <MultiTrigger.Conditions>
+                                <Condition Property="IsSelected" Value="False" />
+                                <Condition Property="IsMouseOver" Value="False" />
+                            </MultiTrigger.Conditions>
+                            <Setter TargetName="bd" Property="BorderBrush" Value="{DynamicResource B.BorderSoft}" />
+                        </MultiTrigger>
+                        <Trigger Property="IsKeyboardFocused" Value="True">
+                            <Setter TargetName="bd" Property="Background" Value="{DynamicResource B.Selected}" />
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Opacity" Value="0.5" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
     </Style>
 </ResourceDictionary>

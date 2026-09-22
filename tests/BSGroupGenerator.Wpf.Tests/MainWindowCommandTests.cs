@@ -9,6 +9,7 @@ using System.Windows.Input;
 using System.Windows.Threading;
 using BSGroupGenerator.Wpf.ViewModels;
 using BSGroupGenerator.Wpf.Views;
+using BSGroupGenerator.Wpf.Views.Pages;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -205,12 +206,16 @@ public class MainWindowCommandTests(ITestOutputHelper output)
         Assert.False(timedOut, "推送消息队列时超时：构造期启动的扫描任务很可能弹出了模态框（见上一条证据）");
     }
 
-    /// <summary>x:Name 生成的字段是 internal，跨程序集只能反射取；取不到说明 XAML 里的 x:Name 被改了。</summary>
+    /// <summary>x:Name 生成的字段是 internal，跨程序集只能反射取；取不到说明 XAML 里的 x:Name 被改了。
+    ///
+    /// 保存按钮住在「分组生成」页上（壳只剩菜单、标签条、状态栏），所以先顺逻辑树找到那一页再反射。</summary>
     private static Button NamedButton(MainWindow window, string name)
     {
-        var field = typeof(MainWindow).GetField(name, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-        Assert.True(field is not null, $"MainWindow.xaml 里找不到 x:Name=\"{name}\" 的控件（改名会让本用例失去覆盖）");
-        return Assert.IsType<Button>(field!.GetValue(window));
+        var page = Descendants(window).OfType<GroupGenerationPage>().FirstOrDefault();
+        Assert.True(page is not null, "壳的标签页里找不到 GroupGenerationPage——保存按钮失去覆盖");
+        var field = page!.GetType().GetField(name, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+        Assert.True(field is not null, $"GroupGenerationPage.xaml 里找不到 x:Name=\"{name}\" 的控件（改名会让本用例失去覆盖）");
+        return Assert.IsType<Button>(field!.GetValue(page));
     }
 
     /// <summary>窗口逻辑树里所有命令绑定的落点（按钮、菜单项）。控制模板不会展开——主窗口这些按钮

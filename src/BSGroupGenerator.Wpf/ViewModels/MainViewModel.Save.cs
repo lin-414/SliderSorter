@@ -433,9 +433,17 @@ public partial class MainViewModel
     /// <summary>「发现新版本」提示的「不再提示」记忆键（存于 AppSettings.SuppressedPrompts）。</summary>
     private const string SuppressKeyUpdate = "update-available";
 
+    /// <summary>设置页「检查更新」按钮。生成的命令属性去掉了 Async 后缀：CheckUpdateAsync → CheckUpdateCommand
+    /// （与 SaveAsync → SaveCommand 同一条约定，写错后缀不会编译报错，只会让按钮静默失效）。
+    /// AsyncRelayCommand 在跑完前 CanExecute 为 false，所以按钮执行期间自己会灰掉，不用再绑 IsEnabled。</summary>
+    [RelayCommand]
+    private Task CheckUpdateAsync() => CheckForUpdatesAsync(reportUpToDate: true);
+
     public async Task CheckForUpdatesAsync(bool reportUpToDate)
     {
         const string releasesUrl = "https://github.com/lin-414/BSGroupGenerator/releases/latest";
+        if (reportUpToDate)
+            UpdateStatusText = L10n.Tr("L.Settings_UpdateChecking");
         try
         {
             using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(8) };
@@ -447,10 +455,17 @@ public partial class MainViewModel
             var current = Version.TryParse(typeof(MainViewModel).Assembly.GetName().Version?.ToString() ?? "", out var cv) ? cv : null;
             if (latest is null || current is null || latest <= current)
             {
+                // 「已是最新」「检查失败」只在用户主动点按钮时写进设置页：
+                // 启动时的静默检查留一句话在那儿，等于每次开机都往设置页撒噪声。
                 if (reportUpToDate)
+                {
+                    UpdateStatusText = L10n.TrF("L.Msg_UpToDate", current);
                     NotifyUser(L10n.Tr("L.Title_CheckUpdate"), L10n.TrF("L.Msg_UpToDate", current));
+                }
                 return;
             }
+            // 有新版本这句话无论如何都留着——静默检查发现的，用户也该在设置页看得见
+            UpdateStatusText = L10n.TrF("L.Msg_UpdateAvailable", tag, current);
             var go = SuppressibleConfirmHandler is not null
                 ? SuppressibleConfirmHandler(L10n.Tr("L.Title_CheckUpdate"),
                     L10n.TrF("L.Msg_UpdateAvailable", tag, current), SuppressKeyUpdate)
@@ -462,7 +477,10 @@ public partial class MainViewModel
         catch (Exception ex)
         {
             if (reportUpToDate)
+            {
+                UpdateStatusText = L10n.TrF("L.Msg_UpdateFailed", ex.Message);
                 NotifyUser(L10n.Tr("L.Title_CheckUpdate"), L10n.TrF("L.Msg_UpdateFailed", ex.Message), warning: true);
+            }
         }
     }
 

@@ -1,18 +1,19 @@
 using System.Windows;
 using System.Windows.Documents;
 using System.Windows.Media;
-using System.Windows.Navigation;
-using BSGroupGenerator.Wpf.Services;
 
-namespace BSGroupGenerator.Wpf.Views;
+namespace BSGroupGenerator.Wpf.Services;
 
-/// <summary>程序内使用说明：先给「常见任务速查」（我要做什么 → 怎么做），再给界面参考手册。
+/// <summary>使用说明正文：先给「常见任务速查」（我要做什么 → 怎么做），再给界面参考手册。
 /// 正文取自语言资源（L.Help_*），FlowDocument 排版，可滚动、可复制。
 ///
 /// 开头放目录而不是长篇正文，是因为原来的帮助是一整块密排文字：用户带着一个具体问题
 /// （"某个服装归错组了怎么办"）进来，得从头读到尾。任务导向的入口 + 可跳转目录能把
-/// 这一步压到一眼。</summary>
-public partial class HelpWindow : Window
+/// 这一步压到一眼。
+///
+/// 原先这套构建长在 HelpWindow 的代码后台里；说明改成设置页内嵌后，宿主换了而正文没变，
+/// 所以抽到这里——FlowDocument 只能被一个宿主持有，故每次调用现造一份。</summary>
+public static class HelpDocument
 {
     /// <summary>目录项 → 章节锚点。键与标题 Paragraph 的 Name 一一对应。</summary>
     private static readonly (string Key, string Anchor)[] Toc =
@@ -26,48 +27,48 @@ public partial class HelpWindow : Window
         ("L.Help_H7", "sec7"),
     ];
 
-    private readonly Dictionary<string, Paragraph> _anchors = new(StringComparer.Ordinal);
-
-    public HelpWindow()
+    public static FlowDocument Build()
     {
-        InitializeComponent();
-        BuildContent(Doc);
-    }
+        var doc = new FlowDocument { PagePadding = new Thickness(20), FontSize = 13 };
+        // 颜色走色板键而不是写死：暗色主题下正文必须是浅色，而 DynamicResource 在
+        // ThemeManager 换色板时会跟着热切换。
+        doc.SetResourceReference(TextElement.ForegroundProperty, "B.Text");
+        var anchors = new Dictionary<string, Paragraph>(StringComparer.Ordinal);
 
-    private static Paragraph P(string text, bool bold = false, bool heading = false)
-    {
-        var para = new Paragraph(new Run(text)
+        Paragraph P(string text, bool bold = false, bool heading = false)
         {
-            FontWeight = heading || bold ? FontWeights.Bold : FontWeights.Normal,
-        });
-        if (heading)
-        {
-            para.FontSize = 15;
-            para.Margin = new Thickness(0, 14, 0, 4);
+            var para = new Paragraph(new Run(text)
+            {
+                FontWeight = heading || bold ? FontWeights.Bold : FontWeights.Normal,
+            });
+            if (heading)
+            {
+                para.FontSize = 15;
+                para.Margin = new Thickness(0, 14, 0, 4);
+            }
+            else
+            {
+                para.Margin = new Thickness(0, 2, 0, 2);
+            }
+            return para;
         }
-        else
+
+        Paragraph B(string text) => P("  · " + text);
+
+        /// 章节标题，同时登记为锚点。
+        Paragraph H(string key, string anchor)
         {
-            para.Margin = new Thickness(0, 2, 0, 2);
+            var para = P(L10n.Tr(key), heading: true);
+            para.Name = anchor;
+            anchors[anchor] = para;
+            return para;
         }
-        return para;
-    }
 
-    private static Paragraph B(string text) => P("  · " + text);
+        doc.Blocks.Add(P(L10n.Tr("L.Help_01")));
 
-    /// <summary>章节标题，同时登记为锚点。</summary>
-    private Paragraph H(string key, string anchor)
-    {
-        var para = P(L10n.Tr(key), heading: true);
-        para.Name = anchor;
-        _anchors[anchor] = para;
-        return para;
-    }
-
-    /// <summary>目录。FlowDocumentScrollViewer 不会自己处理 Hyperlink 的片段导航，
-    /// 所以拦下 RequestNavigate 直接对目标段落 BringIntoView —— 比给每段挂
-    /// <c>&lt;a name&gt;</c> 等价物可靠，也不依赖滚动查看器的内部实现。</summary>
-    private void BuildToc(FlowDocument doc)
-    {
+        // 目录。FlowDocumentScrollViewer 不会自己处理 Hyperlink 的片段导航，
+        // 所以拦下 RequestNavigate 直接对目标段落 BringIntoView —— 比给每段挂
+        // <c>&lt;a name&gt;</c> 等价物可靠，也不依赖滚动查看器的内部实现。
         doc.Blocks.Add(P(L10n.Tr("L.Help_Toc"), heading: true));
         doc.Blocks.Add(P(L10n.Tr("L.Help_TocHint")));
         foreach (var (key, anchor) in Toc)
@@ -86,17 +87,11 @@ public partial class HelpWindow : Window
                 // InvalidOperationException（"This operation is not supported for a relative URI"），
                 // 结果目录里每一条链接点下去都弹一次错误框。锚点直接取循环变量即可
                 //（foreach 的迭代变量每次迭代独立，闭包捕获安全）。
-                if (_anchors.TryGetValue(anchor, out var target))
+                if (anchors.TryGetValue(anchor, out var target))
                     target.BringIntoView();
             };
             doc.Blocks.Add(new Paragraph(link) { Margin = new Thickness(0, 1, 0, 1) });
         }
-    }
-
-    private void BuildContent(FlowDocument doc)
-    {
-        doc.Blocks.Add(P(L10n.Tr("L.Help_01")));
-        BuildToc(doc);
 
         // 一、常见任务速查
         doc.Blocks.Add(H("L.Help_H1", "sec1"));
@@ -168,5 +163,7 @@ public partial class HelpWindow : Window
         doc.Blocks.Add(P(L10n.Tr("L.Help_40")));
         doc.Blocks.Add(P(L10n.Tr("L.Help_41")));
         doc.Blocks.Add(P(L10n.Tr("L.Help_42")));
+
+        return doc;
     }
 }

@@ -27,12 +27,18 @@ public sealed class ConflictRequest
     /// <summary>把已保存的选择写进 BodySlide 的 BuildSelection.xml（调用方须先取得用户同意）。
     /// Message = 该告诉用户的话（成功文案或错误原因）。</summary>
     public required Func<(bool Ok, string? Message)> Export { get; init; }
+
+    /// <summary>按游戏口径解析贴图/网格的数据视图（跨覆盖层从强到弱，散文件优先于归档）。
+    /// 没有扫描结果时为 null，预览就退回纯色。</summary>
+    public required GameDataResolver? Assets { get; init; }
 }
 
 public partial class MainViewModel
 {
-    /// <summary>「工具 → 输出冲突…」与状态栏的冲突计数触发，视图负责弹窗。</summary>
-    public event Action<ConflictRequest>? ConflictsRequested;
+    /// <summary>冲突页要展示的那一份请求。页面常驻（不再是模态窗口），所以"有没有东西可看"
+    /// 得是一个可观察属性，而不是构造窗口时传进去就完事的参数。
+    /// 每次赋值都是新建的实例，因此重复点「输出冲突」也会触发 PropertyChanged，页面才会重建。</summary>
+    [ObservableProperty] private ConflictRequest? _currentConflict;
 
     [ObservableProperty] private int _outputConflictCount;
 
@@ -65,6 +71,10 @@ public partial class MainViewModel
         CrossModConflicts = ConflictGroups.Where(g => g.CrossMod).ToList();
         OutputConflictCount = CrossModConflicts.Count;
         OnPropertyChanged(nameof(ConflictStatusText));
+        // 冲突页是一等入口（标签头常驻、还挂着计数徽标），不能等用户去点菜单才有内容：
+        // 扫描完就把清单备好，切过去立刻看得到；扫完发现冲突没了也要推，否则页面停在上一轮的清单上。
+        // 建这份请求本身不碰磁盘（GameDataResolver 只存层序，源网格索引是一次内存遍历）。
+        CurrentConflict = BuildConflictRequest();
         if (ConflictGroups.Count == 0)
             return;
         Log(L10n.TrF("L.Log_OutputConflictsFound", OutputConflictCount, ConflictGroups.Count,
@@ -85,6 +95,8 @@ public partial class MainViewModel
         return index;
     }
 
+    /// <summary>「工具 → 输出冲突与选择…」与状态栏的冲突计数。没东西可看时不切页——
+    /// 跳到一个空白页比原地不动更让人困惑。</summary>
     [RelayCommand]
     private void OpenConflicts()
     {
@@ -95,13 +107,20 @@ public partial class MainViewModel
         }
         if (ConflictGroups.Count == 0)
         {
-            // 一组都没有才说"没有冲突"：只有同模组内部的共用输出文件时，窗口照样有东西可选
+            // 一组都没有才说"没有冲突"：只有同模组内部的共用输出文件时，页面照样有东西可选
             NotifyUser(L10n.Tr("L.Title_Tip"), L10n.Tr("L.Msg_NoConflicts"), warning: true);
             return;
         }
 
+        CurrentConflict = BuildConflictRequest();
+        SelectedTab = TabConflicts;
+    }
+
+    /// <summary>给冲突页攒一份请求：数据 + 回写通道。每次都是新实例，页面据此判断"该重建了"。</summary>
+    private ConflictRequest BuildConflictRequest()
+    {
         var sourceNif = BuildSourceNifIndex();
-        ConflictsRequested?.Invoke(new ConflictRequest
+        return new ConflictRequest
         {
             Groups = ConflictGroups,
             Choices = Settings.OutputChoices,
@@ -110,7 +129,19 @@ public partial class MainViewModel
             Save = SaveConflictChoices,
             BuildSelectionPath = _bsAppDir is null ? "" : BuildSelectionFile.PathFor(_bsAppDir),
             Export = ExportConflictChoices,
-        });
+            Assets = BuildAssetResolver(),
+        };
+    }
+
+    /// <summary>预览用的数据视图。层序必须和扫描时一模一样（模组从强到弱，最后才是真实的 Data），
+    /// 否则"预览里的贴图"和"BodySlide 建出来的 nif 进游戏后实际引用的贴图"就不是同一份。</summary>
+    private GameDataResolver? BuildAssetResolver()
+    {
+        var roots = Mods.Select(m => m.Dir).ToList();
+        var gameData = Resolution?.GameDataPath;
+        if (!string.IsNullOrWhiteSpace(gameData))
+            roots.Add(gameData!);
+        return roots.Count == 0 ? null : new GameDataResolver(roots);
     }
 
     /// <summary>只动本次扫描认得的冲突路径：其它 BodySlide 安装留下的、或对应模组已消失的条目都不碰。</summary>

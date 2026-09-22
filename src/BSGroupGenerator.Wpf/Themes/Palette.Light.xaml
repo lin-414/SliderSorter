@@ -34,9 +34,19 @@
     <Color x:Key="C.WarnText">#92400E</Color>
     <Color x:Key="C.WarnSoft">#FFFBEB</Color>
     <Color x:Key="C.Hover">#F1F3F5</Color>
-    <Color x:Key="C.Selected">#DBEAFE</Color>
+    <!-- 列表/树的选中行底色。原先是 #DBEAFE，压白卡只有 1.22:1——亮色主题下"我在哪一行"几乎只剩
+         一个单选圈在传达（暗色下同一对是 2.01:1，勉强看得出来）。加深到 1.9:1 才算得上一个状态标记。
+         不与 AccentSoft 复用：勾选框的勾/圆点要压在 AccentSoft 上，它得更浅。 -->
+    <Color x:Key="C.Selected">#BFDBFE</Color>
     <Color x:Key="C.Navy">#1E3A5F</Color>
     <Color x:Key="C.CheckMark">#2563EB</Color>
+
+    <!-- 3D 预览视口是"渲染面"而不是界面装饰：底色带色调会给衣服染上一层不存在的颜色，
+         所以两套主题刻意取同一个值 —— 同一件衣服在暗色和亮色下必须看着是同一件。
+         原先还有一枚 C.ViewportText（压这块灰的说明文字），重排冲突页时删掉了：
+         预览的状态文字改成一枚 B.Panel 底的气泡，压在灰面与卡片底上都读得清，
+         那个键就再没有消费者——留着只会让人以为"视口里的字"该用它。 -->
+    <Color x:Key="C.Viewport">#6E6E6E</Color>
 
     <SolidColorBrush x:Key="B.Window" Color="{StaticResource C.Window}" />
     <SolidColorBrush x:Key="B.Scrim" Color="{StaticResource C.Scrim}" />
@@ -47,6 +57,7 @@
     <SolidColorBrush x:Key="B.CheckBorder" Color="{StaticResource C.CheckBorder}" />
     <SolidColorBrush x:Key="B.Text" Color="{StaticResource C.Text}" />
     <SolidColorBrush x:Key="B.TextDim" Color="{StaticResource C.TextDim}" />
+    <SolidColorBrush x:Key="B.Viewport" Color="{StaticResource C.Viewport}" />
     <SolidColorBrush x:Key="B.Accent" Color="{StaticResource C.Accent}" />
     <SolidColorBrush x:Key="B.AccentBorder" Color="{StaticResource C.AccentBorder}" />
     <SolidColorBrush x:Key="B.AccentHover" Color="{StaticResource C.AccentHover}" />

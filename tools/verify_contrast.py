@@ -37,6 +37,9 @@ REQUIRED: list[tuple[str, str, float, str]] = [
     # 语义色
     ("AccentText", "Card", 4.5, "链接/强调文字"),
     ("AccentText", "Panel", 4.5, "链接/强调文字（面板底）"),
+    # 「已在组内」徽标就是这一对：原先只测了 AccentText 压 Card/Panel，而它真正的底是 AccentSoft，
+    # 暗色下那一对只有 3.96:1，徽标上的字发糊却没人报红。
+    ("AccentText", "AccentSoft", 4.5, "强调徽标文字（强调底纹）"),
     ("Member", "Card", 4.5, "已在组内的标记"),
     ("Conflict", "Card", 4.5, "同名冲突标记"),
     ("Danger", "Card", 4.5, "危险/错误文字"),

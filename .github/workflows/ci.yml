@@ -55,8 +55,8 @@ jobs:
           dotnet test tests/BSGroupGenerator.Wpf.Tests/BSGroupGenerator.Wpf.Tests.csproj -c Release
 
       # 译文/主题的布局回归同样"不会让任何测试变红"：容器按基准语言的标签宽度定尺寸，
-      # 换一种更长的语言就被静默裁掉。这里加载真实资源字典与真实窗口 XAML 离屏排一遍，
-      # 覆盖 4 语言 × 2 主题 × 11 个窗口 × 各档尺寸，断言 0 处溢出/裁切。
+      # 换一种更长的语言就被静默裁掉。这里加载真实资源字典与真实窗口/页面 XAML 离屏排一遍，
+      # 覆盖 4 语言 × 2 主题 × Views 下全部窗口与页面 × 各档尺寸，断言 0 处溢出/裁切。
       - name: 检查布局溢出
         run: dotnet run --project tools/layout-probe/LayoutProbe.csproj -c Release
 

@@ -5,25 +5,27 @@
     <sys:String x:Key="L.App_Title" xml:space="preserve">BS Group Generator — BodySlide Group Tool</sys:String>
 
     <!-- Menu -->
-    <sys:String x:Key="L.Menu_File">File(_F)</sys:String>
-    <sys:String x:Key="L.Menu_Save">Save group files(_S)</sys:String>
     <sys:String x:Key="L.Menu_ImportGroups">Import group files…(_I)</sys:String>
-    <sys:String x:Key="L.Menu_Edit">Edit(_E)</sys:String>
     <sys:String x:Key="L.Menu_Undo">Undo(_U)</sys:String>
-    <sys:String x:Key="L.Menu_Tools">Tools(_T)</sys:String>
-    <sys:String x:Key="L.Menu_Diagnostics">Diagnostics…(_D)</sys:String>
-    <sys:String x:Key="L.Menu_CleanupStale">Clean stale outfits…(_C)</sys:String>
-    <sys:String x:Key="L.Menu_RulePresets">Rule presets…(_P)</sys:String>
-    <sys:String x:Key="L.Menu_OutputConflicts" xml:space="preserve">Output conflicts…(_O)</sys:String>
-    <sys:String x:Key="L.Menu_Theme">Theme(_M)</sys:String>
     <sys:String x:Key="L.Theme_Dark">Dark</sys:String>
     <sys:String x:Key="L.Theme_Light">Light</sys:String>
-    <sys:String x:Key="L.Menu_Language">Language(_L)</sys:String>
-    <sys:String x:Key="L.Menu_CheckUpdate">Check for updates…(_C)</sys:String>
-    <sys:String x:Key="L.Menu_Help">Help(_H)</sys:String>
-    <sys:String x:Key="L.Menu_Manual">User guide(_M)</sys:String>
-    <sys:String x:Key="L.Menu_About">About…(_A)</sys:String>
-    <sys:String x:Key="L.Menu_Exit">Exit(_X)</sys:String>
+
+    <!-- Tabs & settings page. Deliberately not L.Menu_*: the l10n gate demands an (_X) access key
+         on every L.Menu_* value, and that convention would render a literal underscore in a tab header. -->
+    <sys:String x:Key="L.Tab_Generate">Grouping</sys:String>
+    <sys:String x:Key="L.Tab_Conflicts" xml:space="preserve">Output conflicts</sys:String>
+    <sys:String x:Key="L.Tab_Settings">Settings</sys:String>
+    <sys:String x:Key="L.Settings_Workspace">Workspace</sys:String>
+    <sys:String x:Key="L.Settings_Output">Output settings</sys:String>
+    <sys:String x:Key="L.Settings_CleanupStale" xml:space="preserve">Clean stale outfits…</sys:String>
+    <sys:String x:Key="L.Conflict_Rescan" xml:space="preserve">Rescan</sys:String>    <sys:String x:Key="L.Conflict_NoRequest" xml:space="preserve">Nothing to show yet. Run a scan on the Grouping page first — or this scan found no output conflicts at all.</sys:String>
+    <sys:String x:Key="L.Settings_Appearance">Appearance</sys:String>
+    <sys:String x:Key="L.Settings_Theme">Theme</sys:String>
+    <sys:String x:Key="L.Settings_Language">Language</sys:String>
+    <sys:String x:Key="L.Settings_Help">Help and About</sys:String>
+    <sys:String x:Key="L.Settings_CheckUpdate">Check for updates</sys:String>
+    <sys:String x:Key="L.Settings_UpdateChecking">Checking for updates…</sys:String>
+    <sys:String x:Key="L.Settings_Manual">User guide</sys:String>
 
     <!-- Main window -->
     <sys:String x:Key="L.Main_Instance">MO2 instance</sys:String>
@@ -236,10 +238,18 @@ Open the release page to download?</sys:String>
     <sys:String x:Key="L.NewMods_SelectFirst">Tick what to group first (tick a mod or a separator to select in bulk).</sys:String>
     <sys:String x:Key="L.NewMods_SelectTarget">Pick a target group first.</sys:String>
     <sys:String x:Key="L.NewMods_AddSelected">Add selected</sys:String>
-    <sys:String x:Key="L.Conflict_Title" xml:space="preserve">Output conflicts: which mod builds each outfit file</sys:String>
-    <sys:String x:Key="L.Conflict_Intro" xml:space="preserve">{0} outfits are written to the same output file by more than one mod ({1} groups in total counting several presets of one mod sharing a file). Pick which one to build; for a group you leave unset, BodySlide asks again during batch build.</sys:String>
+    <sys:String x:Key="L.Conflict_Intro" xml:space="preserve">Only one mod can build each output file. This scan found {0} conflicts between mods and {1} groups sharing a file inside one mod; BodySlide asks again for a group you leave unset.</sys:String>
+    <sys:String x:Key="L.Conflict_Progress" xml:space="preserve">{0} of {1} groups chosen</sys:String>
+    <sys:String x:Key="L.Conflict_UnresolvedSuffix" xml:space="preserve">· {0} unset</sys:String>
+    <sys:String x:Key="L.Conflict_GroupsHeader" xml:space="preserve">Conflicts</sys:String>
+    <sys:String x:Key="L.Conflict_GroupCount" xml:space="preserve">{0} groups</sys:String>
+    <sys:String x:Key="L.Conflict_CandidatesHeader" xml:space="preserve">Build with</sys:String>
+    <sys:String x:Key="L.Conflict_PreviewHeader" xml:space="preserve">Preview</sys:String>
+    <sys:String x:Key="L.Conflict_BatchScope" xml:space="preserve">For the {0} groups listed:</sys:String>
     <sys:String x:Key="L.Conflict_Filter" xml:space="preserve">Filter output path / outfit / mod…</sys:String>
     <sys:String x:Key="L.Conflict_OnlyCrossMod" xml:space="preserve">Only conflicts between mods</sys:String>
+    <sys:String x:Key="L.Conflict_OnlyCrossModTip" xml:space="preserve">{0} conflicts between mods, {1} groups sharing a file inside one mod. Hundreds of colour presets of one outfit sharing a file is normal for a mod; tick this to leave them out.</sys:String>
+    <sys:String x:Key="L.Conflict_RescanTip" xml:space="preserve">Rescan mods and outfits and rebuild this conflict list. Choices made on this page change this tool's own settings; they do not trigger a rescan.</sys:String>
     <sys:String x:Key="L.Conflict_SameModOnly" xml:space="preserve">same mod only</sys:String>
     <sys:String x:Key="L.Conflict_FilterCount" xml:space="preserve">Showing {0} of {1} groups</sys:String>
     <sys:String x:Key="L.Conflict_AutoAll" xml:space="preserve">Follow mod priority</sys:String>
@@ -248,6 +258,7 @@ Open the release page to download?</sys:String>
     <sys:String x:Key="L.Conflict_ClearAllTip" xml:space="preserve">Clear the choice for every group listed and let BodySlide ask again</sys:String>
     <sys:String x:Key="L.Conflict_Export" xml:space="preserve">Write to BodySlide…</sys:String>
     <sys:String x:Key="L.Conflict_ExportTip" xml:space="preserve">Writes the choices into BuildSelection.xml in the BodySlide folder; the previous file is kept as .bak</sys:String>
+    <sys:String x:Key="L.Conflict_ExportHint" xml:space="preserve">Writes BuildSelection.xml; the previous file is kept as .bak</sys:String>
     <sys:String x:Key="L.Conflict_StatusChosen" xml:space="preserve">Chosen: {0}</sys:String>
     <sys:String x:Key="L.Conflict_StatusUnresolved" xml:space="preserve">unset</sys:String>
     <sys:String x:Key="L.Conflict_CandidateCount" xml:space="preserve">{0} candidates</sys:String>
@@ -258,10 +269,16 @@ Open the release page to download?</sys:String>
     <sys:String x:Key="L.Conflict_Strongest" xml:space="preserve">highest priority</sys:String>
     <sys:String x:Key="L.Conflict_AskMeAgain" xml:space="preserve">Leave unset (let BodySlide ask)</sys:String>
     <sys:String x:Key="L.Preview_Reset" xml:space="preserve">Reset view</sys:String>
-    <sys:String x:Key="L.Preview_Loading" xml:space="preserve">Reading mesh…</sys:String>
+    <sys:String x:Key="L.Preview_Loading" xml:space="preserve">Reading mesh and textures…</sys:String>
     <sys:String x:Key="L.Preview_NoSource" xml:space="preserve">This set has no resolvable source mesh (BodySlide's .nif is not in ShapeData)</sys:String>
-    <sys:String x:Key="L.Preview_Stats" xml:space="preserve">{0} triangles · {1} shapes</sys:String>
-    <sys:String x:Key="L.Conflict_PreviewTip" xml:space="preserve">Click a row to see its 3D model; right-click a row to make it the winner. Drag to orbit, scroll to zoom.</sys:String>
+    <sys:String x:Key="L.Preview_Stats" xml:space="preserve">{0} triangles · {1} shapes · {2} textured</sys:String>
+    <sys:String x:Key="L.Preview_Truncated" xml:space="preserve">{0} more shapes were over the budget and not drawn</sys:String>
+    <sys:String x:Key="L.Preview_Body" xml:space="preserve">Body</sys:String>
+    <sys:String x:Key="L.Preview_BodyAuto" xml:space="preserve">Auto</sys:String>
+    <sys:String x:Key="L.Preview_BodyFemale" xml:space="preserve">Female</sys:String>
+    <sys:String x:Key="L.Preview_BodyMale" xml:space="preserve">Male</sys:String>
+    <sys:String x:Key="L.Preview_BodyNone" xml:space="preserve">None</sys:String>
+    <sys:String x:Key="L.Conflict_PreviewTip" xml:space="preserve">Click a row to see its 3D model; right-click a row to make it the winner. Left-drag to orbit, right-drag to pan, scroll to zoom.</sys:String>
     <sys:String x:Key="L.Conflict_OpenTip" xml:space="preserve">Opens the winner picker. Choices stay in this tool until you press 'Write to BodySlide...'</sys:String>
     <sys:String x:Key="L.Confirm_ExportBuildSel" xml:space="preserve">Write {0} choices to:
 {1}
@@ -346,13 +363,12 @@ One file per group, named after the group: {1}{2} ({3}).
     <sys:String x:Key="L.Diag_OutputUndetermined">(undetermined)</sys:String>
 
     <!-- About -->
-    <sys:String x:Key="L.About_Title">About BS Group Generator</sys:String>
     <sys:String x:Key="L.About_Desc">Reads the mods installed via Mod Organizer 2, lets you batch-assign BodySlide slider sets into groups, and generates group files in BodySlide's native format. Works with any BodySlide-supported game such as Skyrim SE/AE and Fallout 4.</sys:String>
     <sys:String x:Key="L.About_Author">Author: lin-414</sys:String>
+    <sys:String x:Key="L.About_Repo" xml:space="preserve">GitHub: github.com/lin-414/BSGroupGenerator</sys:String>
     <sys:String x:Key="L.About_Compat">The group files are fully compatible with BodySlide; each group becomes its own file named after the group, stored in BodySlide's SliderGroups folder.</sys:String>
 
     <!-- Help -->
-    <sys:String x:Key="L.Help_Title">Help — BS Group Generator</sys:String>
     <sys:String x:Key="L.Help_H1">1. Common tasks</sys:String>
     <sys:String x:Key="L.Help_01">This tool reads the mods installed via Mod Organizer 2 (MO2), lets you batch-assign outfits (BodySlide slider sets) into groups, and generates group files in BodySlide's native format, one file per group.</sys:String>
     <sys:String x:Key="L.Help_02">1. Pick the MO2 instance and Profile — global instances and portable installs are discovered automatically; the Profile defaults to the last one used.</sys:String>

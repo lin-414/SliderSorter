@@ -370,7 +370,34 @@ def main():
         "L.Main_RemoveFromGroup": r"L\.Main_RemoveFromGroup",
         "L.Main_Undo": r"L\.Main_Undo",
         "L.Main_ImportGroups": r"L\.Main_ImportGroups",
-        "L.Menu_Settings": r"L\.Menu_Settings",
+        # 2026-09-22 三页改版：主题/语言/帮助那几个顶层菜单项并进「设置」页后删掉。
+        "L.Menu_Theme": r"L\.Menu_Theme\b",
+        "L.Menu_Language": r"L\.Menu_Language\b",
+        "L.Menu_Help": r"L\.Menu_Help\b",
+        "L.Menu_Manual": r"L\.Menu_Manual\b",
+        "L.Menu_CheckUpdate": r"L\.Menu_CheckUpdate\b",
+        "L.Menu_About": r"L\.Menu_About\b",
+        "L.Menu_Diagnostics": r"L\.Menu_Diagnostics\b",
+        # 这两句原本是 HelpWindow / AboutWindow 的窗口标题；正文与关于内嵌进设置页后没有标题可用了
+        "L.Help_Title": r"L\.Help_Title\b",
+        "L.About_Title": r"L\.About_Title\b",
+        # 2026-09-22 菜单栏整条取消：剩下的每一项要么与页内控件重复（保存＝右下角那颗、
+        # 退出＝关窗口），要么本身就该是个页面（输出冲突、规则预设、设置）。
+        # L.Menu_ImportGroups 与 L.Menu_Undo 活着——它们搬进了组管理的右键菜单，仍是菜单项。
+        "L.Menu_File": r"L\.Menu_File\b",
+        "L.Menu_Save": r"L\.Menu_Save\b",
+        "L.Menu_Edit": r"L\.Menu_Edit\b",
+        "L.Menu_Tools": r"L\.Menu_Tools\b",
+        "L.Menu_RulePresets": r"L\.Menu_RulePresets\b",
+        "L.Menu_OutputConflicts": r"L\.Menu_OutputConflicts\b",
+        "L.Menu_CleanupStale": r"L\.Menu_CleanupStale\b",
+        "L.Menu_Settings": r"L\.Menu_Settings\b",
+        "L.Menu_Exit": r"L\.Menu_Exit\b",
+        # 分组生成页不再复述环境摘要（要改就去设置标签页），"去设置修改"那颗按钮随之取消
+        "L.Settings_GoTo": r"L\.Settings_GoTo\b",
+        # 2026-09-22 冲突页重排：页标题改用 L.Tab_Conflicts（与标签头同键，设置页同理），
+        # 那句"输出冲突：同一个服装文件由谁生成"随之退休。
+        "L.Conflict_Title": r"L\.Conflict_Title\b",
     }
     found = False
     for scan_root in scan_roots:

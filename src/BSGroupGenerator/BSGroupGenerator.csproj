@@ -16,6 +16,8 @@
 
   <ItemGroup>
     <PackageReference Include="Nifly" Version="1.1.0" />
+    <PackageReference Include="Sharp.BSA.BA2" Version="1.17.0" />
+    <PackageReference Include="Pfim" Version="0.11.4" />
   </ItemGroup>
 
 </Project>

@@ -5,25 +5,27 @@
     <sys:String x:Key="L.App_Title" xml:space="preserve">BS Group Generator — инструмент групп BodySlide</sys:String>
 
     <!-- Menu -->
-    <sys:String x:Key="L.Menu_File">Файл(_Ф)</sys:String>
-    <sys:String x:Key="L.Menu_Save">Сохранить файлы групп(_С)</sys:String>
     <sys:String x:Key="L.Menu_ImportGroups">Импорт файлов групп…(_И)</sys:String>
-    <sys:String x:Key="L.Menu_Edit">Правка(_П)</sys:String>
     <sys:String x:Key="L.Menu_Undo">Отменить(_О)</sys:String>
-    <sys:String x:Key="L.Menu_Tools">Инструменты(_И)</sys:String>
-    <sys:String x:Key="L.Menu_Diagnostics">Диагностика…(_Д)</sys:String>
-    <sys:String x:Key="L.Menu_CleanupStale">Удалить устаревшие комплекты…(_У)</sys:String>
-    <sys:String x:Key="L.Menu_RulePresets">Шаблоны правил…(_Ш)</sys:String>
-    <sys:String x:Key="L.Menu_OutputConflicts" xml:space="preserve">Конфликты вывода…(_К)</sys:String>
-    <sys:String x:Key="L.Menu_Theme">Тема(_Т)</sys:String>
     <sys:String x:Key="L.Theme_Dark">Тёмная</sys:String>
     <sys:String x:Key="L.Theme_Light">Светлая</sys:String>
-    <sys:String x:Key="L.Menu_Language">Язык(_Я)</sys:String>
-    <sys:String x:Key="L.Menu_CheckUpdate">Проверить обновления…(_П)</sys:String>
-    <sys:String x:Key="L.Menu_Help">Справка(_С)</sys:String>
-    <sys:String x:Key="L.Menu_Manual">Руководство(_Р)</sys:String>
-    <sys:String x:Key="L.Menu_About">О программе…(_О)</sys:String>
-    <sys:String x:Key="L.Menu_Exit">Выход(_В)</sys:String>
+
+    <!-- Tabs & settings page. Deliberately not L.Menu_*: the l10n gate demands an (_X) access key
+         on every L.Menu_* value, and that convention would render a literal underscore in a tab header. -->
+    <sys:String x:Key="L.Tab_Generate">Группировка</sys:String>
+    <sys:String x:Key="L.Tab_Conflicts" xml:space="preserve">Конфликты вывода</sys:String>
+    <sys:String x:Key="L.Tab_Settings">Параметры</sys:String>
+    <sys:String x:Key="L.Settings_Workspace">Рабочая среда</sys:String>
+    <sys:String x:Key="L.Settings_Output">Настройки вывода</sys:String>
+    <sys:String x:Key="L.Settings_CleanupStale" xml:space="preserve">Удалить устаревшие комплекты…</sys:String>
+    <sys:String x:Key="L.Conflict_Rescan" xml:space="preserve">Просканировать снова</sys:String>    <sys:String x:Key="L.Conflict_NoRequest" xml:space="preserve">Показывать нечего. Сначала выполните сканирование на вкладке «Группировка» — возможно, сканирование вообще не нашло конфликтов вывода.</sys:String>
+    <sys:String x:Key="L.Settings_Appearance">Внешний вид</sys:String>
+    <sys:String x:Key="L.Settings_Theme">Тема интерфейса</sys:String>
+    <sys:String x:Key="L.Settings_Language">Язык интерфейса</sys:String>
+    <sys:String x:Key="L.Settings_Help">Справка и о программе</sys:String>
+    <sys:String x:Key="L.Settings_CheckUpdate">Проверить обновления</sys:String>
+    <sys:String x:Key="L.Settings_UpdateChecking">Проверка обновлений…</sys:String>
+    <sys:String x:Key="L.Settings_Manual">Руководство</sys:String>
 
     <!-- Main window -->
     <sys:String x:Key="L.Main_Instance">Экземпляр MO2</sys:String>
@@ -231,10 +233,18 @@
     <sys:String x:Key="L.NewMods_SelectFirst">Сначала отметьте, что группировать (отметьте мод или разделитель, чтобы выбрать всё сразу).</sys:String>
     <sys:String x:Key="L.NewMods_SelectTarget">Сначала выберите целевую группу.</sys:String>
     <sys:String x:Key="L.NewMods_AddSelected">Добавить выбранные</sys:String>
-    <sys:String x:Key="L.Conflict_Title" xml:space="preserve">Конфликты вывода: какой мод строит файл одежды</sys:String>
-    <sys:String x:Key="L.Conflict_Intro" xml:space="preserve">{0} групп пишутся разными модами в один и тот же выходной файл (всего {1} групп, считая несколько наборов одного мода). Выберите, какой набор строить; про группы без выбора BodySlide спросит сам при пакетной сборке.</sys:String>
+    <sys:String x:Key="L.Conflict_Intro" xml:space="preserve">Каждый выходной файл может строить только один мод. Сканирование нашло {0} конфликтов между модами и {1} групп с общим файлом внутри одного мода; про группы без выбора BodySlide спросит сам.</sys:String>
+    <sys:String x:Key="L.Conflict_Progress" xml:space="preserve">Выбрано {0} из {1} групп</sys:String>
+    <sys:String x:Key="L.Conflict_UnresolvedSuffix" xml:space="preserve">· без выбора {0}</sys:String>
+    <sys:String x:Key="L.Conflict_GroupsHeader" xml:space="preserve">Конфликты</sys:String>
+    <sys:String x:Key="L.Conflict_GroupCount" xml:space="preserve">групп: {0}</sys:String>
+    <sys:String x:Key="L.Conflict_CandidatesHeader" xml:space="preserve">Кто строит</sys:String>
+    <sys:String x:Key="L.Conflict_PreviewHeader" xml:space="preserve">Просмотр</sys:String>
+    <sys:String x:Key="L.Conflict_BatchScope" xml:space="preserve">Для {0} групп в списке:</sys:String>
     <sys:String x:Key="L.Conflict_Filter" xml:space="preserve">Фильтр пути / одежды / мода…</sys:String>
     <sys:String x:Key="L.Conflict_OnlyCrossMod" xml:space="preserve">Только конфликты между модами</sys:String>
+    <sys:String x:Key="L.Conflict_OnlyCrossModTip" xml:space="preserve">Конфликтов между модами: {0}, групп с общим файлом внутри одного мода: {1}. Сотни цветовых вариантов одной вещи с общим файлом — обычное дело для мода; поставьте галочку, чтобы их не видеть.</sys:String>
+    <sys:String x:Key="L.Conflict_RescanTip" xml:space="preserve">Заново просканировать моды и одежду и пересобрать этот список конфликтов. Выбор на этой странице меняет только настройки инструмента и пересканирование не запускает.</sys:String>
     <sys:String x:Key="L.Conflict_SameModOnly" xml:space="preserve">внутри одного мода</sys:String>
     <sys:String x:Key="L.Conflict_FilterCount" xml:space="preserve">Показано групп: {0} из {1}</sys:String>
     <sys:String x:Key="L.Conflict_AutoAll" xml:space="preserve">По приоритету модов</sys:String>
@@ -243,6 +253,7 @@
     <sys:String x:Key="L.Conflict_ClearAllTip" xml:space="preserve">Снять выбор во всех показанных группах и позволить BodySlide спрашивать снова</sys:String>
     <sys:String x:Key="L.Conflict_Export" xml:space="preserve">Записать в BodySlide…</sys:String>
     <sys:String x:Key="L.Conflict_ExportTip" xml:space="preserve">Сохраняет выбор в BuildSelection.xml в папке BodySlide; прежний файл сохраняется как .bak</sys:String>
+    <sys:String x:Key="L.Conflict_ExportHint" xml:space="preserve">Пишет BuildSelection.xml; прежний файл — в .bak</sys:String>
     <sys:String x:Key="L.Conflict_StatusChosen" xml:space="preserve">Выбрано: {0}</sys:String>
     <sys:String x:Key="L.Conflict_StatusUnresolved" xml:space="preserve">не задано</sys:String>
     <sys:String x:Key="L.Conflict_CandidateCount" xml:space="preserve">вариантов: {0}</sys:String>
@@ -253,10 +264,16 @@
     <sys:String x:Key="L.Conflict_Strongest" xml:space="preserve">наивысший приоритет</sys:String>
     <sys:String x:Key="L.Conflict_AskMeAgain" xml:space="preserve">Не задавать (спросит BodySlide)</sys:String>
     <sys:String x:Key="L.Preview_Reset" xml:space="preserve">Сброс вида</sys:String>
-    <sys:String x:Key="L.Preview_Loading" xml:space="preserve">Чтение сетки…</sys:String>
+    <sys:String x:Key="L.Preview_Loading" xml:space="preserve">Чтение сетки и текстур…</sys:String>
     <sys:String x:Key="L.Preview_NoSource" xml:space="preserve">У этого набора нет исходной сетки (файл .nif не найден в ShapeData)</sys:String>
-    <sys:String x:Key="L.Preview_Stats" xml:space="preserve">треугольников: {0} · форм: {1}</sys:String>
-    <sys:String x:Key="L.Conflict_PreviewTip" xml:space="preserve">Клик по строке — показать 3D-модель; правый клик — сделать её победителем. Вращение мышью, зум колесом.</sys:String>
+    <sys:String x:Key="L.Preview_Stats" xml:space="preserve">треугольников: {0} · форм: {1} · с текстурой: {2}</sys:String>
+    <sys:String x:Key="L.Preview_Truncated" xml:space="preserve">ещё {0} форм сверх лимита не отрисовано</sys:String>
+    <sys:String x:Key="L.Preview_Body" xml:space="preserve">Тело</sys:String>
+    <sys:String x:Key="L.Preview_BodyAuto" xml:space="preserve">Авто</sys:String>
+    <sys:String x:Key="L.Preview_BodyFemale" xml:space="preserve">Женское</sys:String>
+    <sys:String x:Key="L.Preview_BodyMale" xml:space="preserve">Мужское</sys:String>
+    <sys:String x:Key="L.Preview_BodyNone" xml:space="preserve">Нет</sys:String>
+    <sys:String x:Key="L.Conflict_PreviewTip" xml:space="preserve">Клик по строке — показать 3D-модель; правый клик — сделать её победителем. Вращение — левая кнопка, панорама — правая, зум — колесо.</sys:String>
     <sys:String x:Key="L.Conflict_OpenTip" xml:space="preserve">Открывает выбор победителя. Выбор хранится этой утилитой, пока вы не нажмёте «Записать в BodySlide…»</sys:String>
     <sys:String x:Key="L.Confirm_ExportBuildSel" xml:space="preserve">Записать {0} выборов в:
 {1}
@@ -341,13 +358,12 @@
     <sys:String x:Key="L.Diag_OutputUndetermined">(не определён)</sys:String>
 
     <!-- About -->
-    <sys:String x:Key="L.About_Title">О программе BS Group Generator</sys:String>
     <sys:String x:Key="L.About_Desc">Читает моды, установленные через Mod Organizer 2, позволяет массово распределять наборы слайдеров BodySlide по группам и создаёт файлы групп в родном формате BodySlide. Работает с любой игрой, поддерживаемой BodySlide, например Skyrim SE/AE и Fallout 4.</sys:String>
     <sys:String x:Key="L.About_Author">Автор: lin-414</sys:String>
+    <sys:String x:Key="L.About_Repo" xml:space="preserve">GitHub: github.com/lin-414/BSGroupGenerator</sys:String>
     <sys:String x:Key="L.About_Compat">Файлы групп полностью совместимы с BodySlide; каждая группа становится отдельным файлом с именем группы в папке SliderGroups.</sys:String>
 
     <!-- Help -->
-    <sys:String x:Key="L.Help_Title">Справка — BS Group Generator</sys:String>
     <sys:String x:Key="L.Help_H1">1. Частые задачи</sys:String>
     <sys:String x:Key="L.Help_01">Эта программа читает моды, установленные через Mod Organizer 2 (MO2), позволяет массово распределять комплекты (наборы слайдеров BodySlide) по группам и создаёт файлы групп в родном формате BodySlide — один файл на группу.</sys:String>
     <sys:String x:Key="L.Help_02">1. Выберите экземпляр MO2 и профиль — глобальные экземпляры и портативные установки определяются автоматически; профиль по умолчанию — последний использованный.</sys:String>

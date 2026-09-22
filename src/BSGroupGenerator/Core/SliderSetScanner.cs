@@ -116,6 +116,7 @@ public static class SliderSetScanner
             .Where(d => d is not null)
             .Select(d => d!)
             .ToList();
+        var shapeDataIndex = BuildShapeDataIndex(shapeDataRoots);
 
         // 相对路径 → 最强层的文件
         var winners = new List<(string RelPath, string Label, string FullPath, int LayerIndex)>();
@@ -229,7 +230,7 @@ public static class SliderSetScanner
                     OutputFilePath = set.OutputFilePath,
                     GenWeights = set.GenWeights,
                     LayerIndex = layerIndex,
-                    SourceNif = ResolveSourceNif(shapeDataRoots, set.DataFolder, set.SourceFile),
+                    SourceNif = ResolveSourceNif(shapeDataIndex, set.DataFolder, set.SourceFile),
                 });
             }
         }
@@ -442,10 +443,60 @@ public static class SliderSetScanner
         return cut <= 0 ? null : Path.Combine(trimmed[..cut], "ShapeData");
     }
 
+    /// <summary>
+    /// 一次性列出各层 ShapeData 里的 *.nif，键 = 相对该层 ShapeData 根的路径。
+    /// <para>
+    /// 为什么不能"每个服装 × 每层"直接 <c>File.Exists</c>：实测一份 2464 个启用模组、6877 件服装的
+    /// 整合包会打出约 3400 万次探测，扫描从 1 秒变 65 秒，进度条停在 100% 像是死掉了。
+    /// 目录本来就要整层遍历一遍才知道有什么，索引一次、之后查表才是对的形状。
+    /// </para>
+    /// 枚举并行、合并按层序串行：层序决定同名文件归谁，绝不能边枚举边写共享字典。
+    /// </summary>
+    static Dictionary<string, string> BuildShapeDataIndex(IReadOnlyList<string> shapeDataRoots)
+    {
+        var perRoot = new List<(string Rel, string Full)>[shapeDataRoots.Count];
+
+        Parallel.For(0, shapeDataRoots.Count, i =>
+        {
+            var list = new List<(string, string)>();
+            var root = Path.GetFullPath(shapeDataRoots[i]);
+            try
+            {
+                if (!Directory.Exists(root))
+                {
+                    perRoot[i] = list;
+                    return;
+                }
+                var files = Directory.EnumerateFiles(root, "*.nif", new EnumerationOptions
+                {
+                    RecurseSubdirectories = true,
+                    IgnoreInaccessible = true,
+                }).ToList();
+                var cut = root.TrimEnd(Path.DirectorySeparatorChar, '/').Length;
+                foreach (var file in files)
+                    list.Add((file[cut..].TrimStart(Path.DirectorySeparatorChar, '/'), file));
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Security.SecurityException
+                                       or ArgumentException or NotSupportedException or PathTooLongException)
+            {
+                // 单层读不到不影响别的层：预览最多就是少一个候选的网格
+                list.Clear();
+            }
+            perRoot[i] = list;
+        });
+
+        // 相对路径在 Windows 上不区分大小写，键必须按忽略大小写比
+        var index = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        for (var i = 0; i < perRoot.Length; i++)
+            foreach (var (rel, full) in perRoot[i])
+                index.TryAdd(rel, full); // 先见的强层获胜
+        return index;
+    }
+
     /// <summary>按 BodySlide 的 <c>SliderSet::GetInputFileName()</c>（<c>SliderSet.cpp:644-649</c>：
-    /// <c>baseDataPath \ DataFolder \ SourceFile</c>）在个覆盖层里解析源网格，返回第一个真实存在的文件。
+    /// <c>baseDataPath \ DataFolder \ SourceFile</c>）在索引里查源网格。
     /// <c>&lt;SourceFile&gt;</c> 有的模组写 "Foo.nif"、有的只写 "Foo"，两种都试。</summary>
-    static string? ResolveSourceNif(IReadOnlyList<string> shapeDataRoots, string? dataFolder, string? sourceFile)
+    static string? ResolveSourceNif(IReadOnlyDictionary<string, string> shapeDataIndex, string? dataFolder, string? sourceFile)
     {
         if (string.IsNullOrWhiteSpace(sourceFile))
             return null;
@@ -455,27 +506,21 @@ public static class SliderSetScanner
         if (!string.IsNullOrWhiteSpace(dataFolder))
             parts.Add(dataFolder!.Trim().Replace('/', Path.DirectorySeparatorChar));
         parts.Add(name);
-        var relative = Path.Combine(parts.ToArray());
+        string relative;
+        try
+        {
+            relative = Path.Combine(parts.ToArray());
+        }
+        catch (Exception ex) when (ex is ArgumentException or NotSupportedException or PathTooLongException)
+        {
+            return null; // XML 里的路径带非法字符（模组作者手打错）：当作没有源网格
+        }
 
-        var candidates = name.EndsWith(".nif", StringComparison.OrdinalIgnoreCase)
-            ? new[] { relative }
-            : new[] { relative, relative + ".nif" };
-
-        foreach (var root in shapeDataRoots)
-            foreach (var candidate in candidates)
-            {
-                try
-                {
-                    var full = Path.GetFullPath(Path.Combine(root, candidate));
-                    if (File.Exists(full))
-                        return full;
-                }
-                catch (Exception ex) when (ex is ArgumentException or NotSupportedException or PathTooLongException)
-                {
-                    // XML 里的路径可能带非法字符（模组作者手打错）：跳过这个候选，别让整个扫描失败
-                }
-            }
-        return null;
+        if (shapeDataIndex.TryGetValue(relative, out var hit))
+            return hit;
+        return name.EndsWith(".nif", StringComparison.OrdinalIgnoreCase)
+            ? null
+            : shapeDataIndex.GetValueOrDefault(relative + ".nif");
     }
 
     /// <summary>

@@ -19,14 +19,19 @@ namespace BSGroupGenerator.Wpf.Tests;
 /// 「真的能构造出窗口」这一层由 MainWindowCommandTests 负责。</summary>
 public class XamlCommandBindingTests
 {
-    /// <summary>视图（相对 WPF 项目根）→ 该文件里 <c>{Binding}</c> 的求值对象类型。
+    /// <summary>视图（相对 WPF 项目根，分隔符一律 <c>/</c>）→ 该文件里 <c>{Binding}</c> 的求值对象类型。
     ///
     /// DataContext 不在 XAML 里声明（代码里 <c>DataContext = ...</c> 赋的），所以只能写死。
     /// 少了登记项时下面的 <see cref="UnregisteredViewsMustNotBindCommands"/> 会失败，逼作者补表，
-    /// 不然一个新增的 ViewModel 窗口就能悄悄漏过本用例。</summary>
+    /// 不然一个新增的 ViewModel 窗口就能悄悄漏过本用例。
+    /// Views/Pages 下的页面同样要登记：壳把 DataContext 传下去，页面里的 {Binding} 也落在 MainViewModel 上。</summary>
     private static readonly Dictionary<string, Type> BoundTarget = new(StringComparer.OrdinalIgnoreCase)
     {
         ["Views/MainWindow.xaml"] = typeof(MainViewModel),
+        ["Views/Pages/GroupGenerationPage.xaml"] = typeof(MainViewModel),
+        ["Views/Pages/OutputConflictPage.xaml"] = typeof(MainViewModel),
+        ["Views/Pages/RulePresetsPage.xaml"] = typeof(MainViewModel),
+        ["Views/Pages/SettingsPage.xaml"] = typeof(MainViewModel),
         // 这两个窗口的 DataContext 就是自己（DataContext = this），绑定路径即窗口自身的公开属性
         ["Views/InputWindow.xaml"] = typeof(InputWindow),
         ["Views/NotifyDialog.xaml"] = typeof(NotifyDialog),
@@ -72,22 +77,29 @@ public class XamlCommandBindingTests
             }
         }
 
-        // 兜底：命令绑定是真实存在的一批路径，别因为解析器写崩而「零断言通过」
+        // 兜底：命令绑定是真实存在的一批路径，别因为解析器写崩而「零断言通过」。
+        // 逐条钉住"哪个视图上的哪个命令"，这样某个命令随布局搬家时（比如探测按钮从主界面搬进设置页）
+        // 是这条断言失败提醒作者改指向，而不是那批绑定悄悄失去对照。
         Assert.Contains("Views/MainWindow.xaml: SaveCommand", checkedPaths);
-        Assert.Contains("Views/MainWindow.xaml: DetectBodySlideCommand", checkedPaths);
         Assert.Contains("Views/MainWindow.xaml: UndoCommand", checkedPaths);
+        Assert.Contains("Views/Pages/SettingsPage.xaml: DetectBodySlideCommand", checkedPaths);
+        Assert.Contains("Views/Pages/GroupGenerationPage.xaml: ApplyCheckedToCurrentGroupCommand", checkedPaths);
     }
 
     /// <summary>没登记 DataContext 类型的视图不该出现命令绑定：出现就说明它是某个 ViewModel 的宿主，
-    /// 必须登记进 <see cref="BoundTarget"/>，否则它的绑定路径没人对照（本用例的漏洞）。</summary>
+    /// 必须登记进 <see cref="BoundTarget"/>，否则它的绑定路径没人对照（本用例的漏洞）。
+    ///
+    /// 必须递归扫：Views/Pages 下的页面同样绑命令，非递归 glob 会让它们**静默**逃过本用例——
+    /// 不报错比报错危险。</summary>
     [Fact]
     public void UnregisteredViewsMustNotBindCommands()
     {
         var offenders = new List<string>();
+        var viewsDir = Path.Combine(WpfProjectDir(), "Views");
 
-        foreach (var file in Directory.EnumerateFiles(Path.Combine(WpfProjectDir(), "Views"), "*.xaml"))
+        foreach (var file in Directory.EnumerateFiles(viewsDir, "*.xaml", SearchOption.AllDirectories))
         {
-            var relative = "Views/" + Path.GetFileName(file);
+            var relative = "Views/" + Path.GetRelativePath(viewsDir, file).Replace(Path.DirectorySeparatorChar, '/');
             if (BoundTarget.ContainsKey(relative))
                 continue;
 

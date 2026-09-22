@@ -1,15 +1,14 @@
 using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Controls.Primitives;
 using System.Windows.Input;
-using System.Windows.Threading;
 using BSGroupGenerator.Wpf.Services;
 using BSGroupGenerator.Wpf.ViewModels;
 using Microsoft.Win32;
 
 namespace BSGroupGenerator.Wpf.Views;
 
+/// <summary>壳：菜单 + 标签条 + 状态栏 + 扫描遮罩。三页的内容与布局各自在 Views/Pages 下。</summary>
 public partial class MainWindow : Window
 {
     private readonly MainViewModel _vm;
@@ -32,42 +31,40 @@ public partial class MainWindow : Window
         _vm.SuppressibleConfirmHandler = (title, message, suppressKey) =>
             Notify.Show(this, title, message, NotifyKind.Question, NotifyButtons.OkCancel,
                 settings: _vm.Settings, suppressKey: suppressKey) == NotifyResult.Primary;
+        // 目录/文件框也在这一层：设置页里的「添加 MO2 目录」「浏览…」复用它们，
+        // owner 才是真正有窗口身份的壳。
         _vm.FolderPicker = description => PickFolder(description);
         _vm.FilePicker = _ => PickImportFile();
+        // 规则归组编辑器全窗口只开一个，却有两个入口（分组页的「规则归组」+「规则预设」窗口），
+        // 所以它归壳管，页面走 VM 上这个注入委托——页面不该认识 MainWindow 这个类型。
+        _vm.RuleEditorOpener = OpenRuleEditor;
         _vm.NewModsDetected += request => Dispatcher.Invoke(() => ShowNewMods(request));
-        _vm.ConflictsRequested += request => Dispatcher.Invoke(() => ShowConflicts(request));
         _vm.SaveCompleted += (dir, bsAppDir) => Dispatcher.Invoke(() => ShowSaveSuccess(dir, bsAppDir));
         // 更新提示不在这里订阅：CheckForUpdatesAsync 内部用 SuppressibleConfirmHandler 弹确认框并打开下载页
-
-        // 日志列表是虚拟化的 ListBox，新行只在展开时才需要滚到底
-        _vm.LogFlushed += () =>
-        {
-            if (_vm.IsLogExpanded && _vm.LogLines.Count > 0)
-                LogList.ScrollIntoView(_vm.LogLines[^1]);
-        };
+        // 日志区的 LogFlushed 订阅在分组页上：LogList 是那一页的控件。
 
         HookDragDrop();
-        HookTreeRowSelection();
-        SyncThemeChecks();
-        SyncLangChecks();
         Loaded += (_, _) => _ = _vm.CheckForUpdatesAsync(reportUpToDate: false);
         PreviewKeyDown += (_, e) =>
         {
             if (e.Key == Key.F1)
             {
                 e.Handled = true;
-                ShowHelp();
+                ShowManual();
             }
         };
     }
 
-    /// <summary>右键点在某一行上时把那一行也选中——右键菜单就是在这一行上弹的，
-    /// 用户预期它同时被选中。实现放在视图侧，理由见 TreeSelection。</summary>
-    private void HookTreeRowSelection() =>
-        OutfitTree.ContextMenuOpening += (_, e) =>
-            TreeSelection.SelectRow(e.OriginalSource as DependencyObject, OutfitTree);
+    /// <summary>F1 = 跳到设置页并把使用说明摊开。以前是弹 HelpWindow；说明内嵌进设置页之后，
+    /// 只切页不展开的话，按 F1 看到的是又一个箭头，等于没响应。</summary>
+    private void ShowManual()
+    {
+        _vm.SelectedTab = MainViewModel.TabSettings;
+        _vm.IsManualExpanded = true;
+    }
 
-    /// <summary>把分组 XML 拖到窗口任意位置即可导入（等价于「导入现有组文件…」）。</summary>
+    /// <summary>把分组 XML 拖到窗口任意位置即可导入（等价于「导入现有组文件…」）。
+    /// 挂在壳上而不是页上：拖到哪个页都该能导入。</summary>
     private void HookDragDrop()
     {
         AllowDrop = true;
@@ -82,43 +79,6 @@ public partial class MainWindow : Window
             if (files is not null && files.Length > 0)
                 _vm.ImportFiles(files.Where(f => f.EndsWith(".xml", StringComparison.OrdinalIgnoreCase)));
         };
-    }
-
-    // ── 界面主题（菜单栏顶层「界面主题」）──────────────────────────────────
-    private void SyncThemeChecks()
-    {
-        MiThemeBoutique.IsChecked = ThemeManager.Current == ThemeManager.Boutique;
-        MiThemeLight.IsChecked = ThemeManager.Current == ThemeManager.Light;
-    }
-
-    private void Theme_Click(object sender, RoutedEventArgs e)
-    {
-        if (sender is not MenuItem { Tag: string theme } || theme == ThemeManager.Current)
-            return;
-        ThemeManager.Apply(theme);
-        _vm.Settings.UiTheme = theme;
-        _vm.Settings.Save();
-        SyncThemeChecks();
-    }
-
-    // ── 界面语言（菜单栏顶层「语言」）────────────────────────────────────
-    private void SyncLangChecks()
-    {
-        MiLangZh.IsChecked = L10n.Current == L10n.Zh;
-        MiLangEn.IsChecked = L10n.Current == L10n.En;
-        MiLangRu.IsChecked = L10n.Current == L10n.Ru;
-        MiLangFr.IsChecked = L10n.Current == L10n.Fr;
-    }
-
-    private void Lang_Click(object sender, RoutedEventArgs e)
-    {
-        if (sender is not MenuItem { Tag: string lang } || lang == L10n.Current)
-            return;
-        L10n.Apply(lang);
-        _vm.Settings.UiLanguage = lang;
-        _vm.Settings.Save();
-        SyncLangChecks();
-        _vm.OnLanguageChanged();
     }
 
     private string? PickFolder(string description)
@@ -153,118 +113,11 @@ public partial class MainWindow : Window
         window.ShowDialog();
     }
 
-    private void ShowConflicts(ConflictRequest request) =>
-        new OutputConflictWindow(request) { Owner = this }.ShowDialog();
-
     private void Conflicts_Click(object sender, MouseButtonEventArgs e) => _vm.OpenConflictsCommand.Execute(null);
 
-    private void ShowHelp() => new HelpWindow { Owner = this }.ShowDialog();
-
-    private void Exit_Click(object sender, RoutedEventArgs e) => Close();
-
-    private void Diagnostics_Click(object sender, RoutedEventArgs e) =>
-        new DiagnosticsWindow(_vm.BuildDiagnostics()) { Owner = this }.ShowDialog();
-
-    private void Help_Click(object sender, RoutedEventArgs e) => ShowHelp();
-
-    private void About_Click(object sender, RoutedEventArgs e) =>
-        new AboutWindow { Owner = this }.ShowDialog();
-
-    private void CheckUpdate_Click(object sender, RoutedEventArgs e) =>
-        _ = _vm.CheckForUpdatesAsync(reportUpToDate: true);
-
-    private void AddMo2_Click(object sender, RoutedEventArgs e)
-    {
-        var dir = PickFolder(L10n.Tr("L.Pick_Mo2Dir"));
-        if (dir is not null)
-            _vm.AddMo2Directory(dir);
-    }
-
-    private void BrowseBodySlide_Click(object sender, RoutedEventArgs e)
-    {
-        var dir = PickFolder(L10n.Tr("L.Pick_BodySlideDir"));
-        if (dir is not null)
-            _vm.UseBodySlideDirectory(dir);
-    }
-
-    private void Import_Click(object sender, RoutedEventArgs e)
-    {
-        var file = PickImportFile();
-        if (file is not null)
-            _vm.ImportFiles([file]);
-    }
-
-    // ── 组管理（右侧「⋯」与组列表右键菜单共用同一份菜单）────────────────
-    private void GroupMenu_Click(object sender, RoutedEventArgs e)
-    {
-        if (sender is not Button button || GroupList.ContextMenu is not { } menu)
-            return;
-        menu.PlacementTarget = button;
-        menu.Placement = PlacementMode.Bottom;
-        menu.IsOpen = true;
-    }
-
-    private void NewGroup_Click(object sender, RoutedEventArgs e)
-    {
-        var name = InputWindow.Show(this, L10n.Tr("L.Title_NewGroup"), L10n.Tr("L.Prompt_GroupName"));
-        if (name is not null)
-            _vm.NewGroupCommand.Execute(name);
-    }
-
-    private void RenameGroup_Click(object sender, RoutedEventArgs e)
-    {
-        var current = _vm.Store.Current?.Name;
-        if (current is null)
-            return;
-        var name = InputWindow.Show(this, L10n.Tr("L.Title_RenameGroup"), L10n.Tr("L.Prompt_NewGroupName"), current);
-        if (name is not null)
-            _vm.RenameGroupCommand.Execute(name);
-    }
-
-    private void DeleteGroup_Click(object sender, RoutedEventArgs e)
-    {
-        var group = _vm.Store.Current;
-        if (group is null)
-            return;
-        if (Notify.Confirm(this, L10n.Tr("L.Title_Confirm"),
-                L10n.TrF("L.Msg_ConfirmDeleteGroup", group.Name, group.Members.Count), destructive: true))
-            _vm.DeleteGroupCommand.Execute(null);
-    }
-
-    private void ViewMembers_Click(object sender, RoutedEventArgs e)
-    {
-        var group = _vm.Store.Current;
-        if (group is null)
-        {
-            Notify.Info(this, L10n.Tr("L.Title_Tip"), L10n.Tr("L.Msg_SelectGroupFirst"));
-            return;
-        }
-        new GroupMembersWindow(group, _vm.GetTreeDisplayStructure(),
-            beforeChange: () => _vm.Store.Snapshot(),
-            onChanged: () =>
-            {
-                _vm.Store.MarkDirtyFromUi();
-                _vm.RefreshGroupsList();
-                _vm.RefreshTree();
-            })
-        { Owner = this }.ShowDialog();
-    }
-
-    private void Rules_Click(object sender, RoutedEventArgs e) => OpenRuleEditor();
-
-    private void RulePresets_Click(object sender, RoutedEventArgs e)
-    {
-        var dialog = new RulePresetsWindow(_vm.Settings.RulePresets, OpenRuleEditor) { Owner = this };
-        dialog.ShowDialog();
-        if (dialog.Changed)
-        {
-            _vm.Settings.Save();
-            _vm.Log(L10n.TrF("L.Log_PresetsUpdated", _vm.Settings.RulePresets.Count));
-        }
-    }
-
-    /// <summary>打开规则归组编辑器（非模态；规则预设窗口的「新建预设」「编辑所选」也走这里）。
-    /// 返回编辑器是否已就绪——规则预设窗口据此决定要不要关掉自己，没就绪就得留着，免得点了没反应。
+    /// <summary>打开规则归组编辑器（非模态；规则预设页的「新建预设」「编辑所选」经
+    /// <see cref="MainViewModel.RuleEditorOpener"/> 走这里）。
+    /// 返回编辑器是否已就绪——调用方据此决定要不要留着自己是合理的。
     /// <paramref name="presetToEdit"/> 非空时把该预设载入各控件，同名保存即覆盖。</summary>
     private bool OpenRuleEditor(Core.RulePreset? presetToEdit = null)
     {
@@ -312,10 +165,7 @@ public partial class MainWindow : Window
         return true;
     }
 
-    private void Groups_DoubleClick(object sender, System.Windows.Input.MouseButtonEventArgs e) =>
-        ViewMembers_Click(sender, e);
-
-    private void Output_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    private void Output_Click(object sender, MouseButtonEventArgs e)
     {
         var dir = _vm.ResolveOutputDirectory();
         if (dir is null)
@@ -323,29 +173,6 @@ public partial class MainWindow : Window
         else
             MainViewModel.OpenDirectory(dir);
     }
-
-    // ── 日志区（默认折叠成一行摘要）────────────────────────────────────
-    private void LogToggle_Click(object sender, RoutedEventArgs e)
-    {
-        _vm.IsLogExpanded = !_vm.IsLogExpanded;
-        if (!_vm.IsLogExpanded || _vm.LogLines.Count == 0)
-            return;
-        // 等展开后的列表完成布局再滚，否则虚拟化面板还没有可视项
-        Dispatcher.BeginInvoke(DispatcherPriority.Loaded,
-            new Action(() => LogList.ScrollIntoView(_vm.LogLines[^1])));
-    }
-
-    private void LogCopy_Click(object sender, RoutedEventArgs e)
-    {
-        Clipboard.SetText(_vm.LogTextAll);
-        Notify.Info(this, L10n.Tr("L.Title_Tip"), L10n.Tr("L.Msg_CopiedToClipboard"));
-    }
-
-    private void LogClear_Click(object sender, RoutedEventArgs e) => _vm.ClearLog();
-
-    /// <summary>拖拽条在日志上方，向下拖 = 让日志变矮。</summary>
-    private void LogResizeThumb_DragDelta(object sender, DragDeltaEventArgs e) =>
-        _vm.LogPanelHeight = Math.Clamp(_vm.LogPanelHeight - e.VerticalChange, 80, 600);
 
     protected override void OnClosing(CancelEventArgs e)
     {

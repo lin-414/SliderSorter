@@ -6,49 +6,44 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 using BSGroupGenerator.Core;
-using BSGroupGenerator.Wpf.Views;
+using BSGroupGenerator.Wpf.ViewModels;
+using BSGroupGenerator.Wpf.Views.Pages;
 using Xunit;
 
 namespace BSGroupGenerator.Wpf.Tests;
 
-/// <summary>规则预设窗口：列表行的文本必须真的渲染出来。
+/// <summary>规则预设页：列表行的文本必须真的渲染出来，且「编辑所选」交出去的是选中的那条。
 ///
-/// 起因是一次真实故障：<c>_rows</c> 用元组 <c>(RulePreset Preset, string Title, string Detail)</c> 承载行数据，
+/// 前者起因是一次真实故障：<c>_rows</c> 用元组 <c>(RulePreset Preset, string Title, string Detail)</c> 承载行数据，
 /// XAML 的 <c>{Binding Title}</c> / <c>{Binding Detail}</c> 于是全部解析失败。元组的元素名只存在于编译期，
 /// 运行时是 <c>ValueTuple</c> 的 <c>Item1/Item2/Item3</c>；WPF 绑定按反射找 <c>Title</c> 找不到就静默给空串
 /// ——编译、既有测试全绿，只表现为"预设列表一片空白"，用户以为预设压根没存上。
-/// 因此这里既对照属性（结构），也真的求值一遍绑定（运行期），后者才是元组能蒙混过关的那一层。</summary>
+/// 因此这里既对照属性（结构），也真的求值一遍绑定（运行期），后者才是元组能蒙混过关的那一层。
+/// <para>
+/// 挂 <see cref="WpfStaCollection"/> 串行：要构造真实控件的用例共用一条常驻 STA 线程（见 <see cref="WpfHost"/>）。
+/// </para></summary>
 [Collection(WpfStaCollection.Name)]
-public class RulePresetsWindowTests
+public class RulePresetsPageTests
 {
+    private static RulePreset Preset(string name, string group) => new()
+    {
+        Name = name,
+        GroupName = group,
+        OutfitInclude = "3BA",
+    };
+
     [Fact]
     public void PresetRowsBindToRealProperties()
     {
         Exception? captured = null;
         var failures = new List<string>();
 
-        // WPF 窗口只能在 STA 线程上构造（见 HelpWindowTests 对同一套样板代码的说明）。
         var thread = new Thread(() =>
         {
             try
             {
-                var app = Application.Current ?? new Application();
-                if (app.Resources.MergedDictionaries.Count == 0)
-                {
-                    // pack URI 必须带程序集名，否则按**入口程序集**（测试宿主）解析而找不到
-                    app.Resources.MergedDictionaries.Add(new ResourceDictionary
-                    {
-                        Source = new Uri("pack://application:,,,/BSGroupGenerator;component/Themes/Controls.xaml"),
-                    });
-                }
-
-                var presets = new List<RulePreset>
-                {
-                    new() { Name = "P1", GroupName = "G1", OutfitInclude = "3BA" },
-                };
-                var window = new RulePresetsWindow(presets, _ => true);
-                var list = (ListBox)window.FindName("List")!;
-                var item = Assert.Single(list.ItemsSource!.Cast<object>());
+                var rows = RulePresetRow.Build([Preset("P1", "G1")]);
+                var item = Assert.Single(rows);
 
                 var paths = ListTemplateBindingPaths();
                 // 兜底：解析器写崩时不能"零路径通过"
@@ -106,7 +101,7 @@ public class RulePresetsWindowTests
     [Fact]
     public void PresetListExposesEditEntryPoints()
     {
-        var xaml = File.ReadAllText(Path.Combine(WpfProjectDir(), "Views", "RulePresetsWindow.xaml"));
+        var xaml = File.ReadAllText(Path.Combine(WpfProjectDir(), "Views", "Pages", "RulePresetsPage.xaml"));
 
         var editButtons = Regex.Matches(xaml, "<Button\\b[^>]*>", RegexOptions.Singleline)
             .Select(m => m.Value)
@@ -130,15 +125,6 @@ public class RulePresetsWindowTests
         {
             try
             {
-                var app = Application.Current ?? new Application();
-                if (app.Resources.MergedDictionaries.Count == 0)
-                {
-                    app.Resources.MergedDictionaries.Add(new ResourceDictionary
-                    {
-                        Source = new Uri("pack://application:,,,/BSGroupGenerator;component/Themes/Controls.xaml"),
-                    });
-                }
-
                 var groups = new List<SliderGroup> { new("G1"), new("G2") };
                 var preset = new RulePreset
                 {
@@ -151,7 +137,7 @@ public class RulePresetsWindowTests
                     UnassignedOnly = false,
                 };
 
-                var window = new RuleGroupWindow(groups, "G1", [],
+                var window = new BSGroupGenerator.Wpf.Views.RuleGroupWindow(groups, "G1", [],
                     (_, _, _, _) => [],
                     () => { }, onSavePreset: _ => { }, presetToEdit: preset);
 
@@ -190,68 +176,65 @@ public class RulePresetsWindowTests
         Assert.Empty(failures);
     }
 
-    /// <summary>「编辑所选…」必须把**选中的那条**交给宿主：传错条目、或压根没传，都会让编辑变成"改了别的预设"。
-    /// 按钮与双击行共用一个处理函数，这里直接调它（真实点击由宿主窗口在真机上验）。
+    /// <summary>「编辑所选…」必须把**选中的那条**交给编辑器：传错条目、或压根没传，都会让编辑变成"改了别的预设"。
+    /// 按钮与双击行走的是同一个 <c>SelectedPreset()</c>，这里走按钮那条支路。
     ///
     /// 只测"已选中"这一支：未选中那一支要弹提示框，而测试线程里没有消息泵，ShowDialog 会一直等下去
-    /// （本用例第一版就是这么把测试挂住的）。"编辑器就绪才关掉预设窗口"也只在真机上验——
-    /// 在测试里关窗会牵动 Application 的关闭策略（那是应用级状态，跨线程碰它会直接把测试宿主搞崩）。</summary>
+    /// （本用例第一版就是这么把测试挂住的）。</summary>
     [Fact]
     public void EditSelectedHandsTheSelectedPresetToTheEditor()
     {
-        Exception? captured = null;
+        // 页面读的是 AppSettings.Shared 里的预设清单，所以整个用例在隔离目录下跑，
+        // 结束时把清单清空，不把这两条测试预设留给同一进程里的其他用例。
+        using var scope = IsolatedUserState.Enter();
+        var first = Preset("A", "G1");
+        var second = Preset("B", "G2");
         var handed = new List<RulePreset?>();
-        var failures = new List<string>();
+        MainViewModel? vm = null;
 
-        var thread = new Thread(() =>
+        // VM 与页面都在常驻 UI 线程上造（工厂在 WpfHost 的线程里求值）：
+        // 预设先塞进 VM 再建页面，页面构造期的那次 Reload 就能把两行摆好。
+        try
         {
-            try
+            var outcome = WpfHost.WithWindow(() =>
             {
-                var app = Application.Current ?? new Application();
-                if (app.Resources.MergedDictionaries.Count == 0)
-                {
-                    app.Resources.MergedDictionaries.Add(new ResourceDictionary
-                    {
-                        Source = new Uri("pack://application:,,,/BSGroupGenerator;component/Themes/Controls.xaml"),
-                    });
-                }
-
-                var first = new RulePreset { Name = "A", GroupName = "G1" };
-                var second = new RulePreset { Name = "B", GroupName = "G2" };
-                // 编辑器"没就绪"（返回 false）：这条支路不关窗，测试里也就不碰 Window.Close
-                var window = new RulePresetsWindow([first, second], preset =>
+                vm = new MainViewModel();
+                vm.Settings.RulePresets.AddRange([first, second]);
+                // 返回 false＝"编辑器没就绪"：这条支路不该有任何副作用，正好用来做纯记录
+                vm.RuleEditorOpener = preset =>
                 {
                     handed.Add(preset);
                     return false;
-                });
-                var list = (ListBox)window.FindName("List")!;
+                };
+                return new RulePresetsPage { DataContext = vm };
+            }, host =>
+            {
+                var page = (RulePresetsPage)host;
+                var list = (ListBox)page.FindName("List")!;
+                Assert.Equal(2, list.Items.Count);
                 list.SelectedIndex = 1;
 
-                typeof(RulePresetsWindow).GetMethod("Edit_Click",
+                typeof(RulePresetsPage).GetMethod("Edit_Click",
                     BindingFlags.NonPublic | BindingFlags.Instance)!
-                    .Invoke(window, [null!, new RoutedEventArgs()]);
+                    .Invoke(page, [null!, new RoutedEventArgs()]);
+                return handed.Count;
+            });
 
-                if (handed.Count != 1 || !ReferenceEquals(handed[0], second))
-                    failures.Add($"编辑所选送出的是 {handed.LastOrDefault()?.Name ?? "<无>"}，预期 B");
-            }
-            catch (Exception ex)
-            {
-                captured = ex;
-            }
-        });
-        thread.SetApartmentState(ApartmentState.STA);
-        thread.Start();
-        thread.Join(TimeSpan.FromSeconds(30));
-
-        Assert.Null(captured);
-        Assert.Empty(failures);
+            Assert.Equal(1, outcome);
+            Assert.Same(second, handed[0]);
+        }
+        finally
+        {
+            // 预设清单挂在进程级共享的 AppSettings 上，不清就会留给同一进程里的下一个用例
+            vm?.Settings.RulePresets.Clear();
+        }
     }
 
-    /// <summary>列表模板里 <c>{Binding}</c> 的路径（本文件的模板只有 Title/Detail 两个）。
+    /// <summary>列表模板里 <c>{Binding}</c> 的路径（本页的模板只有 Title/Detail 两个）。
     /// 刻意从 XAML 里读而不是硬写：路径改名后本用例仍会失败。</summary>
     private static List<string> ListTemplateBindingPaths()
     {
-        var xaml = File.ReadAllText(Path.Combine(WpfProjectDir(), "Views", "RulePresetsWindow.xaml"));
+        var xaml = File.ReadAllText(Path.Combine(WpfProjectDir(), "Views", "Pages", "RulePresetsPage.xaml"));
         return Regex.Matches(xaml, "\\{Binding\\s+([A-Za-z_][A-Za-z0-9_]*)")
             .Select(m => m.Groups[1].Value)
             .ToList();

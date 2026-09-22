@@ -19,13 +19,16 @@ namespace LayoutProbe;
 ///   dotnet run --project tools/layout-probe -c Release -- &lt;仓库根目录&gt;
 /// 退出码 0 = 无溢出/裁切，1 = 有命中（可作为门禁）。
 ///
-/// 做法：加载**真实**资源字典与**真实**窗口 XAML，离屏 Measure/Arrange 后读 ActualWidth，
+/// 做法：加载**真实**资源字典与**真实**窗口/页面 XAML，离屏 Measure/Arrange 后读 ActualWidth，
 /// 按三种失效模式判定：
 ///   ① 自己被压窄     ActualWidth &lt; 文本所需宽（不可折行、无省略号）
 ///   ② 溢出父容器     ActualWidth &gt; 父容器可用宽
 ///   ③ 溢出 Grid 单元格  ActualWidth &gt; 所在列宽（固定像素列不约束子元素）
 /// 刻意用真实控件而不是把逻辑抄进探针：容器尺寸、内边距、布局舍入都算在内，
 /// 抄一遍逻辑就会漏掉控件自身的成本。
+///
+/// 扫描递归进 Views/Pages：页面根不是 Window，会被套进一个只当继承宿主的临时窗口，
+/// 因为 ViewModels/隐式 Window 样式提供的字体不量进去，测出的宽度和真实渲染对不上。
 /// </summary>
 internal static class Program
 {
@@ -47,6 +50,7 @@ internal static class Program
     private static readonly string[] EventAttrs =
     [
         "Click", "MouseDoubleClick", "MouseLeftButtonUp", "MouseLeftButtonDown", "MouseRightButtonUp",
+        "MouseRightButtonDown", "MouseRightClick",
         "MouseWheel", "MouseDown", "MouseUp", "MouseMove", "DragDelta", "DragStarted", "DragCompleted",
         "DragOver", "DragEnter", "DragLeave", "Drop", "Checked", "Unchecked", "Indeterminate",
         "SelectionChanged", "TextChanged", "KeyDown", "KeyUp", "PreviewKeyDown", "GotFocus",
@@ -88,7 +92,7 @@ internal static class Program
                 LoadResources(app, lang, theme);
                 var winStyle = app.TryFindResource(typeof(Window)) as Style;
 
-                foreach (var file in Directory.GetFiles(viewsDir, "*.xaml").OrderBy(f => f))
+                foreach (var file in Directory.EnumerateFiles(viewsDir, "*.xaml", SearchOption.AllDirectories).OrderBy(f => f))
                 {
                     var name = Path.GetFileNameWithoutExtension(file);
                     var text = File.ReadAllText(file, Encoding.UTF8);
@@ -112,7 +116,7 @@ internal static class Program
             }
         }
 
-        Console.WriteLine($"共检查 {configs} 个「语言×主题×窗口×尺寸」组合。");
+        Console.WriteLine($"共检查 {configs} 个「语言×主题×视图×尺寸」组合（视图含 Views 下递归到的窗口与页面）。");
         if (findings.Count == 0)
         {
             Console.WriteLine("结果：0 处溢出/裁切。");
@@ -153,13 +157,18 @@ internal static class Program
         (ResourceDictionary)Application.LoadComponent(
             new Uri($"/{AppAssembly};component/" + relative, UriKind.Relative));
 
-    private static List<(double W, double H)> SizesFor(string window, string xaml)
+    private static List<(double W, double H)> SizesFor(string view, string xaml)
     {
         // 主窗口是评审里出问题的那一个：从 MinWidth×MinHeight 起三种尺寸都要过。
-        // 1000x720 = 当前 MinWidth/MinHeight；改动这两个值时必须同步改这里，
+        // 1000x720 = MainWindow 的 MinWidth/MinHeight；改这两个值时必须同步改 ShellSizes，
         // 否则「最小尺寸」这一档就失去了意义。
-        if (window == "MainWindow")
-            return [(1000, 720), (1240, 820), (1440, 900)];
+        if (view == "MainWindow")
+            return [.. ShellSizes];
+
+        // 页面活在壳的标签页里，可用宽度与壳一致（切标签不改变内容宽），所以照抄壳的三档；
+        // 壳层竖向占用（菜单/标签头/状态栏）在 ProbeOne 里扣，那里才分得清窗口与页面。
+        if (view.EndsWith("Page", StringComparison.Ordinal))
+            return [.. ShellSizes];
 
         var w = ParseAttr(xaml, "Width");
         var h = ParseAttr(xaml, "Height");
@@ -167,6 +176,13 @@ internal static class Program
             return [(w ?? 520, 0)]; // 0 = 高度按内容，ProbeOne 里再定
         return [(w ?? 600, h ?? 600)];
     }
+
+    private static readonly (double W, double H)[] ShellSizes = [(1000, 720), (1240, 820), (1440, 900)];
+
+    /// <summary>壳层竖向占用：标签头 + 状态栏 ≈ 64 DIP（实测量 32/30 加余量；菜单栏取消前是 82）。
+    /// 壳改这两处任何一样式时必须同步改这里，否则页面量到的可用高与真实值脱节——
+    /// 扣多了会漏报（真实排版比测的更挤），扣少了会误报。</summary>
+    private const double PageChromeAllowance = 64;
 
     private static double? ParseAttr(string xaml, string attr)
     {
@@ -190,27 +206,41 @@ internal static class Program
 
     private static List<string> ProbeOne(Style? winStyle, string xaml, double winW, double winH)
     {
-        var win = (Window)System.Windows.Markup.XamlReader.Parse(StripForParse(xaml));
-        // 窗口样式必须由 XAML 自己声明（根元素 Style="{StaticResource AppWindow}"）：隐式样式按元素
-        // **确切类型**匹配，对 x:Class 生成的派生窗口不生效，漏声明就退回系统默认的白底黑字。
-        // 这里只做兜底并留痕——以前无条件强挂样式，恰好把「XAML 漏声明」这类问题掩盖住了。
-        var declaredStyle = win.Style is not null;
-        if (winStyle is not null)
-            win.Style = winStyle;
-        if (winStyle is not null && !declaredStyle)
-            return ["根 <Window> 未声明 Style=\"{StaticResource AppWindow}\"，字体/前景/渲染选项在真实运行时不会生效"];
+        var parsed = System.Windows.Markup.XamlReader.Parse(StripForParse(xaml));
+        Window? host = null;
+        FrameworkElement root;
+        double clientW, clientH;
 
-        if (win.Content is not FrameworkElement root)
-            return [$"根内容不是 FrameworkElement（{win.Content?.GetType().Name}）"];
+        if (parsed is Window win)
+        {
+            // 窗口样式必须由 XAML 自己声明（根元素 Style="{StaticResource AppWindow}"）：隐式样式按元素
+            // **确切类型**匹配，对 x:Class 生成的派生窗口不生效，漏声明就退回系统默认的白底黑字。
+            // 这里只做兜底并留痕——以前无条件强挂样式，恰好把「XAML 漏声明」这类问题掩盖住了。
+            var declaredStyle = win.Style is not null;
+            if (winStyle is not null)
+                win.Style = winStyle;
+            if (winStyle is not null && !declaredStyle)
+                return ["根 <Window> 未声明 Style=\"{StaticResource AppWindow}\"，字体/前景/渲染选项在真实运行时不会生效"];
 
-        var resizable = win.ResizeMode != ResizeMode.NoResize;
-        var frame = resizable
-            ? GetSystemMetrics(SM_CXSIZEFRAME) + GetSystemMetrics(SM_CXPADDEDBORDER)
-            : 3;
-        var clientW = Math.Max(120, winW - 2 * frame);
-        var clientH = winH > 0
-            ? Math.Max(120, winH - 2 * frame - GetSystemMetrics(SM_CYCAPTION))
-            : double.PositiveInfinity;
+            if (win.Content is not FrameworkElement content)
+                return [$"根内容不是 FrameworkElement（{win.Content?.GetType().Name}）"];
+
+            root = content;
+            (clientW, clientH) = ClientSize(winW, winH, win.ResizeMode != ResizeMode.NoResize);
+        }
+        else
+        {
+            if (parsed is not FrameworkElement page)
+                return [$"根元素既不是 Window 也不是 FrameworkElement（{parsed?.GetType().Name}）"];
+
+            // 页面（Views/Pages/*.xaml）不自己开窗，套进一个真 Window 才拿得到 AppWindow 样式
+            // 往下继承的字体/字号/文字色——直接量裸 UserControl 会按系统默认字体排版，宽度与真实渲染不符。
+            // 窗口不 Show，只当继承宿主用；可用高还要再扣掉壳层的标签头与状态栏。
+            host = new Window { Style = winStyle, Content = page };
+            root = page;
+            (clientW, clientH) = ClientSize(winW,
+                winH > 0 ? winH - PageChromeAllowance : winH, resizable: true);
+        }
 
         root.Width = clientW;
         if (!double.IsInfinity(clientH))
@@ -232,7 +262,22 @@ internal static class Program
 
         var hits = new List<string>();
         Walk(root, root, hits);
+        GC.KeepAlive(host); // 页面靠它提供继承上下文，量完之前不能被回收
         return hits;
+    }
+
+    /// <summary>整窗尺寸 → 客户区尺寸。窗口边框宽度与标题栏高度按当前机器的系统度量算，
+    /// 不可调大小的窗口（ResizeMode.NoResize）边框薄得多，不能一律按可拖拽算。</summary>
+    private static (double W, double H) ClientSize(double winW, double winH, bool resizable)
+    {
+        var frame = resizable
+            ? GetSystemMetrics(SM_CXSIZEFRAME) + GetSystemMetrics(SM_CXPADDEDBORDER)
+            : 3;
+        var clientW = Math.Max(120, winW - 2 * frame);
+        var clientH = winH > 0
+            ? Math.Max(120, winH - 2 * frame - GetSystemMetrics(SM_CYCAPTION))
+            : double.PositiveInfinity;
+        return (clientW, clientH);
     }
 
     private static void Walk(DependencyObject element, FrameworkElement root, List<string> hits)

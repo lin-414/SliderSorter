@@ -5,25 +5,27 @@
     <sys:String x:Key="L.App_Title" xml:space="preserve">BS Group Generator — BodySlide 分组生成工具</sys:String>
 
     <!-- 菜单 -->
-    <sys:String x:Key="L.Menu_File">文件(_F)</sys:String>
-    <sys:String x:Key="L.Menu_Save">保存分组文件(_S)</sys:String>
     <sys:String x:Key="L.Menu_ImportGroups">导入组文件…(_I)</sys:String>
-    <sys:String x:Key="L.Menu_Edit">编辑(_E)</sys:String>
     <sys:String x:Key="L.Menu_Undo">撤销(_U)</sys:String>
-    <sys:String x:Key="L.Menu_Tools">工具(_T)</sys:String>
-    <sys:String x:Key="L.Menu_Diagnostics">诊断信息(_D)</sys:String>
-    <sys:String x:Key="L.Menu_CleanupStale">清理失效服装(_C)…</sys:String>
-    <sys:String x:Key="L.Menu_RulePresets">规则预设(_P)…</sys:String>
-    <sys:String x:Key="L.Menu_OutputConflicts" xml:space="preserve">输出冲突与选择(_O)…</sys:String>
-    <sys:String x:Key="L.Menu_Theme">界面主题(_M)</sys:String>
     <sys:String x:Key="L.Theme_Dark">暗色</sys:String>
     <sys:String x:Key="L.Theme_Light">亮色</sys:String>
-    <sys:String x:Key="L.Menu_Language">语言(_L)</sys:String>
-    <sys:String x:Key="L.Menu_CheckUpdate">检查更新(_U)</sys:String>
-    <sys:String x:Key="L.Menu_Help">帮助(_H)</sys:String>
-    <sys:String x:Key="L.Menu_Manual">使用说明(_M)</sys:String>
-    <sys:String x:Key="L.Menu_About">关于(_A)</sys:String>
-    <sys:String x:Key="L.Menu_Exit">退出(_X)</sys:String>
+
+    <!-- 标签页与设置页。刻意不用 L.Menu_ 前缀：门禁要求每个 L.Menu_* 都带 (_X) 访问键，
+         而那套约定用在标签页标题/小节标题上会渲染出字面下划线。 -->
+    <sys:String x:Key="L.Tab_Generate">分组生成</sys:String>
+    <sys:String x:Key="L.Tab_Conflicts" xml:space="preserve">输出冲突与选择</sys:String>
+    <sys:String x:Key="L.Tab_Settings">设置</sys:String>
+    <sys:String x:Key="L.Settings_Workspace">工作环境</sys:String>
+    <sys:String x:Key="L.Settings_Output">输出设置</sys:String>
+    <sys:String x:Key="L.Settings_CleanupStale" xml:space="preserve">清理失效服装…</sys:String>
+    <sys:String x:Key="L.Conflict_Rescan" xml:space="preserve">重新扫描</sys:String>    <sys:String x:Key="L.Conflict_NoRequest" xml:space="preserve">还没有可显示的冲突。先在「分组生成」页扫描一次——也可能这次扫描根本没发现输出文件冲突。</sys:String>
+    <sys:String x:Key="L.Settings_Appearance">外观</sys:String>
+    <sys:String x:Key="L.Settings_Theme">界面主题</sys:String>
+    <sys:String x:Key="L.Settings_Language">界面语言</sys:String>
+    <sys:String x:Key="L.Settings_Help">帮助与关于</sys:String>
+    <sys:String x:Key="L.Settings_CheckUpdate">检查更新</sys:String>
+    <sys:String x:Key="L.Settings_UpdateChecking">正在检查更新…</sys:String>
+    <sys:String x:Key="L.Settings_Manual">使用说明</sys:String>
 
     <!-- 主窗口 -->
     <sys:String x:Key="L.Main_Instance">MO2 实例</sys:String>
@@ -236,10 +238,18 @@
     <sys:String x:Key="L.NewMods_SelectFirst">请先勾选要归组的内容（可勾选模组或分隔符批量全选）。</sys:String>
     <sys:String x:Key="L.NewMods_SelectTarget">请先选择目标组。</sys:String>
     <sys:String x:Key="L.NewMods_AddSelected">加入所选组</sys:String>
-    <sys:String x:Key="L.Conflict_Title" xml:space="preserve">输出冲突：同一个服装文件由谁生成</sys:String>
-    <sys:String x:Key="L.Conflict_Intro" xml:space="preserve">{0} 组服装会被不同模组写进同一个输出文件（连同一模组内部多个预设共用一个输出文件的算上共 {1} 组）。为每组选定由谁来生成；不选的组，BodySlide 批建时会再问你。</sys:String>
+    <sys:String x:Key="L.Conflict_Intro" xml:space="preserve">同一个输出文件只能由一个模组生成。本次扫描到跨模组冲突 {0} 组、同一模组内部共用 {1} 组；不选的组，BodySlide 批建时会再问你。</sys:String>
+    <sys:String x:Key="L.Conflict_Progress" xml:space="preserve">已指定 {0} / {1} 组</sys:String>
+    <sys:String x:Key="L.Conflict_UnresolvedSuffix" xml:space="preserve">· 未指定 {0} 组</sys:String>
+    <sys:String x:Key="L.Conflict_GroupsHeader" xml:space="preserve">冲突组</sys:String>
+    <sys:String x:Key="L.Conflict_GroupCount" xml:space="preserve">{0} 组</sys:String>
+    <sys:String x:Key="L.Conflict_CandidatesHeader" xml:space="preserve">由谁生成</sys:String>
+    <sys:String x:Key="L.Conflict_PreviewHeader" xml:space="preserve">预览</sys:String>
+    <sys:String x:Key="L.Conflict_BatchScope" xml:space="preserve">对当前列出的 {0} 组：</sys:String>
     <sys:String x:Key="L.Conflict_Filter" xml:space="preserve">过滤输出路径 / 服装名 / 模组名…</sys:String>
     <sys:String x:Key="L.Conflict_OnlyCrossMod" xml:space="preserve">只看跨模组冲突</sys:String>
+    <sys:String x:Key="L.Conflict_OnlyCrossModTip" xml:space="preserve">跨模组冲突 {0} 组，同一模组内部共用 {1} 组。同一件衣服的几百个配色共用一个输出文件是模组的常态，勾上就先不看它们。</sys:String>
+    <sys:String x:Key="L.Conflict_RescanTip" xml:space="preserve">重新扫描模组与服装，重算这份冲突清单。页面上的选择改的是本工具的设置，不会自动重扫。</sys:String>
     <sys:String x:Key="L.Conflict_SameModOnly" xml:space="preserve">同模组内部</sys:String>
     <sys:String x:Key="L.Conflict_FilterCount" xml:space="preserve">显示 {0} 组 / 共 {1} 组</sys:String>
     <sys:String x:Key="L.Conflict_AutoAll" xml:space="preserve">全部按模组优先级</sys:String>
@@ -248,6 +258,7 @@
     <sys:String x:Key="L.Conflict_ClearAllTip" xml:space="preserve">清除当前列出的每一组的选择，交回 BodySlide 询问</sys:String>
     <sys:String x:Key="L.Conflict_Export" xml:space="preserve">写入 BodySlide…</sys:String>
     <sys:String x:Key="L.Conflict_ExportTip" xml:space="preserve">把选定结果写进 BodySlide 目录下的 BuildSelection.xml；原文件先备份成 .bak</sys:String>
+    <sys:String x:Key="L.Conflict_ExportHint" xml:space="preserve">写入 BuildSelection.xml，原文件先备份成 .bak</sys:String>
     <sys:String x:Key="L.Conflict_StatusChosen" xml:space="preserve">已选：{0}</sys:String>
     <sys:String x:Key="L.Conflict_StatusUnresolved" xml:space="preserve">未指定</sys:String>
     <sys:String x:Key="L.Conflict_CandidateCount" xml:space="preserve">{0} 个候选</sys:String>
@@ -258,10 +269,16 @@
     <sys:String x:Key="L.Conflict_Strongest" xml:space="preserve">优先级最高</sys:String>
     <sys:String x:Key="L.Conflict_AskMeAgain" xml:space="preserve">不指定（让 BodySlide 再问我）</sys:String>
     <sys:String x:Key="L.Preview_Reset" xml:space="preserve">复位视角</sys:String>
-    <sys:String x:Key="L.Preview_Loading" xml:space="preserve">正在读网格…</sys:String>
+    <sys:String x:Key="L.Preview_Loading" xml:space="preserve">正在读网格与贴图…</sys:String>
     <sys:String x:Key="L.Preview_NoSource" xml:space="preserve">这个 set 没有可解析的源网格（ShapeData 里找不到 BodySlide 要读的那个 .nif）</sys:String>
-    <sys:String x:Key="L.Preview_Stats" xml:space="preserve">{0} 个三角形 · {1} 个形状</sys:String>
-    <sys:String x:Key="L.Conflict_PreviewTip" xml:space="preserve">左键点一行 = 看它的 3D 模型；右键点一行 = 把它设为赢家。拖动转视角，滚轮缩放。</sys:String>
+    <sys:String x:Key="L.Preview_Stats" xml:space="preserve">{0} 个三角形 · {1} 个形状 · {2} 个有贴图</sys:String>
+    <sys:String x:Key="L.Preview_Truncated" xml:space="preserve">另有 {0} 个形状超出预算，没画出来</sys:String>
+    <sys:String x:Key="L.Preview_Body" xml:space="preserve">身体</sys:String>
+    <sys:String x:Key="L.Preview_BodyAuto" xml:space="preserve">自动</sys:String>
+    <sys:String x:Key="L.Preview_BodyFemale" xml:space="preserve">女体</sys:String>
+    <sys:String x:Key="L.Preview_BodyMale" xml:space="preserve">男体</sys:String>
+    <sys:String x:Key="L.Preview_BodyNone" xml:space="preserve">不垫</sys:String>
+    <sys:String x:Key="L.Conflict_PreviewTip" xml:space="preserve">左键点一行 = 看它的 3D 模型；右键点一行 = 把它设为赢家。左键拖动转视角，右键拖动平移，滚轮缩放。</sys:String>
     <sys:String x:Key="L.Conflict_OpenTip" xml:space="preserve">点开选定由哪个模组生成。选择先存在本工具里，按下「写入 BodySlide…」才会被 BodySlide 读到</sys:String>
     <sys:String x:Key="L.Confirm_ExportBuildSel" xml:space="preserve">将把 {0} 条选择写入：
 {1}
@@ -346,13 +363,12 @@
     <sys:String x:Key="L.Diag_OutputUndetermined">（未定）</sys:String>
 
     <!-- 关于 -->
-    <sys:String x:Key="L.About_Title">关于 BS Group Generator</sys:String>
     <sys:String x:Key="L.About_Desc">读取 Mod Organizer 2 安装的模组，把 BodySlide 滑块组批量划进分组，生成原生格式的分组文件。支持天际 SE/AE、辐射 4 等所有 BodySlide 支持的游戏。</sys:String>
     <sys:String x:Key="L.About_Author">作者：lin-414</sys:String>
+    <sys:String x:Key="L.About_Repo" xml:space="preserve">GitHub：github.com/lin-414/BSGroupGenerator</sys:String>
     <sys:String x:Key="L.About_Compat">分组文件与 BodySlide 完全兼容；每个组生成一个以组名命名的独立文件，存放在 BodySlide 的 SliderGroups 目录。</sys:String>
 
     <!-- 帮助 -->
-    <sys:String x:Key="L.Help_Title">使用说明 — BS Group Generator</sys:String>
     <sys:String x:Key="L.Help_H1">一、常见任务速查</sys:String>
     <sys:String x:Key="L.Help_01">本工具读取 Mod Organizer 2（MO2）安装的模组，让你把服装（BodySlide 滑块组）批量划进分组，并按组生成 BodySlide 原生格式的分组文件。</sys:String>
     <sys:String x:Key="L.Help_02">1. 选择 MO2 实例与配置（Profile）——程序自动发现全局实例与便携安装；Profile 会默认带上次使用的。</sys:String>

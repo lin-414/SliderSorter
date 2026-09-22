@@ -23,7 +23,10 @@
          前者是主按钮悬停底（压白字），中者是勾选底纹/文本选区底（压对勾与正文），后者是列表选中行（压正文）。 -->
     <Color x:Key="C.AccentHover">#3F6A5C</Color>
     <Color x:Key="C.AccentSoft">#2E4A41</Color>
-    <Color x:Key="C.AccentText">#7FB09D</Color>
+    <!-- AccentText 还要压 AccentSoft（「已在组内」那枚徽标就是这对组合）：
+         原先的 #7FB09D 在卡片底上 5.86:1 达标，压 AccentSoft 只有 3.96:1，徽标上的字发糊。
+         提亮到 5.2:1 后两种底都够——它只作前景色，提亮不牵动别处。 -->
+    <Color x:Key="C.AccentText">#9AC7B4</Color>
     <Color x:Key="C.Member">#8EC07C</Color>
     <Color x:Key="C.Conflict">#6D9BB5</Color>
     <!-- Danger = 危险文字/描边（压卡片底）；DangerSolid = 危险实心按钮底（压白字）。
@@ -40,6 +43,13 @@
     <Color x:Key="C.Navy">#ECE0C8</Color>
     <Color x:Key="C.CheckMark">#D5E6DF</Color>
 
+    <!-- 3D 预览视口是"渲染面"而不是界面装饰：底色带色调会给衣服染上一层不存在的颜色，
+         所以两套主题刻意取同一个值 —— 同一件衣服在暗色和亮色下必须看着是同一件。
+         原先还有一枚 C.ViewportText（压这块灰的说明文字），重排冲突页时删掉了：
+         预览的状态文字改成一枚 B.Panel 底的气泡，压在灰面与卡片底上都读得清，
+         那个键就再没有消费者——留着只会让人以为"视口里的字"该用它。 -->
+    <Color x:Key="C.Viewport">#6E6E6E</Color>
+
     <SolidColorBrush x:Key="B.Window" Color="{StaticResource C.Window}" />
     <SolidColorBrush x:Key="B.Scrim" Color="{StaticResource C.Scrim}" />
     <SolidColorBrush x:Key="B.Panel" Color="{StaticResource C.Panel}" />
@@ -49,6 +59,7 @@
     <SolidColorBrush x:Key="B.CheckBorder" Color="{StaticResource C.CheckBorder}" />
     <SolidColorBrush x:Key="B.Text" Color="{StaticResource C.Text}" />
     <SolidColorBrush x:Key="B.TextDim" Color="{StaticResource C.TextDim}" />
+    <SolidColorBrush x:Key="B.Viewport" Color="{StaticResource C.Viewport}" />
     <SolidColorBrush x:Key="B.Accent" Color="{StaticResource C.Accent}" />
     <SolidColorBrush x:Key="B.AccentBorder" Color="{StaticResource C.AccentBorder}" />
     <SolidColorBrush x:Key="B.AccentHover" Color="{StaticResource C.AccentHover}" />

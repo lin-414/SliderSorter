@@ -12,6 +12,11 @@ namespace BSGroupGenerator.Wpf.ViewModels;
 /// <summary>状态栏写出模式下拉项。</summary>
 public sealed record WriteModeItem(WriteMode Mode, string Label);
 
+/// <summary>设置页「界面主题 / 界面语言」下拉项：Value 是 ThemeManager/L10n 认的键，Label 随语言变。
+/// 语言那一项的 Label 恒为各语言自己的写法（中文 / English / Русский / Français）——
+/// 把俄语界面翻坏了时，那是唯一还能认出「这里能切回中文」的线索。</summary>
+public sealed record OptionItem(string Value, string Label);
+
 /// <summary>组列表项。</summary>
 public sealed record GroupItem(string Name, int Count)
 {
@@ -48,6 +53,30 @@ public partial class MainViewModel : ObservableObject
     public void NotifyUser(string title, string message, bool warning = false) =>
         NotifyHandler?.Invoke(title, message, warning);
 
+    /// <summary>视图注入：打开规则归组编辑器（非模态，同一个编辑器不叠加第二个窗口）。
+    /// 返回是否已就绪——「规则预设」窗口据此决定要不要关掉自己。
+    /// 走注入而不是让分组页去转强类型找壳：壳换成了三页之后，页面不该认识 MainWindow。</summary>
+    public Func<RulePreset?, bool>? RuleEditorOpener { get; set; }
+
+    // ── 标签页（壳的 TabControl 选中项）────────────────────────────────
+    // 状态放在 VM 上：状态栏的冲突计数、「工具 → 输出冲突…」、F1 都要能主动切页。
+    // 用事件转给壳的话，壳还得反过来告诉 VM 当前是哪页，绕一圈仍是同一份状态。
+    public const int TabGenerate = 0;
+    public const int TabConflicts = 1;
+    public const int TabRulePresets = 2;
+    public const int TabSettings = 3;
+
+    [ObservableProperty] private int _selectedTab = TabGenerate;
+
+    [RelayCommand]
+    private void OpenGenerate() => SelectedTab = TabGenerate;
+
+    [RelayCommand]
+    private void OpenRulePresets() => SelectedTab = TabRulePresets;
+
+    [RelayCommand]
+    private void OpenSettings() => SelectedTab = TabSettings;
+
     // ── 绑定状态 ──
     [ObservableProperty] private string _windowTitle = AppTitle;
     [ObservableProperty] private bool _isDirty;
@@ -58,6 +87,19 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty] private ObservableCollection<BodySlideCandidate> _bodySlideDirs = [];
     [ObservableProperty] private BodySlideCandidate? _selectedBodySlide;
     [ObservableProperty] private ObservableCollection<WriteModeItem> _writeModes = [];
+
+    // ── 设置页：外观与帮助 ──
+    [ObservableProperty] private ObservableCollection<OptionItem> _themeOptions = [];
+    [ObservableProperty] private OptionItem? _selectedThemeOption;
+    [ObservableProperty] private ObservableCollection<OptionItem> _languageOptions = [];
+    [ObservableProperty] private OptionItem? _selectedLanguageOption;
+
+    /// <summary>「检查更新」旁边的内联结果。空串 = 这次运行还没查过。</summary>
+    [ObservableProperty] private string _updateStatusText = "";
+
+    /// <summary>使用说明 / 诊断信息两块的展开态。正文有 60+ 段，收起时干脆不建（见 SettingsPage）。</summary>
+    [ObservableProperty] private bool _isManualExpanded;
+    [ObservableProperty] private bool _isDiagnosticsExpanded;
     [ObservableProperty] private WriteModeItem? _selectedWriteMode;
     [ObservableProperty] private string _infoLine = L10n.Tr("L.Vm_NotScanned");
     [ObservableProperty] private string _statusCounts = L10n.Tr("L.Vm_NotScanned");
@@ -195,6 +237,12 @@ public partial class MainViewModel : ObservableObject
         WriteModes = BuildWriteModes();
         _selectedWriteMode = WriteModes.FirstOrDefault(m => m.Mode == Settings.WriteMode) ?? WriteModes[0];
 
+        // 回填走后备字段：属性 setter 会连带触发 OnChanged 里的 Apply + Settings.Save()，构造期不需要
+        ThemeOptions = BuildThemeOptions();
+        _selectedThemeOption = ThemeOptions.FirstOrDefault(o => o.Value == ThemeManager.Current) ?? ThemeOptions[0];
+        LanguageOptions = BuildLanguageOptions();
+        _selectedLanguageOption = LanguageOptions.FirstOrDefault(o => o.Value == L10n.Current) ?? LanguageOptions[0];
+
         ReloadInstances();
     }
 
@@ -216,6 +264,41 @@ public partial class MainViewModel : ObservableObject
         new WriteModeItem(WriteMode.Custom, L10n.Tr("L.Wm_Custom")),
     ]);
 
+    private static ObservableCollection<OptionItem> BuildThemeOptions() => new(
+    [
+        new OptionItem(ThemeManager.Boutique, L10n.Tr("L.Theme_Dark")),
+        new OptionItem(ThemeManager.Light, L10n.Tr("L.Theme_Light")),
+    ]);
+
+    private static ObservableCollection<OptionItem> BuildLanguageOptions() => new(
+    [
+        new OptionItem(L10n.Zh, "中文"),
+        new OptionItem(L10n.En, "English"),
+        new OptionItem(L10n.Ru, "Русский"),
+        new OptionItem(L10n.Fr, "Français"),
+    ]);
+
+    /// <summary>主题下拉：换项即热切换并落盘。ThemeManager 换的是 app 级色板字典，
+    /// 所有开着的窗口一起变，不需要重建谁。</summary>
+    partial void OnSelectedThemeOptionChanged(OptionItem? value)
+    {
+        if (value is null || _localizing || value.Value == ThemeManager.Current)
+            return;
+        ThemeManager.Apply(value.Value);
+        Settings.UiTheme = value.Value;
+        Settings.Save();
+    }
+
+    partial void OnSelectedLanguageOptionChanged(OptionItem? value)
+    {
+        if (value is null || _localizing || value.Value == L10n.Current)
+            return;
+        L10n.Apply(value.Value);
+        Settings.UiLanguage = value.Value;
+        Settings.Save();
+        OnLanguageChanged();
+    }
+
     /// <summary>语言切换后重算所有由代码拼出的绑定串。</summary>
     public void OnLanguageChanged()
     {
@@ -223,6 +306,14 @@ public partial class MainViewModel : ObservableObject
         var currentMode = SelectedWriteMode?.Mode ?? Settings.WriteMode;
         WriteModes = BuildWriteModes();
         SelectedWriteMode = WriteModes.FirstOrDefault(m => m.Mode == currentMode);
+        // 换 ItemsSource 会把 ComboBox 的选中项清成 null，所以按「当前生效值」重新回填；
+        // _localizing 挡掉回填触发的 OnChanged，免得换语言顺带把主题/语言又 Apply 一遍。
+        var currentTheme = ThemeManager.Current;
+        var currentLang = L10n.Current;
+        ThemeOptions = BuildThemeOptions();
+        SelectedThemeOption = ThemeOptions.FirstOrDefault(o => o.Value == currentTheme);
+        LanguageOptions = BuildLanguageOptions();
+        SelectedLanguageOption = LanguageOptions.FirstOrDefault(o => o.Value == currentLang);
         _localizing = false;
 
         if (Resolution is not null)
@@ -241,6 +332,7 @@ public partial class MainViewModel : ObservableObject
         RefreshTransferState();
         UpdateMembershipMarks(); // 树节点文本也是代码拼的（同名冲突 / [组内 x/y]），一并换语言
         RefreshConflictText();
+        UpdateStatusText = ""; // 检查更新的结果是拼好的句子，就地重译不了——宁可空着也别留半句别的语言
         UpdateCounts();
         UpdateGroupInfo();
         UpdateTitle();

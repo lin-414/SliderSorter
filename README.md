@@ -4,9 +4,9 @@
 
 BodySlide 自带的 Group Manager 只有一个服装平铺列表，不知道哪个服装来自哪个模组；本工具补上这一环：**按模组勾选，一键整组归组**，也能展开后逐个服装微调。
 
-界面为 WPF，自带**暗色 / 亮色**两套主题，支持**中文 / English / Русский / Français** 四种界面语言切换（菜单栏顶层的「界面主题」「语言」即时生效）。
+界面为 WPF，自带**暗色 / 亮色**两套主题，支持**中文 / English / Русский / Français** 四种界面语言切换（都在**设置 → 外观**里，选定即时生效，无需重启）。
 
-**运行要求**：Windows x64 + [.NET 8 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/8.0)。发布包为**框架依赖**版（8 个文件、约 1.8 MB，含 0.9 MB 的 Nifly 网格解析库），不含运行时，首次使用请先安装上面的运行时。
+**运行要求**：Windows x64 + [.NET 8 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/8.0)。发布包为**框架依赖**版（12 个文件、约 2.2 MB，其中 Nifly 网格解析库 0.9 MB），不含运行时，首次使用请先安装上面的运行时。
 
 ## 使用方法
 
@@ -20,14 +20,14 @@ BodySlide 自带的 Group Manager 只有一个服装平铺列表，不知道哪�
    - 「规则归组」：按 模组关键字 / 服装关键字 / 排除关键字（分号分隔，不区分大小写）批量把服装加入或移出某个组；模组关键字先筛模组、再取其下服装，不会把其他模组里的同名服装混进来；可限定仅未分配服装，实时预览命中数量并按 分隔符 → 模组 → 命中服装 树形展示。
    - 「新装模组提醒」：装了新服装模组后再打开程序，扫描会自动弹窗，按 分隔符 → 模组 → 服装 分层列出新增内容（与主窗口一致，可展开查看具体服装），勾选并选好目标组即可一键归组；弹窗顶部也有**两个过滤框**（左筛服装名、右筛模组 / 分隔符名），列表长时用它快速定位，**勾选状态不会因过滤丢失**。关闭则暂不处理，之后仍可用「仅看未分配」找到它们。
    - 「撤销」（**编辑 → 撤销** 或 Ctrl+Z）：最近 30 步分组操作可逐步回退，误点不慌。
-   - 「输出冲突与选择」（**工具 → 输出冲突与选择…**，或直接点状态栏上的「输出冲突 N 组」）：多个模组的服装会写进**同一个 `.nif`** 时（BodySlide 的"输出文件冲突"），在这里为每组指定由谁来生成。选择先存在本工具里；按下「写入 BodySlide…」才落成 BodySlide 认得的 `BuildSelection.xml`（原文件自动备份成 `.bak`），此后 BodySlide 批建不再逐次弹窗。右侧的 **3D 预览**显示当前选中那一行的源网格：左键点一行看它的模型、**右键点一行直接把它设为赢家**，拖动转视角、滚轮缩放，「复位视角」回到正面。窗口默认「只看跨模组冲突」——同一模组内部几百个配色预设共用一个输出文件是常态，别和"多个模组改了同一件衣服"混在一起看。
+   - 「输出冲突与选择」（**第 2 个标签页**，或直接点状态栏上的「输出冲突 N 组」）：多个模组的服装会写进**同一个 `.nif`** 时（BodySlide 的"输出文件冲突"），在这里为每组指定由谁来生成。选择先存在本工具里；按下「写入 BodySlide…」才落成 BodySlide 认得的 `BuildSelection.xml`（原文件自动备份成 `.bak`），此后 BodySlide 批建不再逐次弹窗。页面自上而下是：页标题（右侧一行「已指定 M / N 组」的进度，还有没指定的会补一句警示色的「· 未指定 K 组」）→ 一句话说明 → 工具条（过滤框、只看跨模组、显示计数、重新扫描）→ **三栏**（左「冲突组」：每行是输出文件名 +「未指定／已选：谁」；中「由谁生成」：每行是服装名、模组·层号与「已在组内」「优先级最高」两枚徽标，末尾一条分隔线之下的「不指定」是交回 BodySlide 再问；右 **3D 预览**）→ 操作行（左半是"对当前列出的 N 组"的批量动作，右端是写入）。预览显示当前选中那一行的源网格：左键点一行看它的模型、**右键点一行直接把它设为赢家**，拖动转视角、滚轮缩放，「复位视角」回到正面。默认勾着「只看跨模组冲突」——同一模组内部几百个配色预设共用一个输出文件是常态，别和"多个模组改了同一件衣服"混在一起看。
    - 「查看组」（或双击组名）：预览该组的全部服装，可按名称过滤、可勾选批量移出。
    - 「仅看未分配」：只显示还没进任何组的服装。
    - **两个过滤框各管一类**：「过滤服装名…」只匹配服装名，「过滤模组名…」只匹配模组名（连续子串，命中模组时显示该模组全部服装并标注"匹配 x/总数"）。
-   - 菜单 **文件 → 导入组文件…**：把已有分组 XML 合并进来继续编辑。
-5. 点击**保存分组文件**（或 Ctrl+S，或菜单 **文件 → 保存分组文件**）写出。完成后重启 BodySlide（通过 MO2 启动的话建议连 MO2 一起重启），分组下拉里即可看到新组。
+   - 组列表右键（或右侧「⋯」）里的 **导入组文件…**：把已有分组 XML 合并进来继续编辑。
+5. 点击**保存分组文件**（或 Ctrl+S）写出。完成后重启 BodySlide（通过 MO2 启动的话建议连 MO2 一起重启），分组下拉里即可看到新组。
 
-界面其他要点：菜单栏为 **文件 / 编辑 / 工具 / 界面主题 / 语言 / 帮助**（四种语言都带访问键，可用 Alt 序列操作）；**运行日志**默认折叠成保存按钮下方的一条摘要（有警告/错误时用警示色并带计数徽标），点一下展开——展开后按级别着色、可复制、可清空、高度可拖拽。
+界面其他要点：顶部四个标签页 **分组生成 / 输出冲突与选择 / 规则预设 / 设置**（`Ctrl+1..4` 直达，`Ctrl+,` 或 F1 进设置）；组的新建/重命名/查看/规则归组/删除、**撤销**（Ctrl+Z）与导入都收在组列表的右键菜单与右侧那颗「⋯」里；界面语言与主题在**设置 → 外观**，四种语言的标签页标题都随语言即时切换；**运行日志**默认折叠成保存按钮下方的一条摘要（有警告/错误时用警示色并带计数徽标），点一下展开——展开后按级别着色、可复制、可清空、高度可拖拽。
 
 ## 写到哪里
 
@@ -66,9 +66,9 @@ BodySlide 自带的 Group Manager 只有一个服装平铺列表，不知道哪�
 
 **「同名冲突」和「输出冲突」有什么不同？** 同名冲突是两个模组用了**同一个滑块组名**，BodySlide 先见者胜，归属给优先级最高的那个模组——不影响正确性，只影响"这条显示在哪个模组下面"。输出冲突是两个**不同名**的滑块组写**同一个 `.nif`**，批建时后建的覆盖先建的——这才需要人来定夺，所以状态栏只数这一种，树里也只给它加「（输出冲突）」后缀。
 
-**为什么状态栏的组数比窗口标题里的少？** 窗口标题里的总数是"有 2 个以上滑块组共用一个输出文件"的全部数量，其中一大半往往是同一个模组自己的配色预设（一件衣服几百个预设共用一个输出文件，那是模组的设计，不是模组之间打架）。状态栏与树里的「（输出冲突）」只算**跨模组**的那种；窗口默认勾上「只看跨模组冲突」，取消勾选就能看到全部——它们同样需要指定赢家才能安静地批建。
+**为什么页面上的组数比模组树里标注的少？** 冲突页说明里那句「跨模组冲突 N 组、同一模组内部共用 M 组」报的是全部数量，其中一大半往往是同一个模组自己的配色预设（一件衣服几百个预设共用一个输出文件，那是模组的设计，不是模组之间打架）。状态栏与树里的「（输出冲突）」只算**跨模组**的那 N 组；在页面上取消勾选「只看跨模组冲突」就能看到全部 M 组——它们同样需要指定赢家才能安静地批建。
 
-**3D 预览显示的是最终进游戏的样子吗？** 不是，是**基准网格**：BodySlide 建这件衣服时读的那个源 `.nif`（`<项目路径>\ShapeData\<DataFolder>\<SourceFile>`，跨模组覆盖层从强到弱解析），**没有套任何滑块变形、也没有纹理**——滑块后的形状只有回 BodySlide 里建出来才看得到，而纹理要解 BC7/DDT，收益不值当加一套解码依赖。它回答的是"这个模组的这件衣服是个什么版型、和另一个模组的差在哪"。源网格找不到、或文件解析失败时，预览区会直接说原因，不会静默留白。
+**3D 预览显示的是最终进游戏的样子吗？** 不是，是**基准网格 + 真实纹理**。网格是 BodySlide 建这件衣服时读的那个源 `.nif`（`<项目路径>\ShapeData\<DataFolder>\<SourceFile>`，跨模组覆盖层从强到弱解析）；贴图按游戏同一套口径解析——每一层先看散文件、再看该层的 `.bsa`/`.ba2`，所以颜色跟你装的那个纹理模组一致（纹理常常和 mesh 分开装在另一个模组里，这点必须跨层找）。衣服自己没带身体时会垫一具，而垫的也是**你装的那具**（同一套层序解析，所以 CBBE/HIMBO 生效）。**没有**的是：滑块变形后的形状（那只有回 BodySlide 建出来才看得到）、法线/高光/环境贴图与逐像素光照（WPF 的 `Viewport3D` 是顶点级光照的固定管线，没有像素着色器，那些贴图在这里没有消费者）。它回答的是"这个模组的这件衣服是个什么版型、什么颜色、和另一个模组的差在哪"。源网格找不到、或文件解析失败时，预览区会直接说原因，不会静默留白。
 
 **支持哪些游戏？** 全部——分组机制与游戏无关（天际 SE/AE、辐射4 等都适用），跟随 MO2 实例与 BodySlide 安装自动适配。
 
@@ -80,23 +80,27 @@ BodySlide 自带的 Group Manager 只有一个服装平铺列表，不知道哪�
 dotnet build src/BSGroupGenerator.Wpf/BSGroupGenerator.Wpf.csproj
 dotnet test tests/BSGroupGenerator.Tests/BSGroupGenerator.Tests.csproj
 dotnet test tests/BSGroupGenerator.Wpf.Tests/BSGroupGenerator.Wpf.Tests.csproj
-publish.ps1                  # 生成 dist\（框架依赖，6 个文件约 0.6 MB，需 .NET 8 Desktop Runtime）
+publish.ps1                  # 生成 dist\（框架依赖，12 个文件约 2.2 MB，需 .NET 8 Desktop Runtime）
 publish.ps1 -SelfContained   # 生成 dist\（自包含，约 133 MB，用户无需安装任何依赖）
 
 python tools/verify_l10n.py src/BSGroupGenerator.Wpf   # 语言文件键一致性 / Core 层不得出现中文字面量 / 菜单访问键（CI 门禁）
 python tools/verify_contrast.py                        # 两套色板按 WCAG 2.1 逐对算对比度（CI 门禁）
 python tools/verify_theme.py                           # 窗口是否显式套用主题样式 / 两套色板键集合是否一致（CI 门禁）
-dotnet run --project tools/layout-probe -c Release     # 4 语言 × 2 主题 × 11 窗口 × 各档尺寸，断言 0 处溢出/裁切（CI 门禁）
+dotnet run --project tools/layout-probe -c Release     # 4 语言 × 2 主题 × Views 下全部窗口与页面 × 各档尺寸，断言 0 处溢出/裁切（CI 门禁）
 ```
 
-- 技术栈：C# / .NET 8 WPF（界面，目标框架钉在 `net8.0-windows`，原因见上面的 .NET 10 条目）+ 纯 C# Core 类库（扫描/解析/读写）。第三方依赖只有两个：界面层的 [CommunityToolkit.Mvvm](https://github.com/CommunityToolkit/MVVM)（MIT），以及 Core 里读 `.nif` 的 [Nifly](https://github.com/ousnius/NiflySharp)（GPL-3.0，BodySlide 作者写的）。两者都是纯托管程序集，**不引入任何原生 DLL**——3D 预览刻意走 WPF 自带的 `Viewport3D` 而不是 HelixToolkit.SharpDX/DirectX 那条路，就是为了不在 MO2 的 usvfs 注入下多一个会变数。
-- 界面语言：`src/BSGroupGenerator.Wpf/Strings/Lang.{zh,en,ru,fr}.xaml` 四份资源字典，键必须一一对应（缺键时界面会直接显示键名）。新增语言需改四处：新建语言文件、在 `L10n.Supported` 登记、在 `MainWindow.xaml` 加菜单项、在 `SyncLangChecks()` 加勾选同步，改完跑一次上面的校验脚本。
+- 技术栈：C# / .NET 8 WPF（界面，目标框架钉在 `net8.0-windows`，原因见上面的 .NET 10 条目）+ 纯 C# Core 类库（扫描/解析/读写）。第三方依赖四个，**全是纯托管程序集，不引入任何原生 DLL**：界面层的 [CommunityToolkit.Mvvm](https://github.com/CommunityToolkit/MVVM)（MIT）；Core 里读 `.nif` 的 [Nifly](https://github.com/ousnius/NiflySharp)（GPL-3.0，BodySlide 作者写的）、读 `.bsa`/`.ba2` 归档的 [Sharp.BSA.BA2](https://github.com/p1x/BSA_Browser)（GPL-3.0）、解 DDS 纹理的 [Pfim](https://github.com/nickbabcock/Pfim)（MIT）。
+- 3D 预览走 WPF 自带的 `Viewport3D`，不是 HelixToolkit.SharpDX。**别把理由记成"SharpDX 会带原生 DLL"**——实测它那套包的 `dotnet restore` 里 native 资产数为 0（SharpDX 是托管 COM 包装，调的是系统自带的 `d3d11.dll`）。真正的取舍是：SharpDX 需要可用的 D3D11 设备并经由 `D3DImage` 与 WPF 合成（远程桌面/关掉硬件加速时会黑屏），而 `Viewport3D` 没有这个前提。真要换栈，资产管线（NIF 材质解析、跨层定位、归档读取、DDS 解码）可以原样复用，只有最后画出来的那一步要重写。
+- 纹理必须自己解码：WPF 的 `BitmapImage`（走 WIC）只认老式 fourCC 的 DXT1/DXT3/DXT5，而天际 SE/AE 的纹理大量是 DX10 头 + BC7，喂进去直接抛 `COMException 0x88982F61`（"图像标题无法识别"）。所以用 Pfim 解成 32 位再 `BitmapSource.Create`，并把长边压到 1024（2048² 解出来一张就是 16 MB）。
+- 界面结构：**没有菜单栏**（原先的 文件/编辑/工具/界面主题/语言/帮助 全部取消——剩下的每一项要么与页内控件重复，要么本身就该是个页面）。`MainWindow` 只是壳（顶部 `TabControl` + 状态栏 + 扫描遮罩），四页在 `Views/Pages/` 下——**分组生成**（树 → 搬运 → 分组 → 写文件）、**输出冲突与选择**、**规则预设**、**设置**（工作环境 / 输出设置 / 外观 / 帮助与关于，四节单列自上而下、共用一条自适应标签轨，信息架构取自 boutique；使用说明、诊断信息、检查更新、关于全部内嵌，不再各开一个窗口）。选中页是 `MainViewModel.SelectedTab`，所以状态栏的冲突计数与 F1 都能主动切页；`Ctrl+1..4` 直达四页，`Ctrl+,` 与 F1 也保留。组的增删改查、导入组文件与撤销收在组列表的右键菜单（以及右侧那颗「⋯」）里。新增一页要同时登记三处门禁，否则它会**静默**逃过检查（这些工具原先只扫 `Views/*.xaml`，页面放进子目录不报错、只是不再被看）：`tools/verify_theme.py` 的 §6 要求它被壳引用、`tools/layout-probe` 按页面根宿主进窗口量、`XamlCommandBindingTests.BoundTarget` 要登记它的 DataContext。
+- 界面语言：`src/BSGroupGenerator.Wpf/Strings/Lang.{zh,en,ru,fr}.xaml` 四份资源字典，键必须一一对应（缺键时界面会直接显示键名）。新增语言需改三处：新建语言文件、在 `L10n.Supported` 登记、在 `MainViewModel.BuildLanguageOptions()` 加一项。语言下拉的标签恒为各语言自己的写法（中文 / English / Русский / Français），所以不进 Lang 文件——界面被翻坏时那是唯一还认得出来的线索。
 - Core 层不依赖 UI，面向用户的文案一律经 `CoreStrings.Get/Format("L.Core_…")` 取词，由 WPF 层在启动时注入 `L10n.TrF`；Core 里出现中文字符串字面量会被门禁拦下（注释不算）。
 - 主题色集中在 `Themes/Palette.{Boutique,Light}.xaml`，控件模板在 `Themes/Controls.xaml`，颜色一律经 `DynamicResource B.*` 引用，两套色板的键集合必须一致且对比度达标（门禁会查）。视图里不得再出现硬编码颜色。
 - 窗口样式必须**显式**套用：`Themes/Controls.xaml` 里的 `AppWindow`（背景 / 前景 / 字体 / 渲染选项）要靠根元素 `Style="{StaticResource AppWindow}"` 引用才生效。隐式样式按元素**确切类型**匹配，`TargetType="Window"` 的隐式样式对 `x:Class` 生成的 `MainWindow` 与各对话框（`Window` 的派生类）不起作用，漏掉就会退回系统默认的白底黑字。根元素同时保留一份 `Background="{DynamicResource B.Window}"` 作兜底（本地值优先于样式 setter）。新增窗口时照抄现有窗口的根元素写法，跑 `verify_theme.py` 即可确认没漏。
 - 容器尺寸不得按单一语言的标签宽度定死：固定像素列（`Width="96"`）、`UniformGrid` 等分列都会在更长的译文下静默裁掉文字，而中文的窄标签恰好能把这类问题掩盖住。用 `WrapPanel` 让它按内容定宽，长文本加 `TextWrapping`，单行标签加 `TextTrimming`；改完跑布局探针（它加载真实资源字典与真实窗口 XAML 离屏排一遍，能拦住"按钮压住列表""主操作行被裁"这类回归）。
-- 改 `MainWindow.xaml` 的 `MinWidth` / `MinHeight` 时同步改 `tools/layout-probe/Program.cs` 里的 `SizesFor("MainWindow")`，否则最小尺寸那一档就失去意义。
-- 测试覆盖：modlist.txt 与 ModOrganizer.ini 解析、GetProjectPath 复刻、VFS 覆盖扫描、分组文件读写（UTF-8 BOM）、Core 取词契约、树视图模型、输出文件冲突的解析与聚类（含"跨模组 vs 同模组内部"）、BuildSelection.xml 导出（保留别人的条目、OutputChoice 连续排在最前、幂等、坏文件不覆盖）、「输出冲突」窗口的行渲染、右键设赢家与预览接线；源网格路径的跨层解析。
+- 改 `MainWindow.xaml` 的 `MinWidth` / `MinHeight` 时同步改 `tools/layout-probe/Program.cs` 里的 `ShellSizes`（壳与四页共用这一组尺寸），另外 `PageChromeAllowance` 是页面可用高要扣掉的标签头 + 状态栏，壳改这两处任一样式都要同步。
+- 测试覆盖：modlist.txt 与 ModOrganizer.ini 解析、GetProjectPath 复刻、VFS 覆盖扫描、分组文件读写（UTF-8 BOM）、Core 取词契约、树视图模型、输出文件冲突的解析与聚类（含"跨模组 vs 同模组内部"）、BuildSelection.xml 导出（保留别人的条目、OutputChoice 连续排在最前、幂等、坏文件不覆盖）、「输出冲突」页的行渲染（列表只留文件名）、空状态与批量按钮的启用态、右键设赢家、预览接线与切走时释放视口捕获；源网格路径的跨层解析、预览取数据文件的跨层口径（散文件优先、层序胜负、UNC/绝对路径拒绝、名字像归档但内容不是的东西不许把整次解析带崩）、预览模型的 `CarriesOwnBody`/`IsTextured` 判定。
+- 预览这条链**不是全靠单测兜的**，也兜不住：Nifly 的 `VertexPositions`/`Triangles`/`UVs` 是从打包的顶点流里算出来的只读属性，测试里造不出合法的 `.nif` 夹具（等于自己重写一遍编码器）。所以网格与贴图那一段是对着真机的 2667 个模组目录、6937 个 `ShapeData` 网格和官方 v105 归档跑探针验的，UV 的 V 轴朝向则用一张"上半红下半蓝"的位图打靶回读确定（WPF 的 `V=0` 就是位图首行，与 NIF 同约定，**不要翻转**）。改这块请照做同样的实测，别拿合成数据外推。
 - 分组 XML 格式依据 ousnius/BodySlide-and-Outfit-Studio 的源码行为逆向确认（`SliderGroup.cpp` / `BodySlideApp.cpp` / `ProjectUtil.cpp`），未复制其代码。
 
 ## 许可
@@ -104,4 +108,6 @@ dotnet run --project tools/layout-probe -c Release     # 4 语言 × 2 主题 ×
 **GNU GPLv3**（或更新版本）—— 见 `LICENSE`。本程序是自由软件：你可以自由再分发或修改它，只要连同源码一起、继续按同一许可公开，并且保留"无任何保证"的声明。
 
 选 GPL 而不是继续用 MIT，是因为**服装预览要解析 `.nif`**，而唯一在维护的纯 C# Creation Engine NIF 解析库 [Nifly](https://github.com/ousnius/NiflySharp)（BodySlide 作者 ousnius 写的）是 GPL-3.0。按 GPL 的链接条款，用它构建出来的程序整体必须按 GPL-3.0 分发，所以本项目一并改过去，而不是维持一个"名义 MIT、实际无法合规分发"的状态。
+
+预览后来加的两个依赖与这个许可相容，不必再改条款：读归档的 [Sharp.BSA.BA2](https://github.com/p1x/BSA_Browser) 同样是 GPL-3.0，解 DDS 的 [Pfim](https://github.com/nickbabcock/Pfim) 是 MIT。引入它们之前确认过两者都不含原生二进制（`netstandard2.0`，传递依赖只有 LZ4/SharpZipLib 一类托管包）——这条约束是硬的，见上面 Viewport3D 那一节。
 
