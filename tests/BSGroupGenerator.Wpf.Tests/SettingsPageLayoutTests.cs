@@ -27,8 +27,9 @@ namespace BSGroupGenerator.Wpf.Tests;
 /// </para>
 /// 断言只看附加属性与 Visibility，不看元素位置：宿主窗口是离屏的，没有稳定的客户区尺寸。
 /// 标签轨的实宽是唯一的例外——Auto + 共享组的宽度只由内容决定，与给多少约束无关，所以量得准
-/// （原来那个限宽断点不能这么测，正是因为它绑的是 star 列）。铺满那条量的是 star 列，所以
-/// 只在窗口比限宽宽得多时才成立：断言里给的下限是"内容盒明显宽于 860"，不是精确值。
+/// （原来那个限宽断点不能这么测，正是因为它绑的是 star 列）。铺满那条量的也是 star 列，而宿主窗口
+/// 实际排多宽由那台机器的 DPI 与屏幕决定（CI 上请求 1440 只到约 1030），所以量之前先显式按固定
+/// 尺寸重排一遍再读——直接拿窗口给的真实宽度当基准，红的会是机器而不是布局。
 /// 挂 <see cref="WpfStaCollection"/> 串行：窗口只能在 STA 线程构造，而 Application 是进程级单例。
 /// </summary>
 [Collection(WpfStaCollection.Name)]
@@ -50,6 +51,12 @@ public class SettingsPageLayoutTests
         Assert.Equal(rails.Min(rail => rail.Width), rails.Max(rail => rail.Width), precision: 1);
     }
 
+    /// <summary>量宽度用的固定约束。宿主窗口 Show 出来只是为了让模板项与绑定真的挂上，
+    /// 而窗口本身排多宽由那台机器的 DPI 与屏幕决定（CI 的 windows-latest 上请求 1440 只到约 1030），
+    /// 所以量之前显式按这个尺寸重排一遍，断言才只跟布局有关、不跟机器有关。</summary>
+    private const double ProbeWidth = 1440;
+    private const double ProbeHeight = 900;
+
     [Fact]
     public void CardsSpanTheFullPageWidth()
     {
@@ -58,16 +65,21 @@ public class SettingsPageLayoutTests
             root =>
             {
                 Arrange(root);
+                root.Measure(new Size(ProbeWidth, ProbeHeight));
+                root.Arrange(new Rect(0, 0, ProbeWidth, ProbeHeight));
                 var panel = Named<StackPanel>(root, "SectionsPanel");
-                return (panel.ActualWidth, panel.Children.OfType<Border>().Select(card => card.ActualWidth).ToArray());
+                return (panel.ActualWidth,
+                        panel.Children.OfType<Border>().Select(card => card.ActualWidth).ToArray());
             },
-            1440, 900);
+            ProbeWidth, ProbeHeight);
 
         // 四节就是四张卡片：数错说明有人把某节拆成了两张卡、或塞了别的 Border 进来
         Assert.Equal(4, cardWidths.Length);
         Assert.All(cardWidths, width => Assert.Equal(panelWidth, width, precision: 1));
-        // 卡片的右边缘还得落在内容盒的右边缘上，而不是缩在中间：加回 MaxWidth、或改成 Center 都会掉到 860 上下
-        Assert.True(panelWidth > 1000, $"窗口 1440 下内容盒只有 {panelWidth:F0}，卡片被限宽了");
+        // 10% 余量给页边距和垂直滚动条（滚动条折算成 DIP 会随 DPI 变），
+        // 而把根 Grid 限回 MaxWidth="860" 居中会掉到这一尺寸的六成上下。
+        Assert.True(panelWidth >= ProbeWidth * 0.9,
+            $"卡片没铺满整页：按 {ProbeWidth:F0} 排时面板只有 {panelWidth:F0}");
     }
 
     [Fact]
