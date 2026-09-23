@@ -27,6 +27,69 @@
          同属一个内容盒，左边缘对齐是结构保证而非算术。 -->
     <UserControl.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVis" />
+
+        <!-- ── 「帮助与关于」一节的专用表面 ──
+             都是单点使用的样式，留在页面资源里，不进 Themes/：
+             组件层（Controls/Components.xaml）收的是跨视图复用语义，为一处用法开一个全局键
+             只会让下一个改关于区的人先在两个文件之间找一遍。
+             ⚠️ 一律不写 BasedOn（理由见下面扫描状态指示器那段：离屏加载时资源链上没有 App 级字典）。 -->
+
+        <!-- 关于区块的内凹表面。底色取 B.Window 而不是 B.Panel：
+             B.Panel 在亮色下与 B.Card 是同一个值（两套色板里都是 #FFFFFF），
+             内凹感会在亮色主题下整个消失；B.Window 在两套主题里都比卡片底暗一档，
+             "陷进去一块"这件事才两套都成立。 -->
+        <Style x:Key="AboutWell" TargetType="Border">
+            <Setter Property="Background" Value="{DynamicResource B.Window}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource B.Border}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="6" />
+            <Setter Property="Padding" Value="12" />
+        </Style>
+
+        <!-- 元信息的标签轨（作者 / GitHub）。
+             ⚠️ 这里的首列**不能**挂 SharedSizeGroup="SettingsRail"：那条轨是全页四节字段标签的基准，
+             关于区是散文不是表单，一旦并进去，「Mises à jour」这种长标签会把全页的字段列推宽。
+             它自己 Auto 取宽，对齐只发生在这几行之间。 -->
+        <Style x:Key="MetaLabel" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{DynamicResource B.TextDim}" />
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="Margin" Value="0,4,12,4" />
+        </Style>
+
+        <Style x:Key="MetaValue" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{DynamicResource B.Text}" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+            <Setter Property="Margin" Value="0,4" />
+        </Style>
+
+        <!-- 外链：静止时不划线（元信息行本来就成排，一条下划线只会添噪），
+             悬停才补上下划线并提亮一档 —— 指针已经在上面了，不必再靠颜色常驻提示可点。 -->
+        <Style x:Key="MetaLink" TargetType="Hyperlink">
+            <Setter Property="Foreground" Value="{DynamicResource B.AccentText}" />
+            <Setter Property="TextDecorations" Value="{x:Null}" />
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Foreground" Value="{DynamicResource B.AccentBorder}" />
+                    <Setter Property="TextDecorations" Value="Underline" />
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- 检查更新的结果条。空串时整条收起：没点过按钮就没有结果，
+             留一行只有分隔线的内容，读起来像坏了。 -->
+        <Style x:Key="UpdateFooter" TargetType="Border">
+            <Setter Property="Margin" Value="0,10,0,0" />
+            <Setter Property="BorderBrush" Value="{DynamicResource B.BorderSoft}" />
+            <Setter Property="BorderThickness" Value="0,1,0,0" />
+            <Setter Property="Padding" Value="0,8,0,0" />
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding UpdateStatusText}" Value="">
+                    <Setter Property="Visibility" Value="Collapsed" />
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
     </UserControl.Resources>
     <Grid Margin="12">
         <ScrollViewer x:Name="Scroller"
@@ -239,72 +302,120 @@
                      这一节是散文与折叠区，不是表单，所以不铺字段栅格、也就不占标签轨；
                      它的正文起点是卡片内容盒的左边缘，与前三节的标签同一条线。
                      使用说明 / 诊断信息 / 关于 / 检查更新 以前各是一个独立窗口，从菜单栏点出去。
-                     内容都不大，摊在这一页里：少一层窗口，也少一次"关掉就找不回来"。 -->
+                     内容都不大，摊在这一页里：少一层窗口，也少一次"关掉就找不回来"。
+
+                     版式：关于分成两个视觉单元 —— 「这个程序是什么」（身份 + 说明 + 元信息 + 更新结果，
+                     收进一块内凹表面）与「我现在要做什么」（两条折叠区，留在表面之外）。
+                     原先这四段是同宽同色同距的一叠整句：作者、仓库、兼容说明各自成句，
+                     版本号散在字标底下，检查更新孤零零一颗按钮夹在两条通栏分隔线中间，
+                     一路读下来没有落点。现在元信息并成一条标签轨、按钮回到版本旁边（它改的就是版本）、
+                     结果单独成一条状态带；原先三条通栏分隔线只剩状态带上面那一条，
+                     而且它随内容一起出现——分组改由表面边界与留白承担。 -->
                 <Border Style="{StaticResource SettingCard}">
                     <StackPanel>
                         <TextBlock Style="{StaticResource SettingSectionHeader}"
                                    Text="{DynamicResource L.Settings_Help}" />
 
-                        <!-- 关于 -->
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto" />
-                                <ColumnDefinition Width="*" />
-                            </Grid.ColumnDefinitions>
-                            <Image Grid.Column="0" Source="../../app.ico" Width="40" Height="40" Stretch="Uniform" />
-                            <StackPanel Grid.Column="1" Margin="12,0,0,0" VerticalAlignment="Center">
-                                <!-- 应用名是品牌字标，故意不进 Lang 文件（四语同形，且 verify_l10n 扫不到它）。
-                                     字号走 H2（SectionTitleText，16）：页标题 18 要当全页最大的字，
-                                     否则一级层次读不出来。 -->
-                                <TextBlock Text="SliderSorter" Style="{StaticResource SectionTitleText}" />
-                                <TextBlock x:Name="VersionLabel" Foreground="{DynamicResource B.TextDim}" />
+                        <Border Style="{StaticResource AboutWell}">
+                            <StackPanel>
+                                <!-- 身份行：图标 | 字标 + 版本徽标 | 检查更新 -->
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <Image Grid.Column="0" Source="../../app.ico" Width="44" Height="44"
+                                           Stretch="Uniform" VerticalAlignment="Center" />
+                                    <StackPanel Grid.Column="1" Orientation="Horizontal"
+                                                Margin="12,0,0,0" VerticalAlignment="Center">
+                                        <!-- 应用名是品牌字标，故意不进 Lang 文件（四语同形，且 verify_l10n 扫不到它）。
+                                             字号走 H2（SectionTitleText，16）：页标题 18 要当全页最大的字，
+                                             否则一级层次读不出来。 -->
+                                        <TextBlock Text="SliderSorter" Style="{StaticResource SectionTitleText}"
+                                                   VerticalAlignment="Center" />
+                                        <!-- 版本号提成徽标而不是留在字标下面一行散字：它是这一行的第二个事实，
+                                             比正文小一档、但和字标同一条线，不该低到去和下面的散文抢基线。 -->
+                                        <Border Background="{DynamicResource B.AccentSoft}" CornerRadius="9"
+                                                Padding="7,1" Margin="8,0,0,0" VerticalAlignment="Center">
+                                            <TextBlock x:Name="VersionLabel" FontSize="11"
+                                                       Foreground="{DynamicResource B.AccentText}"
+                                                       VerticalAlignment="Center" />
+                                        </Border>
+                                    </StackPanel>
+                                    <!-- 按钮留在身份行右侧，不再另起一行：它作用于版本号，
+                                         隔着一段说明文字就断了关系。「已是最新」也不弹框，写进下面的状态带。 -->
+                                    <Button Grid.Column="2" Content="{DynamicResource L.Settings_CheckUpdate}"
+                                            Command="{Binding CheckUpdateCommand}" MinWidth="120"
+                                            Margin="12,0,0,0" VerticalAlignment="Center" />
+                                </Grid>
+
+                                <TextBlock Margin="0,12,0,0" TextWrapping="Wrap" Foreground="{DynamicResource B.Text}"
+                                           Text="{DynamicResource L.About_Desc}" />
+
+                                <!-- 元信息标签轨。作者与仓库地址都是标识符而不是文案 —— 与字标同理，
+                                     四语同形，所以不进 Lang 文件；显示文本由 code-behind 从 RepoUrl 派生，
+                                     免得仓库搬家时 URL 在两处各改一次。 -->
+                                <Grid Margin="0,10,0,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                    </Grid.RowDefinitions>
+
+                                    <TextBlock Grid.Row="0" Grid.Column="0" Style="{StaticResource MetaLabel}"
+                                               Text="{DynamicResource L.About_AuthorLabel}" />
+                                    <TextBlock Grid.Row="0" Grid.Column="1" Style="{StaticResource MetaValue}"
+                                               Text="lin-414" />
+
+                                    <TextBlock Grid.Row="1" Grid.Column="0" Style="{StaticResource MetaLabel}"
+                                               Text="GitHub" />
+                                    <TextBlock Grid.Row="1" Grid.Column="1" Style="{StaticResource MetaValue}">
+                                        <Hyperlink Style="{StaticResource MetaLink}" Click="Repo_Click"><Run
+                                                x:Name="RepoLinkText" /><Run Text=" ↗"
+                                                Foreground="{DynamicResource B.TextDim}" /></Hyperlink>
+                                    </TextBlock>
+                                </Grid>
+
+                                <!-- 兼容性说明是脚注：压暗、收在最后，读起来是"补充"而不是第四段正文 -->
+                                <TextBlock Margin="0,10,0,0" Style="{StaticResource DimLabel}" TextWrapping="Wrap"
+                                           Text="{DynamicResource L.About_Compat}" />
+
+                                <!-- 检查更新的结果带。空串时整条收起（见 UpdateFooter 样式） -->
+                                <Border Style="{StaticResource UpdateFooter}">
+                                    <TextBlock Style="{StaticResource DimLabel}" TextWrapping="Wrap"
+                                               Text="{Binding UpdateStatusText}" />
+                                </Border>
                             </StackPanel>
-                        </Grid>
-                        <TextBlock Margin="0,12,0,0" TextWrapping="Wrap" Foreground="{DynamicResource B.Text}"
-                                   Text="{DynamicResource L.About_Desc}" />
-                        <TextBlock Margin="0,10,0,0" Foreground="{DynamicResource B.Text}">
-                            <Hyperlink Click="Repo_Click" Foreground="{DynamicResource B.AccentText}"><Run
-                                    Text="{DynamicResource L.About_Repo}" /></Hyperlink>
-                        </TextBlock>
-                        <TextBlock Margin="0,10,0,0" Text="{DynamicResource L.About_Author}" Foreground="{DynamicResource B.Text}" />
-                        <TextBlock Margin="0,10,0,0" Style="{StaticResource DimLabel}" TextWrapping="Wrap"
-                                   Text="{DynamicResource L.About_Compat}" />
-
-                        <Border Height="1" Background="{DynamicResource B.BorderSoft}" Margin="0,14" />
-
-                        <!-- 检查更新：结果写在这行右边。「已是最新」不再单独弹框 -->
-                        <StackPanel Orientation="Horizontal">
-                            <Button Content="{DynamicResource L.Settings_CheckUpdate}" Command="{Binding CheckUpdateCommand}"
-                                    MinWidth="120" VerticalAlignment="Center" />
-                            <TextBlock Margin="10,0,0,0" VerticalAlignment="Center" Style="{StaticResource DimLabel}"
-                                       TextWrapping="Wrap" Text="{Binding UpdateStatusText}" />
-                        </StackPanel>
-
-                        <Border Height="1" Background="{DynamicResource B.BorderSoft}" Margin="0,14" />
+                        </Border>
 
                         <!-- 使用说明：正文 60+ 段，收起时一份都不建（见 code-behind 的 ShowManual）。
                              ToggleButton 的 IsChecked 直接绑 VM 的展开态——双向，所以 F1 从壳那边
                              把 IsManualExpanded 置 true 时，这颗切换钮会自己变成"已展开"，
-                             箭头由样式里的 IsChecked 触发器转 90°，这里不用再画箭头、不用绑 Click。 -->
+                             箭头由样式里的 IsChecked 触发器转 90°，这里不用再画箭头、不用绑 Click。
+                             Tag="F1" 是这条路径的键帽提示：折叠条自己看不出还有快捷键，
+                             而 F1 从别的页也能按，写在行尾才不用先展开才知道。 -->
                         <ToggleButton x:Name="ManualToggle" Style="{StaticResource DisclosureToggle}"
                                       Content="{DynamicResource L.Settings_Manual}"
+                                      Tag="F1" Margin="0,8,0,0"
                                       IsChecked="{Binding IsManualExpanded, Mode=TwoWay}"
                                       PreviewMouseLeftButtonDown="ManualToggle_UserInput"
                                       PreviewKeyDown="ManualToggle_UserInput" />
-                        <Border x:Name="ManualHost" Height="360" Margin="0,6,0,0" Background="{DynamicResource B.Panel}"
+                        <Border x:Name="ManualHost" Height="360" Margin="0,4,0,0" Background="{DynamicResource B.Panel}"
                                 BorderBrush="{DynamicResource B.Border}" BorderThickness="1" CornerRadius="4"
                                 Visibility="{Binding IsManualExpanded, Converter={StaticResource BoolToVis}}">
                             <FlowDocumentScrollViewer x:Name="ManualViewer" IsToolBarVisible="False"
                                                       VerticalScrollBarVisibility="Auto" />
                         </Border>
 
-                        <Border Height="1" Background="{DynamicResource B.BorderSoft}" Margin="0,14" />
-
                         <!-- 诊断信息。与上面同款：状态在控件上，样式负责画箭头。 -->
                         <ToggleButton x:Name="DiagnosticsToggle" Style="{StaticResource DisclosureToggle}"
-                                      Content="{DynamicResource L.Diag_Title}"
+                                      Content="{DynamicResource L.Diag_Title}" Margin="0,4,0,0"
                                       IsChecked="{Binding IsDiagnosticsExpanded, Mode=TwoWay}" />
-                        <Grid x:Name="DiagnosticsHost" Margin="0,6,0,0"
+                        <Grid x:Name="DiagnosticsHost" Margin="0,4,0,0"
                               Visibility="{Binding IsDiagnosticsExpanded, Converter={StaticResource BoolToVis}}">
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="Auto" />

@@ -2,7 +2,7 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:sys="clr-namespace:System;assembly=mscorlib">
     <!-- 中文（简体）——默认语言。键与英文版 Lang.en.xaml 一一对应。 -->
-    <sys:String x:Key="L.App_Title" xml:space="preserve">SliderSorter — BodySlide 分组整理工具</sys:String>
+    <sys:String x:Key="L.App_Title" xml:space="preserve">SliderSorter</sys:String>
 
     <!-- 菜单 -->
     <sys:String x:Key="L.Menu_ImportGroups">导入组文件…(_I)</sys:String>
@@ -23,9 +23,6 @@
     <sys:String x:Key="L.Scan_StatusAt" xml:space="preserve">上次扫描：{0}　·　{1}</sys:String>
     <sys:String x:Key="L.Scan_CountsShort" xml:space="preserve">模组 {0} · 服装 {1}</sys:String>
     <sys:String x:Key="L.Scan_StatusStaleTip" xml:space="preserve">这份结果已经放了一会儿了。如果刚装过模组，点「重新扫描」再动手。</sys:String>
-    <sys:String x:Key="L.Age_JustNow" xml:space="preserve">{0} 秒前</sys:String>
-    <sys:String x:Key="L.Age_Minutes" xml:space="preserve">{0} 分钟前</sys:String>
-    <sys:String x:Key="L.Age_Hours" xml:space="preserve">{0} 小时前</sys:String>
     <sys:String x:Key="L.Rescan_Tip" xml:space="preserve">重新扫描模组与服装（会一并重算输出冲突清单）</sys:String>
     <sys:String x:Key="L.Settings_CleanupStale" xml:space="preserve">清理失效服装…</sys:String>
     <sys:String x:Key="L.Settings_CleanupStaleNote" xml:space="preserve">把已不在当前扫描结果里的服装从各组剔除（模组可能被卸载或改名）。会改动分组内容，确认后会先备份，且可 Ctrl+Z 撤销。</sys:String>
@@ -283,7 +280,7 @@
     <sys:String x:Key="L.Conflict_ClearAll" xml:space="preserve">全部清除</sys:String>
     <sys:String x:Key="L.Conflict_ClearAllTip" xml:space="preserve">清除当前列出的每一组的选择，交回 BodySlide 询问</sys:String>
     <sys:String x:Key="L.Conflict_Export" xml:space="preserve">写入 BodySlide…</sys:String>
-    <sys:String x:Key="L.Conflict_ExportTip" xml:space="preserve">把选定结果写进 BodySlide 目录下的 BuildSelection.xml；原文件先备份成 .bak</sys:String>
+    <sys:String x:Key="L.Conflict_ExportTip" xml:space="preserve">把选定结果写进 BodySlide 程序目录（Config.xml 同级）的 BuildSelection.xml——分组文件可以经模组供上去，这个文件不行；写之前的确认框会列出全路径，原文件先备份成 .bak</sys:String>
     <sys:String x:Key="L.Conflict_ExportHint" xml:space="preserve">写入 BuildSelection.xml，原文件先备份成 .bak</sys:String>
     <sys:String x:Key="L.Conflict_StatusChosen" xml:space="preserve">已选：{0}</sys:String>
     <sys:String x:Key="L.Conflict_StatusUnresolved" xml:space="preserve">未指定</sys:String>
@@ -313,7 +310,7 @@
     <sys:String x:Key="L.Msg_NoBodySlideDir" xml:space="preserve">还没选中 BodySlide 安装，无处可写 BuildSelection.xml。</sys:String>
     <sys:String x:Key="L.Msg_ConflictNothingToExport" xml:space="preserve">还没有为任何冲突组选定赢家，无需写入。</sys:String>
     <sys:String x:Key="L.Msg_ExportFail" xml:space="preserve">写入 BuildSelection.xml 失败。</sys:String>
-    <sys:String x:Key="L.Msg_BuildSelWritten" xml:space="preserve">已写入 {0} 条、删除 {1} 条。重启 BodySlide 后生效。</sys:String>
+    <sys:String x:Key="L.Msg_BuildSelWritten" xml:space="preserve">已写入 {0} 条、删除 {1} 条 → {2}。重启 BodySlide 后生效。</sys:String>
     <sys:String x:Key="L.Log_OutputConflictsFound" xml:space="preserve">发现 {0} 组服装被不同模组写入同一个输出文件；连同一模组内部共用的算上一共 {1} 组，其中 {2} 组还没指定由谁生成——可在「工具 → 输出冲突与选择…」里选定</sys:String>
     <sys:String x:Key="L.Log_BuildSelWritten" xml:space="preserve">已写出 BuildSelection.xml：新增/改动 {0} 条，删除 {1} 条 → {2}</sys:String>
     <sys:String x:Key="L.Vm_ConflictsInline" xml:space="preserve">输出冲突 {0} 组（未指定 {1}）</sys:String>
@@ -393,8 +390,7 @@
 
     <!-- 关于 -->
     <sys:String x:Key="L.About_Desc">读取 Mod Organizer 2 安装的模组，把 BodySlide 滑块组批量划进分组，生成原生格式的分组文件。支持天际 SE/AE、辐射 4 等所有 BodySlide 支持的游戏。</sys:String>
-    <sys:String x:Key="L.About_Author">作者：lin-414</sys:String>
-    <sys:String x:Key="L.About_Repo" xml:space="preserve">GitHub：github.com/lin-414/SliderSorter</sys:String>
+    <sys:String x:Key="L.About_AuthorLabel">作者</sys:String>
     <sys:String x:Key="L.About_Compat">分组文件与 BodySlide 完全兼容；每个组生成一个以组名命名的独立文件，存放在 BodySlide 的 SliderGroups 目录。</sys:String>
 
     <!-- 帮助 -->
@@ -440,8 +436,8 @@
     <sys:String x:Key="L.Help_H5">五、规则归组（批量分组）</sys:String>
     <sys:String x:Key="L.Help_32">「撤销」（Ctrl+Z 或菜单「编辑 → 撤销」）可逐步回退最近 30 步分组操作：加入/移出、规则归组、新建/重命名/删除组、导入、查看组中的移出都可撤销。保存到文件不会清空撤销记录，但重启程序会。</sys:String>
     <sys:String x:Key="L.Help_33">输出位置五种模式：</sys:String>
-    <sys:String x:Key="L.Help_34">自动（推荐）：BodySlide 有效项目路径是真实目录时写它的 SliderGroups；是 MO2 虚拟 Data 下的 CalienteTools\BodySlide（最常见）时，写入 MO2 专用模组"SliderSorter"。</sys:String>
-    <sys:String x:Key="L.Help_35">MO2 专用模组：mods\SliderSorter\CalienteTools\BodySlide\SliderGroups\ —— 在 MO2 里可见、可按 Profile 开关、重装 BodySlide 不丢。</sys:String>
+    <sys:String x:Key="L.Help_34">自动（推荐）：BodySlide 有效项目路径是真实目录时写它的 SliderGroups；是 MO2 虚拟 Data 下的 CalienteTools\BodySlide（最常见）时，写入 MO2 专用模组"SliderSorter Output"。</sys:String>
+    <sys:String x:Key="L.Help_35">MO2 专用模组：mods\SliderSorter Output\CalienteTools\BodySlide\SliderGroups\ —— 在 MO2 里可见、可按 Profile 开关、重装 BodySlide 不丢。</sys:String>
     <sys:String x:Key="L.Help_36">BodySlide 程序目录 / 游戏真实 Data / 自定义：分别写到对应位置的 SliderGroups。</sys:String>
     <sys:String x:Key="L.Help_H6">六、撤销与输出位置</sys:String>
     <sys:String x:Key="L.Help_37">· 勾选后为什么没进组？勾选只是「选中」，还要点中间的「加入组」。</sys:String>
@@ -462,7 +458,7 @@
     <sys:String x:Key="L.Help_H8">八、两份独立成果</sys:String>
     <sys:String x:Key="L.Help_Conflict_Intro">扫描一次会产生两份互不依赖的成果，分别落在两个标签页里。可以直接做其中任意一件，不必先完成另一件。</sys:String>
     <sys:String x:Key="L.Help_Conflict_A">① 分组（「分组生成」页）——把服装划进组，点「保存分组文件」写出 SliderGroups\*.xml，供 BodySlide 读取滑块组。</sys:String>
-    <sys:String x:Key="L.Help_Conflict_B">② 输出冲突选择（「输出冲突与选择」页）——多件服装写出同一个身体网格文件时，选定由哪个模组生成，点「写入 BodySlide…」写进 BuildSelection.xml。选择结果只存在本工具里，写入前原文件会备份为 .bak。</sys:String>
+    <sys:String x:Key="L.Help_Conflict_B">② 输出冲突选择（「输出冲突与选择」页）——多件服装写出同一个身体网格文件时，选定由哪个模组生成，点「写入 BodySlide…」写进 BuildSelection.xml。选择结果只存在本工具里，写入前原文件会备份为 .bak。它永远写到 BodySlide 程序目录（Config.xml 旁边）——BodySlide 只从那里读这个文件，所以它不跟随设置里的输出位置。</sys:String>
     <sys:String x:Key="L.Help_Conflict_C">两者各写各的文件，互不覆盖：只要扫描过一次，两份成果就都可用，顺序随意，之后也都能重新进入单独修改。</sys:String>
     <sys:String x:Key="L.Help_Conflict_D">「同一模组内部共用输出文件」（一件衣服的几百个配色）是常态，默认不算需要处理的冲突；勾「只看跨模组冲突」可把它们滤掉。</sys:String>
     <sys:String x:Key="L.Help_Toc">目录</sys:String>

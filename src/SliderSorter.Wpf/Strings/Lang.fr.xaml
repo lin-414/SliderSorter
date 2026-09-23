@@ -2,7 +2,7 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:sys="clr-namespace:System;assembly=mscorlib">
     <!-- Français — keys mirror Lang.zh.xaml one-to-one. -->
-    <sys:String x:Key="L.App_Title" xml:space="preserve">SliderSorter — outil de groupes BodySlide</sys:String>
+    <sys:String x:Key="L.App_Title" xml:space="preserve">SliderSorter</sys:String>
 
     <!-- Menu -->
     <sys:String x:Key="L.Menu_ImportGroups">Importer des fichiers de groupes…(_I)</sys:String>
@@ -23,9 +23,6 @@
     <sys:String x:Key="L.Scan_StatusAt" xml:space="preserve">Dernière analyse : {0}　·　{1}</sys:String>
     <sys:String x:Key="L.Scan_CountsShort" xml:space="preserve">{0} mods · {1} tenues</sys:String>
     <sys:String x:Key="L.Scan_StatusStaleTip" xml:space="preserve">Ce résultat date un peu. Si vous avez installé des mods depuis, cliquez sur Rescanner avant de continuer.</sys:String>
-    <sys:String x:Key="L.Age_JustNow" xml:space="preserve">il y a {0} secondes</sys:String>
-    <sys:String x:Key="L.Age_Minutes" xml:space="preserve">il y a {0} minutes</sys:String>
-    <sys:String x:Key="L.Age_Hours" xml:space="preserve">il y a {0} heures</sys:String>
     <sys:String x:Key="L.Rescan_Tip" xml:space="preserve">Relancer l'analyse des mods et des tenues (reconstruit aussi la liste des conflits de sortie)</sys:String>
     <sys:String x:Key="L.Settings_CleanupStale" xml:space="preserve">Supprimer les tenues obsolètes…</sys:String>
     <sys:String x:Key="L.Settings_CleanupStaleNote" xml:space="preserve">Retire de tous les groupes les tenues absentes de l’analyse actuelle (le mod a pu être désinstallé ou renommé). Cela modifie le contenu des groupes ; une confirmation sera demandée et l’action est annulable par Ctrl+Z.</sys:String>
@@ -278,7 +275,7 @@
     <sys:String x:Key="L.Conflict_ClearAll" xml:space="preserve">Tout effacer</sys:String>
     <sys:String x:Key="L.Conflict_ClearAllTip" xml:space="preserve">Effacer le choix de chaque groupe affiché et laisser BodySlide demander à nouveau</sys:String>
     <sys:String x:Key="L.Conflict_Export" xml:space="preserve">Écrire pour BodySlide…</sys:String>
-    <sys:String x:Key="L.Conflict_ExportTip" xml:space="preserve">Écrit les choix dans BuildSelection.xml du dossier de BodySlide ; l'ancien fichier est sauvegardé en .bak</sys:String>
+    <sys:String x:Key="L.Conflict_ExportTip" xml:space="preserve">Écrit les choix dans BuildSelection.xml du dossier de l'application BodySlide (à côté de Config.xml) — les fichiers de groupes peuvent venir d'un mod, pas ce fichier ; la boîte de confirmation affiche le chemin complet, l'ancien fichier est sauvegardé en .bak</sys:String>
     <sys:String x:Key="L.Conflict_ExportHint" xml:space="preserve">Écrit BuildSelection.xml ; l'ancien fichier part en .bak</sys:String>
     <sys:String x:Key="L.Conflict_StatusChosen" xml:space="preserve">Choisi : {0}</sys:String>
     <sys:String x:Key="L.Conflict_StatusUnresolved" xml:space="preserve">non défini</sys:String>
@@ -308,7 +305,7 @@ Le fichier existant sera sauvegardé en BuildSelection.xml.bak. Après redémarr
     <sys:String x:Key="L.Msg_NoBodySlideDir" xml:space="preserve">Aucune installation de BodySlide n'est sélectionnée ; impossible d'écrire BuildSelection.xml.</sys:String>
     <sys:String x:Key="L.Msg_ConflictNothingToExport" xml:space="preserve">Aucun gagnant n'a été choisi ; rien à écrire.</sys:String>
     <sys:String x:Key="L.Msg_ExportFail" xml:space="preserve">Échec de l'écriture de BuildSelection.xml.</sys:String>
-    <sys:String x:Key="L.Msg_BuildSelWritten" xml:space="preserve">{0} entrées écrites, {1} supprimées. Redémarrez BodySlide.</sys:String>
+    <sys:String x:Key="L.Msg_BuildSelWritten" xml:space="preserve">{0} entrées écrites, {1} supprimées → {2}. Redémarrez BodySlide.</sys:String>
     <sys:String x:Key="L.Log_OutputConflictsFound" xml:space="preserve">{0} tenues sont écrites dans le même fichier par plusieurs mods ; {1} groupes au total (préréglages d'un même mod compris), {2} sans choix — choisissez dans Outils → Conflits de sortie…</sys:String>
     <sys:String x:Key="L.Log_BuildSelWritten" xml:space="preserve">BuildSelection.xml écrit : {0} ajoutées/modifiées, {1} supprimées → {2}</sys:String>
     <sys:String x:Key="L.Vm_ConflictsInline" xml:space="preserve">conflits de sortie : {0} ({1} sans choix)</sys:String>
@@ -386,8 +383,7 @@ Un fichier par groupe, nommé d'après le groupe : {1}{2} ({3}).
 
     <!-- About -->
     <sys:String x:Key="L.About_Desc">Lit les mods installés via Mod Organizer 2, permet d'attribuer en lot les jeux de curseurs BodySlide à des groupes et génère les fichiers de groupes au format natif de BodySlide. Fonctionne avec tout jeu pris en charge par BodySlide, comme Skyrim SE/AE et Fallout 4.</sys:String>
-    <sys:String x:Key="L.About_Author">Auteur : lin-414</sys:String>
-    <sys:String x:Key="L.About_Repo" xml:space="preserve">GitHub : github.com/lin-414/SliderSorter</sys:String>
+    <sys:String x:Key="L.About_AuthorLabel">Auteur</sys:String>
     <sys:String x:Key="L.About_Compat">Les fichiers de groupes sont entièrement compatibles avec BodySlide ; chaque groupe devient son propre fichier nommé d'après le groupe, stocké dans le dossier SliderGroups de BodySlide.</sys:String>
 
     <!-- Help -->
@@ -433,8 +429,8 @@ Un fichier par groupe, nommé d'après le groupe : {1}{2} ({3}).
     <sys:String x:Key="L.Help_H5">5. Regroupement par règles</sys:String>
     <sys:String x:Key="L.Help_32">« Annuler » (Ctrl+Z, ou Édition → Annuler) revient pas à pas sur les 30 dernières actions : ajout/retrait, regroupement par règles, création/renommage/suppression de groupe, import et retraits effectués dans la liste des membres. Enregistrer sur le disque ne vide pas l'historique, mais redémarrer l'application si.</sys:String>
     <sys:String x:Key="L.Help_33">Cinq modes de sortie :</sys:String>
-    <sys:String x:Key="L.Help_34">Auto (recommandé) : écrit dans les SliderGroups du chemin de projet effectif lorsqu'il s'agit d'un vrai dossier ; lorsque c'est CalienteTools\BodySlide sous le Data virtuel de MO2 (le cas le plus courant), écrit dans le mod dédié MO2 « SliderSorter ».</sys:String>
-    <sys:String x:Key="L.Help_35">Mod dédié MO2 : mods\SliderSorter\CalienteTools\BodySlide\SliderGroups\ — visible dans MO2, activable par profil, survit aux réinstallations de BodySlide.</sys:String>
+    <sys:String x:Key="L.Help_34">Auto (recommandé) : écrit dans les SliderGroups du chemin de projet effectif lorsqu'il s'agit d'un vrai dossier ; lorsque c'est CalienteTools\BodySlide sous le Data virtuel de MO2 (le cas le plus courant), écrit dans le mod dédié MO2 « SliderSorter Output ».</sys:String>
+    <sys:String x:Key="L.Help_35">Mod dédié MO2 : mods\SliderSorter Output\CalienteTools\BodySlide\SliderGroups\ — visible dans MO2, activable par profil, survit aux réinstallations de BodySlide.</sys:String>
     <sys:String x:Key="L.Help_36">Dossier de l'application BodySlide / Data réel du jeu / personnalisé : écrit dans les SliderGroups de l'emplacement correspondant.</sys:String>
     <sys:String x:Key="L.Help_H6">6. Annulation et dossier de sortie</sys:String>
     <sys:String x:Key="L.Help_37">· J'ai coché des tenues mais rien ne s'est passé ? Cocher ne fait que sélectionner ; il faut encore cliquer sur « Ajouter au groupe » au milieu.</sys:String>
@@ -449,7 +445,7 @@ Un fichier par groupe, nommé d'après le groupe : {1}{2} ({3}).
     <sys:String x:Key="L.Help_H8">8. Deux résultats indépendants</sys:String>
     <sys:String x:Key="L.Help_Conflict_Intro">Une seule analyse produit deux résultats indépendants l’un de l’autre, un par onglet. Vous pouvez faire l’un ou l’autre seul — aucun n’a besoin de précéder l’autre.</sys:String>
     <sys:String x:Key="L.Help_Conflict_A">· Les groupes (onglet « Groupes ») — répartissez les tenues en groupes, puis « Enregistrer les fichiers de groupes » écrit SliderGroups\*.xml pour BodySlide.</sys:String>
-    <sys:String x:Key="L.Help_Conflict_B">· Les choix de conflits de sortie (onglet « Conflits de sortie ») — lorsque plusieurs tenues écrivent le même fichier de maillage, choisissez quel mod le génère, puis « Écrire dans BodySlide… » enregistre BuildSelection.xml. Les choix restent dans cet outil jusqu’à l’écriture ; le fichier d’origine est d’abord sauvegardé en .bak.</sys:String>
+    <sys:String x:Key="L.Help_Conflict_B">· Les choix de conflits de sortie (onglet « Conflits de sortie ») — lorsque plusieurs tenues écrivent le même fichier de maillage, choisissez quel mod le génère, puis « Écrire dans BodySlide… » enregistre BuildSelection.xml. Les choix restent dans cet outil jusqu’à l’écriture ; le fichier d’origine est d’abord sauvegardé en .bak. Il est toujours écrit dans le dossier de l'application BodySlide (à côté de Config.xml) — c'est le seul endroit où BodySlide le lit, il ne suit donc pas le répertoire de sortie des paramètres.</sys:String>
     <sys:String x:Key="L.Help_Conflict_C">Chacun écrit son propre fichier sans écraser l’autre : après une seule analyse, les deux résultats sont disponibles, dans n’importe quel ordre, et vous pouvez revenir à l’un ou l’autre plus tard.</sys:String>
     <sys:String x:Key="L.Help_Conflict_D">Le « partage interne à un mod » (des centaines de recolorations d’une même tenue) est normal et n’est pas un conflit à résoudre ; cochez « Conflits entre mods uniquement » pour les masquer.</sys:String>
     <sys:String x:Key="L.Help_Toc">Sommaire</sys:String>

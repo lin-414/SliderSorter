@@ -27,6 +27,9 @@ public partial class SettingsPage : UserControl
 
         var version = typeof(SettingsPage).Assembly.GetName().Version;
         VersionLabel.Text = "v" + (version is null ? "?" : version.ToString(3));
+        // 仓库地址的显示文本从 RepoUrl 派生（去掉协议）：链接和它上面那行字是同一条 URL，
+        // 分成两处写的话仓库搬家只会先改掉能点的那一半。
+        RepoLinkText.Text = RepoUrl.Substring(RepoUrl.IndexOf("://", StringComparison.Ordinal) + 3);
     }
 
     private void AdoptViewModel()

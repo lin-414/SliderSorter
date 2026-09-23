@@ -2,7 +2,7 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:sys="clr-namespace:System;assembly=mscorlib">
     <!-- English — keys mirror Lang.zh.xaml one-to-one. -->
-    <sys:String x:Key="L.App_Title" xml:space="preserve">SliderSorter — BodySlide Group Tool</sys:String>
+    <sys:String x:Key="L.App_Title" xml:space="preserve">SliderSorter</sys:String>
 
     <!-- Menu -->
     <sys:String x:Key="L.Menu_ImportGroups">Import group files…(_I)</sys:String>
@@ -23,9 +23,6 @@
     <sys:String x:Key="L.Scan_StatusAt" xml:space="preserve">Last scan: {0}　·　{1}</sys:String>
     <sys:String x:Key="L.Scan_CountsShort" xml:space="preserve">{0} mods · {1} outfits</sys:String>
     <sys:String x:Key="L.Scan_StatusStaleTip" xml:space="preserve">This result has been sitting for a while. If you installed mods since, click Rescan before going further.</sys:String>
-    <sys:String x:Key="L.Age_JustNow" xml:space="preserve">{0} seconds ago</sys:String>
-    <sys:String x:Key="L.Age_Minutes" xml:space="preserve">{0} minutes ago</sys:String>
-    <sys:String x:Key="L.Age_Hours" xml:space="preserve">{0} hours ago</sys:String>
     <sys:String x:Key="L.Rescan_Tip" xml:space="preserve">Rescan mods and outfits (also rebuilds the output-conflict list)</sys:String>
     <sys:String x:Key="L.Settings_CleanupStale" xml:space="preserve">Clean stale outfits…</sys:String>
     <sys:String x:Key="L.Settings_CleanupStaleNote" xml:space="preserve">Removes outfits that are no longer in the current scan from every group (the mod may have been uninstalled or renamed). This edits group contents; you will be asked to confirm, and it can be undone with Ctrl+Z.</sys:String>
@@ -283,7 +280,7 @@ Open the release page to download?</sys:String>
     <sys:String x:Key="L.Conflict_ClearAll" xml:space="preserve">Clear all</sys:String>
     <sys:String x:Key="L.Conflict_ClearAllTip" xml:space="preserve">Clear the choice for every group listed and let BodySlide ask again</sys:String>
     <sys:String x:Key="L.Conflict_Export" xml:space="preserve">Write to BodySlide…</sys:String>
-    <sys:String x:Key="L.Conflict_ExportTip" xml:space="preserve">Writes the choices into BuildSelection.xml in the BodySlide folder; the previous file is kept as .bak</sys:String>
+    <sys:String x:Key="L.Conflict_ExportTip" xml:space="preserve">Writes the choices into BuildSelection.xml in the BodySlide program folder (next to Config.xml) — group files can be supplied by a mod, this file can't; the confirm box lists the full path first, and the previous file is kept as .bak</sys:String>
     <sys:String x:Key="L.Conflict_ExportHint" xml:space="preserve">Writes BuildSelection.xml; the previous file is kept as .bak</sys:String>
     <sys:String x:Key="L.Conflict_StatusChosen" xml:space="preserve">Chosen: {0}</sys:String>
     <sys:String x:Key="L.Conflict_StatusUnresolved" xml:space="preserve">unset</sys:String>
@@ -313,7 +310,7 @@ The existing file is backed up as BuildSelection.xml.bak. BodySlide stops asking
     <sys:String x:Key="L.Msg_NoBodySlideDir" xml:space="preserve">No BodySlide installation is selected, so BuildSelection.xml has nowhere to go.</sys:String>
     <sys:String x:Key="L.Msg_ConflictNothingToExport" xml:space="preserve">No conflict group has a chosen winner yet, so there is nothing to write.</sys:String>
     <sys:String x:Key="L.Msg_ExportFail" xml:space="preserve">Failed to write BuildSelection.xml.</sys:String>
-    <sys:String x:Key="L.Msg_BuildSelWritten" xml:space="preserve">{0} entries written, {1} removed. Restart BodySlide to pick them up.</sys:String>
+    <sys:String x:Key="L.Msg_BuildSelWritten" xml:space="preserve">{0} entries written, {1} removed → {2}. Restart BodySlide to pick them up.</sys:String>
     <sys:String x:Key="L.Log_OutputConflictsFound" xml:space="preserve">{0} outfits are written to the same output file by more than one mod; {1} groups in total counting one mod's own presets, {2} of them still unset — pick winners under Tools → Output conflicts…</sys:String>
     <sys:String x:Key="L.Log_BuildSelWritten" xml:space="preserve">Wrote BuildSelection.xml: {0} added/changed, {1} removed → {2}</sys:String>
     <sys:String x:Key="L.Vm_ConflictsInline" xml:space="preserve">output conflicts: {0} ({1} unset)</sys:String>
@@ -391,8 +388,7 @@ One file per group, named after the group: {1}{2} ({3}).
 
     <!-- About -->
     <sys:String x:Key="L.About_Desc">Reads the mods installed via Mod Organizer 2, lets you batch-assign BodySlide slider sets into groups, and generates group files in BodySlide's native format. Works with any BodySlide-supported game such as Skyrim SE/AE and Fallout 4.</sys:String>
-    <sys:String x:Key="L.About_Author">Author: lin-414</sys:String>
-    <sys:String x:Key="L.About_Repo" xml:space="preserve">GitHub: github.com/lin-414/SliderSorter</sys:String>
+    <sys:String x:Key="L.About_AuthorLabel">Author</sys:String>
     <sys:String x:Key="L.About_Compat">The group files are fully compatible with BodySlide; each group becomes its own file named after the group, stored in BodySlide's SliderGroups folder.</sys:String>
 
     <!-- Help -->
@@ -438,8 +434,8 @@ One file per group, named after the group: {1}{2} ({3}).
     <sys:String x:Key="L.Help_H5">5. Rule grouping (batch grouping)</sys:String>
     <sys:String x:Key="L.Help_32">Undo (Ctrl+Z, or Edit → Undo) rolls back the last 30 grouping actions one step at a time: add/remove, rule grouping, new/rename/delete group, import, and removals made in the member list. Saving to disk does not clear the undo history, but restarting the app does.</sys:String>
     <sys:String x:Key="L.Help_33">Five output modes:</sys:String>
-    <sys:String x:Key="L.Help_34">Auto (recommended): writes to the effective project path's SliderGroups when it is a real folder; when it is CalienteTools\BodySlide under MO2's virtual Data (the most common case), writes to the MO2-dedicated mod "SliderSorter".</sys:String>
-    <sys:String x:Key="L.Help_35">MO2-dedicated mod: mods\SliderSorter\CalienteTools\BodySlide\SliderGroups\ — visible in MO2, toggleable per Profile, survives BodySlide reinstalls.</sys:String>
+    <sys:String x:Key="L.Help_34">Auto (recommended): writes to the effective project path's SliderGroups when it is a real folder; when it is CalienteTools\BodySlide under MO2's virtual Data (the most common case), writes to the MO2-dedicated mod "SliderSorter Output".</sys:String>
+    <sys:String x:Key="L.Help_35">MO2-dedicated mod: mods\SliderSorter Output\CalienteTools\BodySlide\SliderGroups\ — visible in MO2, toggleable per Profile, survives BodySlide reinstalls.</sys:String>
     <sys:String x:Key="L.Help_36">BodySlide app folder / real game Data / custom: writes to the SliderGroups of the respective location.</sys:String>
     <sys:String x:Key="L.Help_H6">6. Undo and output location</sys:String>
     <sys:String x:Key="L.Help_37">· Ticked outfits but nothing happened? A tick only selects; you still have to click "Add to group" in the middle.</sys:String>
@@ -458,7 +454,7 @@ One file per group, named after the group: {1}{2} ({3}).
     <sys:String x:Key="L.Help_H8">8. Two independent results</sys:String>
     <sys:String x:Key="L.Help_Conflict_Intro">One scan produces two results that do not depend on each other, one per tab. You can do either one on its own — neither has to come first.</sys:String>
     <sys:String x:Key="L.Help_Conflict_A">· Groups ("Grouping" tab) — assign outfits to groups, then "Save group files" writes SliderGroups\*.xml for BodySlide to read.</sys:String>
-    <sys:String x:Key="L.Help_Conflict_B">· Output-conflict choices ("Output conflicts" tab) — when several outfits write the same body mesh file, choose which mod generates it, then "Write to BodySlide…" saves BuildSelection.xml. Choices live inside this tool until written; the original file is backed up as .bak first.</sys:String>
+    <sys:String x:Key="L.Help_Conflict_B">· Output-conflict choices ("Output conflicts" tab) — when several outfits write the same body mesh file, choose which mod generates it, then "Write to BodySlide…" saves BuildSelection.xml. Choices live inside this tool until written; the original file is backed up as .bak first. It always goes to the BodySlide program folder (next to Config.xml) — that is the only place BodySlide reads it from, so it does not follow the output location in Settings.</sys:String>
     <sys:String x:Key="L.Help_Conflict_C">Each writes its own file and never overwrites the other: after a single scan both are available, in any order, and you can come back to either one later.</sys:String>
     <sys:String x:Key="L.Help_Conflict_D">"Shared output within one mod" (hundreds of recolours of the same outfit) is normal and is not counted as something to resolve; tick "Cross-mod conflicts only" to filter them out.</sys:String>
     <sys:String x:Key="L.Help_Toc">Contents</sys:String>

@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Text;
+using System.Windows.Threading;
 using System.Xml;
 using SliderSorter.Core;
 using SliderSorter.Wpf.Services;
@@ -49,7 +50,7 @@ public sealed record GroupItem(string Name, int Count)
 public partial class MainViewModel : ObservableObject
 {
     public static string AppTitle => L10n.Tr("L.App_Title");
-    public const string DedicatedModName = "SliderSorter";
+    public const string DedicatedModName = "SliderSorter Output";
 
     // 共享实例：App 启动时加载并登记（AppSettings.Use）。没有 App 上下文（单测）时 Shared 惰性加载，
     // 效果与原来的各自 Load 一致，但不会出现"两处各加载一份、互相覆盖"的问题。
@@ -185,21 +186,53 @@ public partial class MainViewModel : ObservableObject
     /// 用户看到一份清单无从判断它是不是已经过期（装了新模组之后尤其危险）。</summary>
     [ObservableProperty] private DateTime? _lastScanAt;
 
-    /// <summary>扫描状态一行摘要（"上次扫描：3 分钟前 · 模组 120 · 服装 840"）。
-    /// 未扫描时给引导文案，而不是留空——空白会被读成"这栏坏了"。
+    /// <summary>扫描状态一行摘要（"上次扫描：14:32 · 模组 120 · 服装 840"）。
+    /// 时刻是绝对值而不是"3 分钟前"：这句只在扫描收尾那一刻算一次，没有计时器再去重算，
+    /// 相对时长会一直冻在"0 秒前"——一个永远不动的读数会被读成这栏坏了。绝对时刻不随时间走样。
+    /// 未扫描时给引导文案，而不是留空——空白同样会被读成"这栏坏了"。
     /// 注意别和 <see cref="ScanStatusText"/> 混：那个是扫描中遮罩上的进度文字。</summary>
     public string ScanSummaryText => LastScanAt is null
         ? L10n.Tr("L.Scan_StatusNever")
-        : L10n.TrF("L.Scan_StatusAt", DescribeAge(DateTime.Now - LastScanAt.Value), StatusCountsShort);
+        : L10n.TrF("L.Scan_StatusAt", LastScanAt.Value.ToShortTimeString(), StatusCountsShort);
 
     /// <summary>扫描结果是否可能已过期（超过 10 分钟）。只用来调颜色，不做任何拦截——
     /// 判定"真的过期了"需要重扫，而那正是用户点「重新扫描」要做的事，不需要工具替他下结论。</summary>
-    public bool IsScanStale => LastScanAt is not null && DateTime.Now - LastScanAt.Value > TimeSpan.FromMinutes(10);
+    public bool IsScanStale => LastScanAt is not null && DateTime.Now - LastScanAt.Value > StaleAfter;
+
+    private static readonly TimeSpan StaleAfter = TimeSpan.FromMinutes(10);
+    private DispatcherTimer? _staleTimer;
 
     partial void OnLastScanAtChanged(DateTime? value)
     {
         OnPropertyChanged(nameof(ScanSummaryText));
         OnPropertyChanged(nameof(IsScanStale));
+        ArmStaleWarning(value);
+    }
+
+    /// <summary>到过期那一刻补发一次 <see cref="IsScanStale"/> 通知，让警告色真的亮起来。
+    /// 这条线只有一次 false→true 的翻转，所以不挂个每秒重绘的常转计时器，而是一次性定时器到点停表。
+    /// 上面 <see cref="OnLastScanAtChanged"/> 里那次通知顺手覆盖了"设进来时就已经过期"的情况。</summary>
+    private void ArmStaleWarning(DateTime? scannedAt)
+    {
+        _staleTimer?.Stop();
+        if (scannedAt is not { } at)
+            return;
+        var remaining = StaleAfter - (DateTime.Now - at);
+        if (remaining <= TimeSpan.Zero)
+            return;
+        if (_staleTimer is null)
+        {
+            // 表只造一次，处理器也就只挂一次：重扫时反复 += 会让一次 Tick 叫醒好几个副本
+            var timer = new DispatcherTimer(DispatcherPriority.Background);
+            timer.Tick += (_, _) =>
+            {
+                timer.Stop();
+                OnPropertyChanged(nameof(IsScanStale));
+            };
+            _staleTimer = timer;
+        }
+        _staleTimer.Interval = remaining;
+        _staleTimer.Start();
     }
 
     /// <summary>状态栏那句的简版（"模组 120 · 服装 840"），供扫描指示器复用。
@@ -207,13 +240,6 @@ public partial class MainViewModel : ObservableObject
     private string StatusCountsShort => Scan is null
         ? L10n.Tr("L.Word_None")
         : L10n.TrF("L.Scan_CountsShort", WalkRoots().Count(n => n.Kind == NodeKind.Mod), Scan.Outfits.Count);
-
-    /// <summary>把时长说成人话。刻意不分"秒/分/小时"以外的档——超过一天的情况在这类
-    /// 桌面工具的会话长度里不存在，多写档位只会多几行译文。</summary>
-    private static string DescribeAge(TimeSpan age) =>
-        age.TotalSeconds < 60 ? L10n.TrF("L.Age_JustNow", (int)age.TotalSeconds)
-        : age.TotalMinutes < 60 ? L10n.TrF("L.Age_Minutes", (int)age.TotalMinutes)
-        : L10n.TrF("L.Age_Hours", (int)age.TotalHours);
 
     /// <summary>环境是否还没配好（缺实例或缺 BodySlide 目录）。设置页据此在最上方挂引导条。
     /// 两个条件缺一不可：只选实例不选 BodySlide 仍然扫不了，反之亦然。</summary>
@@ -481,6 +507,10 @@ public partial class MainViewModel : ObservableObject
         LogWriteTarget();
         OnPropertyChanged(nameof(SaveButtonLabel));
         OnPropertyChanged(nameof(OutputToolTip));
+        // 扫描状态行与未配置引导条同样是代码拼的，且没有别的变更源（LastScanAt 扫完就定下来了），
+        // 不在这儿补一句就会一直留着旧语言。
+        OnPropertyChanged(nameof(ScanSummaryText));
+        RaiseConfigState();
         RaiseLogSummary();
         RefreshTransferState();
         UpdateMembershipMarks(); // 树节点文本也是代码拼的（同名冲突 / [组内 x/y]），一并换语言
@@ -495,6 +525,7 @@ public partial class MainViewModel : ObservableObject
     {
         _closed = true;
         DisposeDebounce(); // 关窗后不会再有输入变更，防抖计时器与它的 CTS 一并收掉
+        _staleTimer?.Stop(); // 同理：不会再有过期翻转，别留一颗挂着 VM 的表
         Settings.Save();
     }
 

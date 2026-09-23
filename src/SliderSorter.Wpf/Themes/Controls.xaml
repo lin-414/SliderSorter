@@ -556,6 +556,10 @@
         <Setter Property="Foreground" Value="{DynamicResource B.Text}" />
         <Setter Property="SnapsToDevicePixels" Value="True" />
         <Setter Property="OverridesDefaultStyle" Value="True" />
+        <!-- 滚轮不许改选中项（Services/IgnoreWheel.cs：只在下拉框持有键盘焦点时掐，没焦点时页面照滚）。
+             放在隐式样式里而不是逐个下拉框写：全项目的 ComboBox 都从这条样式派生，而误改选中项
+             这个坑对每一个都成立——语言、主题、输出模式、实例、Profile 选完即落盘，实例还会连带重扫。 -->
+        <Setter Property="ui:IgnoreWheel.Enabled" Value="True" />
         <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Auto" />
         <Setter Property="Template">
             <Setter.Value>
@@ -988,10 +992,17 @@
          换成 ToggleButton 后，IsChecked 天然就是 IsExpanded，模板里一个 Trigger 画箭头，
          无需要求调用方再写一个 DataTrigger，也自动带上 Toggle 模式的自动化语义。
 
-         Padding 收窄到 4,3 让箭头与卡片左边界齐平，而不是缩进一颗按钮的内边距。 -->
+         整行都是命中区（HorizontalAlignment=Stretch）：折叠条读起来是"一行"，
+         可点的却只有文字那么宽，鼠标沿行扫过去会在文字两端忽亮忽灭；撑满后悬停带
+         与命中区一致，行尾还能腾出一个位置放快捷键提示（见下面的 Tag）。
+         Padding 因此从 4,3 放宽到 6,7 —— 行高要撑得起一条可悬停的行。
+
+         Tag = 行尾的键帽提示（如「使用说明」的 F1）。不设就不占位。
+         用 Tag 而不是再加一对 ContentSource：提示是这一行的附属说明，不是它的内容，
+         调用方只写一个字符串就够，不值得为它扩模板契约。 -->
     <Style x:Key="DisclosureToggle" TargetType="ToggleButton">
-        <Setter Property="Padding" Value="4,3" />
-        <Setter Property="HorizontalAlignment" Value="Left" />
+        <Setter Property="Padding" Value="6,7" />
+        <Setter Property="HorizontalAlignment" Value="Stretch" />
         <Setter Property="HorizontalContentAlignment" Value="Left" />
         <Setter Property="Foreground" Value="{DynamicResource B.Text}" />
         <Setter Property="Background" Value="Transparent" />
@@ -1008,6 +1019,7 @@
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="Auto" />
                                 <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
                             <!-- 箭头：收起时朝右（▸ = 还有内容可展开），展开时转 90° 朝下（▾）。
                                  用一个 RotateTransform 而不是两套 Path 数据，形状定义只此一处。
@@ -1028,9 +1040,21 @@
                             <ContentPresenter Grid.Column="1" VerticalAlignment="Center"
                                               TextElement.Foreground="{TemplateBinding Foreground}"
                                               TextElement.FontWeight="SemiBold" />
+                            <!-- 行尾键帽提示（Tag）。底色取 B.Border：它必须同时压得住两种状态 ——
+                                 静止时下面是卡片（B.Card），悬停时整行换成 B.Panel，
+                                 而 BorderSoft 与 Card、Panel 与 Panel 都几乎同值，
+                                 用它们任何一枚都会让键帽在悬停那一刻整枚消失。 -->
+                            <Border x:Name="hint" Grid.Column="2" Margin="8,0,0,0" VerticalAlignment="Center"
+                                    Background="{DynamicResource B.Border}" CornerRadius="3" Padding="5,1">
+                                <TextBlock Text="{Binding Tag, RelativeSource={RelativeSource TemplatedParent}}"
+                                           Foreground="{DynamicResource B.TextDim}" FontSize="11" />
+                            </Border>
                         </Grid>
                     </Border>
                     <ControlTemplate.Triggers>
+                        <Trigger Property="Tag" Value="{x:Null}">
+                            <Setter TargetName="hint" Property="Visibility" Value="Collapsed" />
+                        </Trigger>
                         <Trigger Property="IsMouseOver" Value="True">
                             <Setter TargetName="bd" Property="Background" Value="{DynamicResource B.Panel}" />
                         </Trigger>

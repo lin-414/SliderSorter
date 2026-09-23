@@ -148,7 +148,9 @@
                      让它改的是左右两栏（都是 *），中间这一列（Auto）不受影响 -->
                 <GridSplitter Width="6" HorizontalAlignment="Left" VerticalAlignment="Stretch"
                               Background="Transparent" ResizeDirection="Columns" ResizeBehavior="PreviousAndNext" />
-                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Margin="10,0,0,0">
+                <!-- 左右留白必须相等：中间这列是 Auto，宽度恰好等于「按钮 + 外边距」，
+                     HorizontalAlignment=Center 因此无从偏移——单边留白会把按钮整体推向右栏。 -->
+                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Margin="12,0,12,0">
                     <Button x:Name="AddToGroupButton" Style="{StaticResource PrimaryButton}"
                             Content="{Binding TransferAddLabel}"
                             Command="{Binding ApplyCheckedToCurrentGroupCommand}" CommandParameter="add"

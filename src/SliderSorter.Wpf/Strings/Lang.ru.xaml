@@ -2,7 +2,7 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:sys="clr-namespace:System;assembly=mscorlib">
     <!-- Русский — keys mirror Lang.zh.xaml one-to-one. -->
-    <sys:String x:Key="L.App_Title" xml:space="preserve">SliderSorter — инструмент групп BodySlide</sys:String>
+    <sys:String x:Key="L.App_Title" xml:space="preserve">SliderSorter</sys:String>
 
     <!-- Menu -->
     <sys:String x:Key="L.Menu_ImportGroups">Импорт файлов групп…(_И)</sys:String>
@@ -23,9 +23,6 @@
     <sys:String x:Key="L.Scan_StatusAt" xml:space="preserve">Последнее сканирование: {0}　·　{1}</sys:String>
     <sys:String x:Key="L.Scan_CountsShort" xml:space="preserve">модов {0} · одежды {1}</sys:String>
     <sys:String x:Key="L.Scan_StatusStaleTip" xml:space="preserve">Результат уже давно не обновлялся. Если вы с тех пор установили моды, нажмите «Просканировать снова».</sys:String>
-    <sys:String x:Key="L.Age_JustNow" xml:space="preserve">{0} сек. назад</sys:String>
-    <sys:String x:Key="L.Age_Minutes" xml:space="preserve">{0} мин. назад</sys:String>
-    <sys:String x:Key="L.Age_Hours" xml:space="preserve">{0} ч. назад</sys:String>
     <sys:String x:Key="L.Rescan_Tip" xml:space="preserve">Заново просканировать моды и одежду (заодно пересоберёт список конфликтов вывода)</sys:String>
     <sys:String x:Key="L.Settings_CleanupStale" xml:space="preserve">Удалить устаревшие комплекты…</sys:String>
     <sys:String x:Key="L.Settings_CleanupStaleNote" xml:space="preserve">Убирает из всех групп одежду, которой больше нет в текущих результатах сканирования (мод мог быть удалён или переименован). Это меняет содержимое групп; потребуется подтверждение, отменить можно через Ctrl+Z.</sys:String>
@@ -278,7 +275,7 @@
     <sys:String x:Key="L.Conflict_ClearAll" xml:space="preserve">Сбросить всё</sys:String>
     <sys:String x:Key="L.Conflict_ClearAllTip" xml:space="preserve">Снять выбор во всех показанных группах и позволить BodySlide спрашивать снова</sys:String>
     <sys:String x:Key="L.Conflict_Export" xml:space="preserve">Записать в BodySlide…</sys:String>
-    <sys:String x:Key="L.Conflict_ExportTip" xml:space="preserve">Сохраняет выбор в BuildSelection.xml в папке BodySlide; прежний файл сохраняется как .bak</sys:String>
+    <sys:String x:Key="L.Conflict_ExportTip" xml:space="preserve">Сохраняет выбор в BuildSelection.xml в папке BodySlide (рядом с Config.xml) — группы можно подавать через мод, этот файл нет; перед записью показывается полный путь, прежний файл сохраняется как .bak</sys:String>
     <sys:String x:Key="L.Conflict_ExportHint" xml:space="preserve">Пишет BuildSelection.xml; прежний файл — в .bak</sys:String>
     <sys:String x:Key="L.Conflict_StatusChosen" xml:space="preserve">Выбрано: {0}</sys:String>
     <sys:String x:Key="L.Conflict_StatusUnresolved" xml:space="preserve">не задано</sys:String>
@@ -308,7 +305,7 @@
     <sys:String x:Key="L.Msg_NoBodySlideDir" xml:space="preserve">Установка BodySlide не выбрана — записывать BuildSelection.xml некуда.</sys:String>
     <sys:String x:Key="L.Msg_ConflictNothingToExport" xml:space="preserve">Ни в одной группе не выбран победитель — записывать нечего.</sys:String>
     <sys:String x:Key="L.Msg_ExportFail" xml:space="preserve">Не удалось записать BuildSelection.xml.</sys:String>
-    <sys:String x:Key="L.Msg_BuildSelWritten" xml:space="preserve">Записано записей: {0}, удалено: {1}. Перезапустите BodySlide.</sys:String>
+    <sys:String x:Key="L.Msg_BuildSelWritten" xml:space="preserve">Записано записей: {0}, удалено: {1} → {2}. Перезапустите BodySlide.</sys:String>
     <sys:String x:Key="L.Log_OutputConflictsFound" xml:space="preserve">{0} групп пишутся разными модами в один выходной файл; всего {1} группа (включая наборы одного мода), без выбора: {2} — победителя можно выбрать: Инструменты → Конфликты вывода…</sys:String>
     <sys:String x:Key="L.Log_BuildSelWritten" xml:space="preserve">Записан BuildSelection.xml: добавлено/изменено {0}, удалено {1} → {2}</sys:String>
     <sys:String x:Key="L.Vm_ConflictsInline" xml:space="preserve">конфликты вывода: {0} (без выбора {1})</sys:String>
@@ -386,8 +383,7 @@
 
     <!-- About -->
     <sys:String x:Key="L.About_Desc">Читает моды, установленные через Mod Organizer 2, позволяет массово распределять наборы слайдеров BodySlide по группам и создаёт файлы групп в родном формате BodySlide. Работает с любой игрой, поддерживаемой BodySlide, например Skyrim SE/AE и Fallout 4.</sys:String>
-    <sys:String x:Key="L.About_Author">Автор: lin-414</sys:String>
-    <sys:String x:Key="L.About_Repo" xml:space="preserve">GitHub: github.com/lin-414/SliderSorter</sys:String>
+    <sys:String x:Key="L.About_AuthorLabel">Автор</sys:String>
     <sys:String x:Key="L.About_Compat">Файлы групп полностью совместимы с BodySlide; каждая группа становится отдельным файлом с именем группы в папке SliderGroups.</sys:String>
 
     <!-- Help -->
@@ -433,8 +429,8 @@
     <sys:String x:Key="L.Help_H5">5. Группировка по правилам</sys:String>
     <sys:String x:Key="L.Help_32">«Отмена» (Ctrl+Z или меню «Правка → Отменить») пошагово откатывает последние 30 действий: добавление/удаление, группировку по правилам, создание/переименование/удаление группы, импорт и удаления в списке участников. Сохранение на диск не очищает историю отмены, а перезапуск программы — очищает.</sys:String>
     <sys:String x:Key="L.Help_33">Пять режимов вывода:</sys:String>
-    <sys:String x:Key="L.Help_34">Авто (рекомендуется): запись в SliderGroups действующего пути проекта, если это реальная папка; если это CalienteTools\BodySlide в виртуальной Data MO2 (самый частый случай) — в отдельный мод MO2 «SliderSorter».</sys:String>
-    <sys:String x:Key="L.Help_35">Отдельный мод MO2: mods\SliderSorter\CalienteTools\BodySlide\SliderGroups\ — виден в MO2, включается по профилям, переживает переустановку BodySlide.</sys:String>
+    <sys:String x:Key="L.Help_34">Авто (рекомендуется): запись в SliderGroups действующего пути проекта, если это реальная папка; если это CalienteTools\BodySlide в виртуальной Data MO2 (самый частый случай) — в отдельный мод MO2 «SliderSorter Output».</sys:String>
+    <sys:String x:Key="L.Help_35">Отдельный мод MO2: mods\SliderSorter Output\CalienteTools\BodySlide\SliderGroups\ — виден в MO2, включается по профилям, переживает переустановку BodySlide.</sys:String>
     <sys:String x:Key="L.Help_36">Папка приложения BodySlide / реальная Data игры / своя папка: запись в SliderGroups соответствующего места.</sys:String>
     <sys:String x:Key="L.Help_H6">6. Отмена и каталог вывода</sys:String>
     <sys:String x:Key="L.Help_37">· Отметил комплекты, но ничего не произошло? Отметка только выбирает — нужно ещё нажать «Добавить в группу» посередине.</sys:String>
@@ -449,7 +445,7 @@
     <sys:String x:Key="L.Help_H8">8. Два независимых результата</sys:String>
     <sys:String x:Key="L.Help_Conflict_Intro">Одно сканирование даёт два результата, независимых друг от друга, по одному на вкладку. Можно выполнить любой из них отдельно — ни один не обязан быть первым.</sys:String>
     <sys:String x:Key="L.Help_Conflict_A">· Группы (вкладка «Группировка») — распределите одежду по группам и нажмите «Сохранить файлы групп»: будут записаны SliderGroups\*.xml для BodySlide.</sys:String>
-    <sys:String x:Key="L.Help_Conflict_B">· Выбор конфликтов вывода (вкладка «Конфликты вывода») — когда несколько предметов пишут один и тот же файл меша, выберите, какой мод его создаёт, и нажмите «Записать в BodySlide…»: результат попадёт в BuildSelection.xml. Выбор хранится в этой программе до записи; исходный файл сначала сохраняется как .bak.</sys:String>
+    <sys:String x:Key="L.Help_Conflict_B">· Выбор конфликтов вывода (вкладка «Конфликты вывода») — когда несколько предметов пишут один и тот же файл меша, выберите, какой мод его создаёт, и нажмите «Записать в BodySlide…»: результат попадёт в BuildSelection.xml. Выбор хранится в этой программе до записи; исходный файл сначала сохраняется как .bak. Он всегда пишется в папку BodySlide (рядом с Config.xml) — больше оттуда BodySlide его не читает, поэтому настройка «Куда писать» на него не влияет.</sys:String>
     <sys:String x:Key="L.Help_Conflict_C">Каждый пишет свой файл и не перезаписывает другой: после одного сканирования доступны оба результата, в любом порядке, и позже можно вернуться к каждому отдельно.</sys:String>
     <sys:String x:Key="L.Help_Conflict_D">«Общий вывод внутри одного мода» (сотни перекрасок одной вещи) — это норма, а не конфликт для решения; включите «Только конфликты между модами», чтобы их скрыть.</sys:String>
     <sys:String x:Key="L.Help_Toc">Содержание</sys:String>
