@@ -17,7 +17,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\BSGroupGenerator.Wpf\BSGroupGenerator.Wpf.csproj" />
+    <ProjectReference Include="..\..\src\SliderSorter.Wpf\SliderSorter.Wpf.csproj" />
   </ItemGroup>
 
 </Project>

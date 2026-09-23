@@ -1,4 +1,4 @@
-# BS Group Generator
+# SliderSorter
 
 读取 **Mod Organizer 2 (MO2)** 安装的模组，让用户把服装模组批量划进 **BodySlide 分组（SliderGroups）** 的 Windows 独立小工具。
 
@@ -37,7 +37,7 @@ BodySlide 自带的 Group Manager 只有一个服装平铺列表，不知道哪�
 |---|---|---|
 | 自动（推荐） | 按下述规则 | 绝大多数情况 |
 | BodySlide 程序目录 | `<BodySlide 目录>\SliderGroups\` | BodySlide 目录旁有 SliderSets 的安装 |
-| MO2 专用模组 | `<MO2 mods>\BS Group Generator\CalienteTools\BodySlide\SliderGroups\` | 通过 MO2 启动 BodySlide（最干净：可按 profile 开关、重装 BodySlide 不丢） |
+| MO2 专用模组 | `<MO2 mods>\SliderSorter\CalienteTools\BodySlide\SliderGroups\` | 通过 MO2 启动 BodySlide（最干净：可按 profile 开关、重装 BodySlide 不丢） |
 | 游戏真实 Data | `<游戏 Data>\CalienteTools\BodySlide\SliderGroups\` | 不经 MO2 启动 BodySlide 时 |
 | 自定义（浏览选择） | 「浏览…」选择的任意路径 | 想自己管理文件；注意确认 BodySlide 能读到该位置 |
 
@@ -58,9 +58,9 @@ BodySlide 自带的 Group Manager 只有一个服装平铺列表，不知道哪�
 
 **MO2 正在运行时能用吗？** 能。工具读取的是磁盘上的 `ModOrganizer.ini` / `modlist.txt`（MO2 退出时才回写设置，运行中改动可能略有滞后）；写出后需重启 BodySlide，必要时重启 MO2 以刷新虚拟文件系统。
 
-**能从 MO2 里启动它吗？** 能，但**没必要**——工具与 MO2 只有磁盘读写关系，不需要虚拟文件系统，双击即用。想顺手一点就在 MO2 右下的「执行文件」下拉 → **配置…** → 添加，选 `BSGroupGenerator.exe`，参数留空（程序不读命令行）。**不要把它装成模组**：它不是游戏数据，装成模组只会让它经由虚拟文件系统启动。
+**能从 MO2 里启动它吗？** 能，但**没必要**——工具与 MO2 只有磁盘读写关系，不需要虚拟文件系统，双击即用。想顺手一点就在 MO2 右下的「执行文件」下拉 → **配置…** → 添加，选 `SliderSorter.exe`，参数留空（程序不读命令行）。**不要把它装成模组**：它不是游戏数据，装成模组只会让它经由虚拟文件系统启动。
 
-**为什么是 .NET 8 而不是更新的版本？** 实测：.NET 10 的 `BSGroupGenerator.exe` 从 MO2 启动**必崩**——MO2 会往子进程注入 `usvfs_x64.dll` 挂钩文件 API，.NET 10 的引导层在这种注入下 100% 触发访问违例（`0xc0000005`，故障模块 unknown，进程还没加载 coreclr 就死了），而同一份程序改成 net8 目标就正常。四种发布形态（框架依赖/自包含 × 多文件/单文件）都救不了 net10。所以 `TargetFramework` 钉在 `net8.0-windows`，**升回 net10 之前务必先在 MO2 里点一次验证**。
+**为什么是 .NET 8 而不是更新的版本？** 实测：.NET 10 的 `SliderSorter.exe` 从 MO2 启动**必崩**——MO2 会往子进程注入 `usvfs_x64.dll` 挂钩文件 API，.NET 10 的引导层在这种注入下 100% 触发访问违例（`0xc0000005`，故障模块 unknown，进程还没加载 coreclr 就死了），而同一份程序改成 net8 目标就正常。四种发布形态（框架依赖/自包含 × 多文件/单文件）都救不了 net10。所以 `TargetFramework` 钉在 `net8.0-windows`，**升回 net10 之前务必先在 MO2 里点一次验证**。
 
 **生成的组在 BodySlide 里看不到？** 1) 确认重启了 BodySlide/MO2；2) 在工具「**工具 → 诊断信息**」里检查「有效项目路径」和「写出目标」是否对应同一个目录——BodySlide 只从有效项目路径的 `SliderGroups` 读分组。
 
@@ -77,13 +77,13 @@ BodySlide 自带的 Group Manager 只有一个服装平铺列表，不知道哪�
 ## 开发
 
 ```
-dotnet build src/BSGroupGenerator.Wpf/BSGroupGenerator.Wpf.csproj
-dotnet test tests/BSGroupGenerator.Tests/BSGroupGenerator.Tests.csproj
-dotnet test tests/BSGroupGenerator.Wpf.Tests/BSGroupGenerator.Wpf.Tests.csproj
+dotnet build src/SliderSorter.Wpf/SliderSorter.Wpf.csproj
+dotnet test tests/SliderSorter.Tests/SliderSorter.Tests.csproj
+dotnet test tests/SliderSorter.Wpf.Tests/SliderSorter.Wpf.Tests.csproj
 publish.ps1                  # 生成 dist\（框架依赖，12 个文件约 2.2 MB，需 .NET 8 Desktop Runtime）
 publish.ps1 -SelfContained   # 生成 dist\（自包含，约 133 MB，用户无需安装任何依赖）
 
-python tools/verify_l10n.py src/BSGroupGenerator.Wpf   # 语言文件键一致性 / Core 层不得出现中文字面量 / 菜单访问键（CI 门禁）
+python tools/verify_l10n.py src/SliderSorter.Wpf   # 语言文件键一致性 / Core 层不得出现中文字面量 / 菜单访问键（CI 门禁）
 python tools/verify_contrast.py                        # 两套色板按 WCAG 2.1 逐对算对比度（CI 门禁）
 python tools/verify_theme.py                           # 窗口是否显式套用主题样式 / 两套色板键集合是否一致（CI 门禁）
 dotnet run --project tools/layout-probe -c Release     # 4 语言 × 2 主题 × Views 下全部窗口与页面 × 各档尺寸，断言 0 处溢出/裁切（CI 门禁）
@@ -93,7 +93,7 @@ dotnet run --project tools/layout-probe -c Release     # 4 语言 × 2 主题 ×
 - 3D 预览走 WPF 自带的 `Viewport3D`，不是 HelixToolkit.SharpDX。**别把理由记成"SharpDX 会带原生 DLL"**——实测它那套包的 `dotnet restore` 里 native 资产数为 0（SharpDX 是托管 COM 包装，调的是系统自带的 `d3d11.dll`）。真正的取舍是：SharpDX 需要可用的 D3D11 设备并经由 `D3DImage` 与 WPF 合成（远程桌面/关掉硬件加速时会黑屏），而 `Viewport3D` 没有这个前提。真要换栈，资产管线（NIF 材质解析、跨层定位、归档读取、DDS 解码）可以原样复用，只有最后画出来的那一步要重写。
 - 纹理必须自己解码：WPF 的 `BitmapImage`（走 WIC）只认老式 fourCC 的 DXT1/DXT3/DXT5，而天际 SE/AE 的纹理大量是 DX10 头 + BC7，喂进去直接抛 `COMException 0x88982F61`（"图像标题无法识别"）。所以用 Pfim 解成 32 位再 `BitmapSource.Create`，并把长边压到 1024（2048² 解出来一张就是 16 MB）。
 - 界面结构：**没有菜单栏**（原先的 文件/编辑/工具/界面主题/语言/帮助 全部取消——剩下的每一项要么与页内控件重复，要么本身就该是个页面）。`MainWindow` 只是壳（顶部 `TabControl` + 状态栏 + 扫描遮罩），四页在 `Views/Pages/` 下——**分组生成**（树 → 搬运 → 分组 → 写文件）、**输出冲突与选择**、**规则预设**、**设置**（工作环境 / 输出设置 / 外观 / 帮助与关于，四节单列自上而下、共用一条自适应标签轨，信息架构取自 boutique；使用说明、诊断信息、检查更新、关于全部内嵌，不再各开一个窗口）。选中页是 `MainViewModel.SelectedTab`，所以状态栏的冲突计数与 F1 都能主动切页；`Ctrl+1..4` 直达四页，`Ctrl+,` 与 F1 也保留。组的增删改查、导入组文件与撤销收在组列表的右键菜单（以及右侧那颗「⋯」）里。新增一页要同时登记三处门禁，否则它会**静默**逃过检查（这些工具原先只扫 `Views/*.xaml`，页面放进子目录不报错、只是不再被看）：`tools/verify_theme.py` 的 §6 要求它被壳引用、`tools/layout-probe` 按页面根宿主进窗口量、`XamlCommandBindingTests.BoundTarget` 要登记它的 DataContext。
-- 界面语言：`src/BSGroupGenerator.Wpf/Strings/Lang.{zh,en,ru,fr}.xaml` 四份资源字典，键必须一一对应（缺键时界面会直接显示键名）。新增语言需改三处：新建语言文件、在 `L10n.Supported` 登记、在 `MainViewModel.BuildLanguageOptions()` 加一项。设置里存的是**诉求**（`AppSettings.UiLanguage`）而不是生效语言，默认 `"system"`（跟随系统）：`L10n.Current` 是真正装载的那一种，设置页下拉的选中项与去重判断则要比 `L10n.Normalize(Settings.UiLanguage)`——「跟随系统」下这两者不等，比 `Current` 会让"英文系统上手动点一下 English"变成无声的空操作，`"system"` 也永远清不掉。系统语言按 `CultureInfo.CurrentUICulture`（Windows 的显示语言，不是区域格式、也不是 WPF 那个恒为 `en-US` 的 `FrameworkElement.Language`）取两字母码匹配，不在 `L10n.Supported` 里时回落 `L10n.SystemFallback`（= 英语）。语言下拉的后四项标签恒为各语言自己的写法（中文 / English / Русский / Français），所以不进 Lang 文件——界面被翻坏时那是唯一还认得出来的线索；「跟随系统」是例外（它描述行为不是语言名），走 `L.Settings_LanguageSystem`，四份语言文件都要有。
+- 界面语言：`src/SliderSorter.Wpf/Strings/Lang.{zh,en,ru,fr}.xaml` 四份资源字典，键必须一一对应（缺键时界面会直接显示键名）。新增语言需改三处：新建语言文件、在 `L10n.Supported` 登记、在 `MainViewModel.BuildLanguageOptions()` 加一项。设置里存的是**诉求**（`AppSettings.UiLanguage`）而不是生效语言，默认 `"system"`（跟随系统）：`L10n.Current` 是真正装载的那一种，设置页下拉的选中项与去重判断则要比 `L10n.Normalize(Settings.UiLanguage)`——「跟随系统」下这两者不等，比 `Current` 会让"英文系统上手动点一下 English"变成无声的空操作，`"system"` 也永远清不掉。系统语言按 `CultureInfo.CurrentUICulture`（Windows 的显示语言，不是区域格式、也不是 WPF 那个恒为 `en-US` 的 `FrameworkElement.Language`）取两字母码匹配，不在 `L10n.Supported` 里时回落 `L10n.SystemFallback`（= 英语）。语言下拉的后四项标签恒为各语言自己的写法（中文 / English / Русский / Français），所以不进 Lang 文件——界面被翻坏时那是唯一还认得出来的线索；「跟随系统」是例外（它描述行为不是语言名），走 `L.Settings_LanguageSystem`，四份语言文件都要有。
 - Core 层不依赖 UI，面向用户的文案一律经 `CoreStrings.Get/Format("L.Core_…")` 取词，由 WPF 层在启动时注入 `L10n.TrF`；Core 里出现中文字符串字面量会被门禁拦下（注释不算）。
 - 主题色集中在 `Themes/Palette.{Boutique,Light}.xaml`，控件模板在 `Themes/Controls.xaml`，颜色一律经 `DynamicResource B.*` 引用，两套色板的键集合必须一致且对比度达标（门禁会查）。视图里不得再出现硬编码颜色。
 - 窗口样式必须**显式**套用：`Themes/Controls.xaml` 里的 `AppWindow`（背景 / 前景 / 字体 / 渲染选项）要靠根元素 `Style="{StaticResource AppWindow}"` 引用才生效。隐式样式按元素**确切类型**匹配，`TargetType="Window"` 的隐式样式对 `x:Class` 生成的 `MainWindow` 与各对话框（`Window` 的派生类）不起作用，漏掉就会退回系统默认的白底黑字。根元素同时保留一份 `Background="{DynamicResource B.Window}"` 作兜底（本地值优先于样式 setter）。新增窗口时照抄现有窗口的根元素写法，跑 `verify_theme.py` 即可确认没漏。

@@ -52,11 +52,11 @@ PAGE_ROOTS = ("UserControl", "Page")
 
 
 def find_repo_root() -> str | None:
-    """从脚本位置向上找含 src/BSGroupGenerator.Wpf/Views 的目录。"""
+    """从脚本位置向上找含 src/SliderSorter.Wpf/Views 的目录。"""
     here = os.path.dirname(os.path.abspath(__file__))
     cur = here
     for _ in range(8):
-        if os.path.isdir(os.path.join(cur, "src", "BSGroupGenerator.Wpf", "Views")):
+        if os.path.isdir(os.path.join(cur, "src", "SliderSorter.Wpf", "Views")):
             return cur
         parent = os.path.dirname(cur)
         if parent == cur:
@@ -96,11 +96,11 @@ def root_open_tag(text: str) -> tuple[str | None, str | None]:
 def main() -> int:
     repo = sys.argv[1] if len(sys.argv) > 1 else find_repo_root()
     if not repo:
-        print("找不到仓库根目录（预期存在 src/BSGroupGenerator.Wpf/Views）。")
+        print("找不到仓库根目录（预期存在 src/SliderSorter.Wpf/Views）。")
         print("请显式传入：python tools/verify_theme.py <仓库根目录>")
         return 2
 
-    wpf = os.path.join(repo, "src", "BSGroupGenerator.Wpf")
+    wpf = os.path.join(repo, "src", "SliderSorter.Wpf")
     views = sorted(glob.glob(os.path.join(wpf, "Views", "**", "*.xaml"), recursive=True))
     themes = os.path.join(wpf, "Themes")
     light_path = os.path.join(themes, "Palette.Light.xaml")

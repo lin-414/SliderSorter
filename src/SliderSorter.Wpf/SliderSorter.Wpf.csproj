@@ -1,0 +1,36 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <!-- 钉在 net8：.NET 10 的 apphost 在 MO2 的 usvfs 注入下必崩（0xc0000005，coreclr 还没加载就死），
+         而本工具的用户都从 MO2 启动 BodySlide。升回 net10 前先在 MO2 里点一次验证。 -->
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <RootNamespace>SliderSorter.Wpf</RootNamespace>
+    <AssemblyName>SliderSorter</AssemblyName>
+    <ApplicationIcon>app.ico</ApplicationIcon>
+    <Version>0.2.0</Version>
+    <Product>SliderSorter</Product>
+    <Authors>lin-414</Authors>
+    <RepositoryUrl>https://github.com/lin-414/SliderSorter</RepositoryUrl>
+    <Description>读取 Mod Organizer 2 安装的模组，为 BodySlide 批量生成服装分组（SliderGroups）文件。</Description>
+    <SatelliteResourceLanguages>zh-Hans;en</SatelliteResourceLanguages>
+    <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="app.ico" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\SliderSorter\SliderSorter.csproj" />
+  </ItemGroup>
+
+</Project>

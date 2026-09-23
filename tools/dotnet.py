@@ -11,8 +11,8 @@
 `obj/` 一旦被清（例如改了 csproj、清了 bin/obj）就无路可走。
 
 用法（在仓库根）：
-    python tools/dotnet.py build  src/BSGroupGenerator.Wpf/BSGroupGenerator.Wpf.csproj -v q
-    python tools/dotnet.py test   tests/BSGroupGenerator.Wpf.Tests -v q
+    python tools/dotnet.py build  src/SliderSorter.Wpf/SliderSorter.Wpf.csproj -v q
+    python tools/dotnet.py test   tests/SliderSorter.Wpf.Tests -v q
     python tools/dotnet.py run    --project tools/layout-probe
 
 最后按 dotnet 的退出码退出，可直接用于 `&&` 串联。

@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <RootNamespace>SliderSorter</RootNamespace>
+    <AssemblyName>SliderSorter.Core</AssemblyName>
+    <Version>0.2.0</Version>
+    <Product>SliderSorter</Product>
+    <Authors>lin-414</Authors>
+    <RepositoryUrl>https://github.com/lin-414/SliderSorter</RepositoryUrl>
+    <Description>读取 Mod Organizer 2 安装的模组，为 BodySlide 批量生成服装分组（SliderGroups）文件。</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Nifly" Version="1.1.0" />
+    <PackageReference Include="Sharp.BSA.BA2" Version="1.17.0" />
+    <PackageReference Include="Pfim" Version="0.11.4" />
+  </ItemGroup>
+
+</Project>

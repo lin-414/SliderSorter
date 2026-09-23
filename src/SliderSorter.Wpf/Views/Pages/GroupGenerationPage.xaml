@@ -1,0 +1,434 @@
+<UserControl x:Class="SliderSorter.Wpf.Views.Pages.GroupGenerationPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="clr-namespace:SliderSorter.Wpf">
+    <!-- 分组生成页：壳（MainWindow）四个标签页里的主干——「选服装 → 分组 → 写文件」。
+         环境设置区（MO2 实例 / Profile / BodySlide 目录 / 输出方式）在设置页，这一页不重复播报它：
+         要改就去设置标签页，一行只读摘要在这里只是占掉树的高度。 -->
+    <UserControl.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVis" />
+        <!-- 反相：与 BoolToVis 配对使用（XAML 没有内置的反相可见性转换器），
+             让「一个组都没有」和「被过滤成空的」两类空状态互斥显示。 -->
+        <local:InverseBooleanToVisibilityConverter x:Key="InverseBoolToVis" />
+    </UserControl.Resources>
+    <Grid Margin="12,6,12,4">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*" MinHeight="0" />
+            <!-- 内联提示条：横跨整页，不挤三栏的宽度。
+                 放在主分栏下方（而不是"搬运按钮旁边"）是因为 1000px 宽时中间那栏只有
+                 Auto 宽度，塞进一句话会把左右两栏一起压缩——而提示内容往往比按钮长得多。
+                 高度 Auto + 内容为空时整行塌成 0，不占任何空间。 -->
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <!-- ── 页内行 0：主分栏（树 | 搬运操作栏 | 分组）── -->
+        <Grid Grid.Row="0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" MinWidth="220" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" MinWidth="220" />
+            </Grid.ColumnDefinitions>
+
+            <!-- 左：模组树 -->
+            <Grid Grid.Column="0">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" MinHeight="120" />
+                </Grid.RowDefinitions>
+                <Grid Grid.Row="0" Margin="0,0,0,6">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="8" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <Grid Grid.Column="0">
+                        <TextBox x:Name="FilterBox" Text="{Binding FilterText, UpdateSourceTrigger=PropertyChanged, Delay=0}" />
+                        <TextBlock Text="{DynamicResource L.Main_FilterOutfits}" IsHitTestVisible="False" Foreground="{DynamicResource B.TextDim}"
+                                   TextTrimming="CharacterEllipsis" Margin="8,0,0,0" VerticalAlignment="Center">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Visibility" Value="Collapsed" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Text, ElementName=FilterBox}" Value="">
+                                            <Setter Property="Visibility" Value="Visible" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                    </Grid>
+                    <Grid Grid.Column="2">
+                        <TextBox x:Name="ModFilterBox" Text="{Binding ModFilterText, UpdateSourceTrigger=PropertyChanged, Delay=0}" />
+                        <TextBlock Text="{DynamicResource L.Main_FilterMods}" IsHitTestVisible="False" Foreground="{DynamicResource B.TextDim}"
+                                   TextTrimming="CharacterEllipsis" Margin="8,0,0,0" VerticalAlignment="Center">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Visibility" Value="Collapsed" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Text, ElementName=ModFilterBox}" Value="">
+                                            <Setter Property="Visibility" Value="Visible" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+                    </Grid>
+                    <CheckBox Grid.Column="3" Content="{DynamicResource L.Main_UnassignedOnly}" Margin="10,0,0,4"
+                              VerticalAlignment="Center" IsChecked="{Binding UnassignedOnly}" />
+                    <!-- 重扫入口：原先只有冲突页有。扫描是**两份成果共同的前置**，
+                         而分组页才是用户的主场——装完新模组回来，第一眼就在这一页，
+                         却要切到另一页才能刷新，那个绕路是没道理的。
+                         按钮上的 ToolTip 说明了"会一并重算冲突清单"（探针保证不溢出）。 -->
+                    <Button Grid.Column="4" x:Name="RescanButton" Content="{DynamicResource L.Conflict_Rescan}"
+                            Command="{Binding DetectBodySlideCommand}" MinWidth="100" Margin="10,0,0,0"
+                            VerticalAlignment="Center"
+                            IsEnabled="{Binding CanRescan}"
+                            ToolTipService.ShowOnDisabled="True"
+                            ToolTip="{DynamicResource L.Rescan_Tip}" />
+                </Grid>
+
+                <Grid Grid.Row="1">
+                    <TreeView x:Name="OutfitTree" ItemsSource="{Binding TreeRoots}"
+                              ItemContainerStyle="{StaticResource NodeTreeItemStyle}">
+                        <TreeView.ItemTemplate>
+                            <HierarchicalDataTemplate ItemsSource="{Binding Children}">
+                                <!-- 用 Grid 而不是横向 StackPanel：横向 StackPanel 会给子元素无限宽度，
+                                     TextTrimming 就永远不会触发，超长服装名会撑出横向滚动条 -->
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <CheckBox Grid.Column="0" Style="{StaticResource NodeRowCheckBox}"
+                                              IsChecked="{Binding IsChecked, UpdateSourceTrigger=PropertyChanged}" />
+                                    <!-- 「已在组内」独立成徽标：以前是拼进 Text 的 "✔ " 前缀，
+                                         既没法单独设色/对齐，又和「（同名冲突）」后缀挤在同一个字符串里 -->
+                                    <Path Grid.Column="1" Data="M 1.5 5 L 5 8.5 L 10.5 1.5"
+                                          Stretch="Uniform" Width="10" Height="8" Margin="0,0,5,0"
+                                          VerticalAlignment="Center"
+                                          Stroke="{DynamicResource B.Member}" StrokeThickness="2"
+                                          StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                                          StrokeLineJoin="Round">
+                                        <Path.Style>
+                                            <Style TargetType="Path">
+                                                <!-- Hidden 而非 Collapsed：保持成员/非成员行的文字左边缘对齐 -->
+                                                <Setter Property="Visibility" Value="Hidden" />
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsMember}" Value="True">
+                                                        <Setter Property="Visibility" Value="Visible" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Path.Style>
+                                    </Path>
+                                    <!-- 冲突蓝 / 分隔符灰粗 / 占位灰 / 成员绿 四态的着色与叠加顺序，
+                                         原先在这里内联了四个 DataTrigger；现在收在 Themes/Components.xaml
+                                         的 NodeRowText 里，本页是这套样式的发源地，另三个视图共用同一份。 -->
+                                    <TextBlock Grid.Column="2" Text="{Binding Text}" ToolTip="{Binding Text}"
+                                               Style="{StaticResource NodeRowText}" />
+                                </Grid>
+                            </HierarchicalDataTemplate>
+                        </TreeView.ItemTemplate>
+                    </TreeView>
+                    <!-- 空状态：未扫描时树是纯空白，看起来像卡住了 -->
+                    <TextBlock Style="{StaticResource EmptyStateText}" Text="{DynamicResource L.Empty_Tree}"
+                               Visibility="{Binding ShowTreeEmptyState, Converter={StaticResource BoolToVis}}" />
+                </Grid>
+            </Grid>
+
+            <!-- 中：搬运操作栏。把「选中 → 搬运」的方向做成空间关系，
+                 主操作因此不必再和组管理按钮挤在同一面按钮墙上；标题也就不用写操作步骤了。 -->
+            <Grid Grid.Column="1">
+                <!-- 6px 拖拽条留在左缘，保住两栏宽度可调；ResizeBehavior=PreviousAndNext
+                     让它改的是左右两栏（都是 *），中间这一列（Auto）不受影响 -->
+                <GridSplitter Width="6" HorizontalAlignment="Left" VerticalAlignment="Stretch"
+                              Background="Transparent" ResizeDirection="Columns" ResizeBehavior="PreviousAndNext" />
+                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Margin="10,0,0,0">
+                    <Button x:Name="AddToGroupButton" Style="{StaticResource PrimaryButton}"
+                            Content="{Binding TransferAddLabel}"
+                            Command="{Binding ApplyCheckedToCurrentGroupCommand}" CommandParameter="add"
+                            IsEnabled="{Binding CanTransferAdd}"
+                            ToolTipService.ShowOnDisabled="True" ToolTip="{Binding TransferAddTip}"
+                            MinWidth="112" Margin="0,0,0,8" />
+                    <Button x:Name="RemoveFromGroupButton"
+                            Content="{Binding TransferRemoveLabel}"
+                            Command="{Binding ApplyCheckedToCurrentGroupCommand}" CommandParameter="remove"
+                            IsEnabled="{Binding CanTransferRemove}"
+                            ToolTipService.ShowOnDisabled="True" ToolTip="{Binding TransferRemoveTip}"
+                            MinWidth="112" />
+                </StackPanel>
+            </Grid>
+
+            <!-- 右：分组面板 -->
+            <Grid Grid.Column="2">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" MinHeight="120" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+                <Grid Grid.Row="0" Margin="0,0,0,6">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Grid.Column="0" Style="{StaticResource SectionHeader}"
+                               Text="{DynamicResource L.Main_GroupsHeader}" />
+                    <!-- 撤销从右键菜单里提出来常驻：它是这批分组操作唯一的后悔药，
+                         只挂在菜单/Ctrl+Z 上等于「看不见的功能」——用户误操作后的第一反应
+                         是找按钮，而不是先想到右键。菜单项保留（那里有 Ctrl+Z 的手势提示）。
+                         按钮带文字而不是纯图标：↶ 在四种语言里都不是"撤销"的通用符号，
+                         上标文字在 28px 内放不下，所以给一个矮的带字按钮（不是图标钮）。 -->
+                    <StackPanel Grid.Column="1" Orientation="Horizontal">
+                        <Button x:Name="UndoButton" Padding="8,3"
+                                Content="{DynamicResource L.Main_Undo}"
+                                Command="{Binding UndoCommand}"
+                                IsEnabled="{Binding CanUndo}"
+                                ToolTipService.ShowOnDisabled="True"
+                                ToolTip="{DynamicResource L.Main_UndoTip}" Margin="0,0,4,0" />
+                        <!-- 组管理收进一个「⋯」：新建/重命名/删除/查看/规则归组 都是低频动作，
+                             占着主面板按钮位会把「加入组」压下去 -->
+                        <Button x:Name="GroupMenuButton" Style="{StaticResource IconButton}"
+                                Content="⋯" Click="GroupMenu_Click" ToolTip="{DynamicResource L.Main_GroupManage}" />
+                    </StackPanel>
+                </Grid>
+
+                <!-- 组多到几十个时才需要过滤；一行高，常驻不占地方 -->
+                <Grid Grid.Row="1" Margin="0,0,0,6">
+                    <TextBox x:Name="GroupFilterBox" Text="{Binding GroupFilterText, UpdateSourceTrigger=PropertyChanged, Delay=0}" />
+                    <TextBlock Text="{DynamicResource L.Main_FilterGroups}" IsHitTestVisible="False"
+                               Foreground="{DynamicResource B.TextDim}"
+                               TextTrimming="CharacterEllipsis" Margin="8,0,0,0" VerticalAlignment="Center">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding Text, ElementName=GroupFilterBox}" Value="">
+                                        <Setter Property="Visibility" Value="Visible" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                </Grid>
+
+                <Grid Grid.Row="2">
+                    <ListBox x:Name="GroupList" ItemsSource="{Binding GroupsView}" SelectedIndex="{Binding SelectedGroupIndex}"
+                             BorderBrush="{DynamicResource B.Border}" BorderThickness="1"
+                             VirtualizingPanel.IsVirtualizing="True"
+                             MouseDoubleClick="Groups_DoubleClick">
+                        <ListBox.ContextMenu>
+                            <!-- 菜单栏取消后，这里就是组的全部操作入口。 -->
+                            <ContextMenu>
+                                <MenuItem Header="{DynamicResource L.Menu_Undo}" InputGestureText="Ctrl+Z"
+                                          Command="{Binding UndoCommand}" />
+                                <Separator />
+                                <MenuItem Header="{DynamicResource L.Main_NewGroup}" Click="NewGroup_Click" />
+                                <MenuItem Header="{DynamicResource L.Main_Rename}" Click="RenameGroup_Click" />
+                                <MenuItem Header="{DynamicResource L.Main_ViewGroup}" Click="ViewMembers_Click" />
+                                <MenuItem Header="{DynamicResource L.Main_RuleGrouping}" Click="Rules_Click" />
+                                <Separator />
+                                <MenuItem Header="{DynamicResource L.Menu_ImportGroups}"
+                                          Command="{Binding ImportGroupsCommand}" />
+                                <Separator />
+                                <MenuItem Header="{DynamicResource L.Main_DeleteGroup}" Click="DeleteGroup_Click"
+                                          Style="{StaticResource DangerMenuItem}" />
+                            </ContextMenu>
+                        </ListBox.ContextMenu>
+                        <ListBox.ItemTemplate>
+                            <!-- 用 Grid 而不是横向 StackPanel：长组名要能截断，而成员数要始终可见——
+                                 拼在同一个字符串里时，截断点会落在数字上（CountText 就是为此拆出来的）。 -->
+                            <DataTemplate>
+                                <Grid ToolTip="{Binding Name}">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0" Text="{Binding Display}" Padding="4,2"
+                                               TextTrimming="CharacterEllipsis" />
+                                    <Border Grid.Column="1" Style="{StaticResource CountBadge}" Margin="6,0,0,0">
+                                        <TextBlock Style="{StaticResource CountBadgeText}" Text="{Binding CountText}" />
+                                    </Border>
+                                </Grid>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                    <!-- 空状态一分为二：一个组都没有（引导去新建）和「都被过滤掉了」（提示清过滤词）
+                         是两件完全不同的处境，原来共用一句话会让过滤到空时用户以为组丢了 -->
+                    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center"
+                                Visibility="{Binding IsGroupsEmpty, Converter={StaticResource BoolToVis}}">
+                        <TextBlock Style="{StaticResource EmptyStateText}"
+                                   Text="{DynamicResource L.Empty_Groups}"
+                                   Visibility="{Binding IsGroupFilterActive, Converter={StaticResource InverseBoolToVis}}" />
+                        <TextBlock Style="{StaticResource EmptyStateText}"
+                                   Text="{DynamicResource L.Empty_GroupsFiltered}"
+                                   Visibility="{Binding IsGroupFilterActive, Converter={StaticResource BoolToVis}}" />
+                        <Button Content="{DynamicResource L.Main_NewGroup}" Click="NewGroup_Click"
+                                HorizontalAlignment="Center" MinWidth="120"
+                                Visibility="{Binding IsGroupFilterActive, Converter={StaticResource InverseBoolToVis}}" />
+                    </StackPanel>
+                </Grid>
+
+                <TextBlock Grid.Row="3" Text="{Binding GroupInfo}"
+                           TextTrimming="CharacterEllipsis" ToolTip="{Binding GroupInfo}"
+                           Foreground="{DynamicResource B.TextDim}" Margin="0,6,0,0" />
+            </Grid>
+        </Grid>
+
+        <!-- ── 页内行 1：内联提示条（仅在有时才占高）──
+             ContentTemplate 必须用 DynamicResource 取：InlineBannerTemplate 定义在 app 级字典
+             （Themes/Components.xaml）里，而 StaticResource 是在**解析期**沿本页的资源链向上找的，
+             离屏加载本页（探针/设计器/单测）时链上没有 App 级字典，会在 XamlParseException 里直接炸。
+             DynamicResource 推迟到渲染期，那时 Application.Resources 一定已经就绪。 -->
+        <ContentControl Grid.Row="1" Content="{Binding Banner}"
+                        ContentTemplate="{DynamicResource InlineBannerTemplate}"
+                        Visibility="{Binding HasBanner, Converter={StaticResource BoolToVis}}"
+                        Margin="0,6,0,0" />
+
+        <!-- ── 页内行 2：保存 ── -->
+        <Button Grid.Row="2" x:Name="SaveButton" Content="{Binding SaveButtonLabel}"
+                Height="34" MinWidth="180" Margin="0,4,0,2"
+                Command="{Binding SaveCommand}" HorizontalAlignment="Right">
+            <Button.Style>
+                <!-- 未保存态不再硬编码 #E8A33A（白字压它只有 2.16:1，是全项目唯一一处视图内硬编码色）：
+                     底色改走色板键 B.Warn（暗 5.91:1 / 亮 5.02:1），并且颜色之外再加一个圆点徽标 + 文案后缀，
+                     色盲用户也能分辨；IsDirty=False 的显式分支负责复位，避免样式残留。 -->
+                <Style TargetType="Button" BasedOn="{StaticResource PrimaryButton}">
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding IsDirty}" Value="True">
+                            <Setter Property="Background" Value="{DynamicResource B.Warn}" />
+                            <Setter Property="ToolTip" Value="{DynamicResource L.Main_SaveDirtyTip}" />
+                        </DataTrigger>
+                        <DataTrigger Binding="{Binding IsDirty}" Value="False">
+                            <Setter Property="Background" Value="{DynamicResource B.Accent}" />
+                            <Setter Property="ToolTip" Value="{DynamicResource L.Main_Save}" />
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </Button.Style>
+        </Button>
+
+        <!-- ── 页内行 3：日志。默认折叠成一行摘要 —— 96 DIP 常驻的日志框在 660 高的窗口里是 15% 的高度，
+             而它 95% 的时间只是静态噪声（也正是旧版布局崩坏的诱因之一）。 ── -->
+        <Grid Grid.Row="3">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <Grid Grid.Row="0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <StackPanel Grid.Column="0" Orientation="Horizontal">
+                    <Button x:Name="LogSummaryButton" Click="LogToggle_Click" Padding="8,3"
+                            ToolTip="{DynamicResource L.Log_ToggleTip}">
+                        <StackPanel Orientation="Horizontal">
+                            <Path Data="M 0 0 L 4 4 L 0 8" Stroke="{DynamicResource B.TextDim}" StrokeThickness="1.6"
+                                  Margin="1,0,8,0" VerticalAlignment="Center" RenderTransformOrigin="0.5,0.5">
+                                <Path.Style>
+                                    <Style TargetType="Path">
+                                        <Setter Property="RenderTransform">
+                                            <Setter.Value>
+                                                <RotateTransform Angle="0" />
+                                            </Setter.Value>
+                                        </Setter>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsLogExpanded}" Value="True">
+                                                <Setter Property="RenderTransform">
+                                                    <Setter.Value>
+                                                        <RotateTransform Angle="90" />
+                                                    </Setter.Value>
+                                                </Setter>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Path.Style>
+                            </Path>
+                            <TextBlock Text="{Binding LogSummary}" VerticalAlignment="Center" />
+                            <Border Style="{StaticResource CountBadge}" Margin="8,0,0,0"
+                                    Visibility="{Binding HasLogIssues, Converter={StaticResource BoolToVis}}">
+                                <TextBlock Style="{StaticResource CountBadgeText}" Text="{Binding LogIssueCount}" />
+                            </Border>
+                        </StackPanel>
+                        <Button.Style>
+                            <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding HasLogIssues}" Value="True">
+                                        <Setter Property="Foreground" Value="{DynamicResource B.WarnText}" />
+                                        <Setter Property="BorderBrush" Value="{DynamicResource B.WarnText}" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+                    </Button>
+                </StackPanel>
+                <StackPanel Grid.Column="1" Orientation="Horizontal"
+                            Visibility="{Binding IsLogExpanded, Converter={StaticResource BoolToVis}}">
+                    <Button Content="{DynamicResource L.Btn_CopyAll}" Click="LogCopy_Click" Margin="0,0,6,0" />
+                    <Button Content="{DynamicResource L.Log_Clear}" Click="LogClear_Click" />
+                </StackPanel>
+            </Grid>
+
+            <Thumb Grid.Row="1" Style="{StaticResource GripThumb}" DragDelta="LogResizeThumb_DragDelta"
+                   Visibility="{Binding IsLogExpanded, Converter={StaticResource BoolToVis}}" />
+
+            <!-- 日志框的字号刻意写在字阶之外（见 Themes/Components.xaml 顶部的例外清单）：
+                 等宽面的字号与列宽、行高是成套定的，归到 H4(11) 只会让每行少放几个字符。 -->
+            <Border Grid.Row="2" Height="{Binding LogPanelHeight}"
+                    Background="{DynamicResource B.Card}" BorderBrush="{DynamicResource B.Border}"
+                    BorderThickness="1" CornerRadius="4"
+                    Visibility="{Binding IsLogExpanded, Converter={StaticResource BoolToVis}}">
+                <ListBox x:Name="LogList" ItemsSource="{Binding LogLines}"
+                         Background="Transparent" BorderThickness="0" Padding="4,2"
+                         Focusable="False" IsTabStop="False" SelectionMode="Single"
+                         VirtualizingPanel.IsVirtualizing="True"
+                         VirtualizingPanel.VirtualizationMode="Recycling"
+                         ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                         ScrollViewer.VerticalScrollBarVisibility="Auto"
+                         FontFamily="{StaticResource MonoFont}" FontSize="12">
+                    <ListBox.ItemContainerStyle>
+                        <Style TargetType="ListBoxItem">
+                            <Setter Property="Padding" Value="0" />
+                            <Setter Property="Margin" Value="0" />
+                            <Setter Property="Focusable" Value="False" />
+                            <Setter Property="Template">
+                                <Setter.Value>
+                                    <ControlTemplate TargetType="ListBoxItem">
+                                        <ContentPresenter />
+                                    </ControlTemplate>
+                                </Setter.Value>
+                            </Setter>
+                        </Style>
+                    </ListBox.ItemContainerStyle>
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding Text}" TextWrapping="NoWrap">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Foreground" Value="{DynamicResource B.Text}" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding Level}" Value="Warning">
+                                                <Setter Property="Foreground" Value="{DynamicResource B.WarnText}" />
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding Level}" Value="Error">
+                                                <Setter Property="Foreground" Value="{DynamicResource B.Danger}" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+            </Border>
+        </Grid>
+    </Grid>
+</UserControl>

@@ -35,9 +35,9 @@ namespace LayoutProbe;
 /// </summary>
 internal static class Program
 {
-    // 程序集名：WPF 工程 csproj 里 AssemblyName=BSGroupGenerator（不是 BSGroupGenerator.Wpf），
-    // Core 才是 BSGroupGenerator.Core。写错会报"找不到程序集"而不是"找不到资源"。
-    private const string AppAssembly = "BSGroupGenerator";
+    // 程序集名：WPF 工程 csproj 里 AssemblyName=SliderSorter（不是 SliderSorter.Wpf），
+    // Core 才是 SliderSorter.Core。写错会报"找不到程序集"而不是"找不到资源"。
+    private const string AppAssembly = "SliderSorter";
 
     private static readonly string[] Langs = ["zh", "en", "ru", "fr"];
     private static readonly string[] Themes = ["Boutique", "Light"];
@@ -97,12 +97,12 @@ internal static class Program
         var repo = rest.Count > 0 ? Path.GetFullPath(rest[0]) : FindRepoRoot();
         if (repo is null)
         {
-            Console.WriteLine("找不到仓库根目录（预期存在 src/BSGroupGenerator.Wpf/Views）。");
+            Console.WriteLine("找不到仓库根目录（预期存在 src/SliderSorter.Wpf/Views）。");
             Console.WriteLine("请显式传入：dotnet run --project tools/layout-probe -c Release -- <仓库根目录>");
             return 2;
         }
 
-        var viewsDir = Path.Combine(repo, "src", "BSGroupGenerator.Wpf", "Views");
+        var viewsDir = Path.Combine(repo, "src", "SliderSorter.Wpf", "Views");
         if (!Directory.Exists(viewsDir))
         {
             Console.WriteLine($"找不到窗口目录：{viewsDir}");
@@ -161,13 +161,13 @@ internal static class Program
         return 1;
     }
 
-    /// <summary>从可执行文件位置向上找到含 src/BSGroupGenerator.Wpf/Views 的目录。</summary>
+    /// <summary>从可执行文件位置向上找到含 src/SliderSorter.Wpf/Views 的目录。</summary>
     private static string? FindRepoRoot()
     {
         var dir = new DirectoryInfo(AppContext.BaseDirectory);
         while (dir is not null)
         {
-            if (Directory.Exists(Path.Combine(dir.FullName, "src", "BSGroupGenerator.Wpf", "Views")))
+            if (Directory.Exists(Path.Combine(dir.FullName, "src", "SliderSorter.Wpf", "Views")))
                 return dir.FullName;
             dir = dir.Parent;
         }

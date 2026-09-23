@@ -21,7 +21,7 @@ jobs:
       - name: 检查界面语言文件一致性
         env:
           PYTHONUTF8: '1'   # 脚本输出含中文，Windows 上重定向输出需钉住 UTF-8
-        run: python tools/verify_l10n.py src/BSGroupGenerator.Wpf
+        run: python tools/verify_l10n.py src/SliderSorter.Wpf
 
       # 对比度不达标是"看不见的回归"：颜色改错不会让任何测试变红，只有眼睛能发现。
       # 这里按 WCAG 2.1 逐对算（正文 4.5:1、控件边界 3:1），两套色板都查。
@@ -47,12 +47,12 @@ jobs:
             8.0.x
 
       - name: 构建
-        run: dotnet build src/BSGroupGenerator.Wpf/BSGroupGenerator.Wpf.csproj -c Release
+        run: dotnet build src/SliderSorter.Wpf/SliderSorter.Wpf.csproj -c Release
 
       - name: 测试
         run: |
-          dotnet test tests/BSGroupGenerator.Tests/BSGroupGenerator.Tests.csproj -c Release
-          dotnet test tests/BSGroupGenerator.Wpf.Tests/BSGroupGenerator.Wpf.Tests.csproj -c Release
+          dotnet test tests/SliderSorter.Tests/SliderSorter.Tests.csproj -c Release
+          dotnet test tests/SliderSorter.Wpf.Tests/SliderSorter.Wpf.Tests.csproj -c Release
 
       # 译文/主题的布局回归同样"不会让任何测试变红"：容器按基准语言的标签宽度定尺寸，
       # 换一种更长的语言就被静默裁掉。这里加载真实资源字典与真实窗口/页面 XAML 离屏排一遍，

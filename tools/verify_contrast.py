@@ -10,7 +10,7 @@
   · UI 组件边界与图形 1.4.11 → ≥ 3:1
 
 用法：
-    python tools/verify_contrast.py [src/BSGroupGenerator.Wpf]
+    python tools/verify_contrast.py [src/SliderSorter.Wpf]
 退出码 0 = 全部通过；1 = 有组合不达标（CI 门禁）。
 """
 
@@ -98,7 +98,7 @@ def resolve(token: str, colors: dict[str, str], palette: str, label: str) -> str
 
 
 def main(argv: list[str]) -> int:
-    root = Path(argv[1] if len(argv) > 1 else "src/BSGroupGenerator.Wpf")
+    root = Path(argv[1] if len(argv) > 1 else "src/SliderSorter.Wpf")
     themes = root / "Themes"
     palettes = {
         "Boutique": parse_palette(themes / "Palette.Boutique.xaml"),

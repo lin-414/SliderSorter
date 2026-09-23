@@ -1,7 +1,7 @@
-# BS Group Generator —— UI / 组件 / 布局改进方案
+# SliderSorter —— UI / 组件 / 布局改进方案
 
 > 基线：`029fa88`（2026-09-22）
-> 范围：`src/BSGroupGenerator.Wpf` 的界面层。不涉及 Core 层逻辑与分组文件格式。
+> 范围：`src/SliderSorter.Wpf` 的界面层。不涉及 Core 层逻辑与分组文件格式。
 
 ---
 
@@ -262,13 +262,13 @@
 
 ### 7.4 验证命令
 ```bash
-python tools/verify_l10n.py src/BSGroupGenerator.Wpf   # 语言键一致性 / Core 层不得出现中文字面量 / 菜单访问键
+python tools/verify_l10n.py src/SliderSorter.Wpf   # 语言键一致性 / Core 层不得出现中文字面量 / 菜单访问键
 python tools/verify_contrast.py                        # 两套色板 WCAG 2.1 对比度
 python tools/verify_theme.py                           # 窗口显式套主题 / 两套色板键集合一致
 dotnet run --project tools/layout-probe -c Release     # 4 语言 × 2 主题 × 全部窗口与页面 × 各档尺寸，断言 0 处溢出/裁切
-dotnet build src/BSGroupGenerator.Wpf/BSGroupGenerator.Wpf.csproj
-dotnet test tests/BSGroupGenerator.Tests/BSGroupGenerator.Tests.csproj
-dotnet test tests/BSGroupGenerator.Wpf.Tests/BSGroupGenerator.Wpf.Tests.csproj
+dotnet build src/SliderSorter.Wpf/SliderSorter.Wpf.csproj
+dotnet test tests/SliderSorter.Tests/SliderSorter.Tests.csproj
+dotnet test tests/SliderSorter.Wpf.Tests/SliderSorter.Wpf.Tests.csproj
 ```
 
 ---

@@ -3,8 +3,8 @@
 """校验手写 ResourceDictionary i18n 的键一致性与引用完整性。
 
 用法（仓库根目录下执行）：
-    python tools/verify_l10n.py src/BSGroupGenerator.Wpf
-    python tools/verify_l10n.py --root src/BSGroupGenerator.Wpf   # 两种写法等价
+    python tools/verify_l10n.py src/SliderSorter.Wpf
+    python tools/verify_l10n.py --root src/SliderSorter.Wpf   # 两种写法等价
 
 检查项：
     1. 各 Lang.*.xaml 的键集合是否完全一致（多语言项目最易漏的地方）
@@ -58,7 +58,7 @@ MENU_OPEN = re.compile(r"<Menu[\s>]")
 CJK = re.compile(r"[\u3400-\u9fff\uf900-\ufaff\U00020000-\U0002ffff]")
 
 # Core 项目名（与 WPF 项目同级）；找不到就跳过第 7 节
-CORE_PROJECT_NAME = "BSGroupGenerator"
+CORE_PROJECT_NAME = "SliderSorter"
 
 SKIP_DIRS = {"obj", "bin", ".git", ".vs", "node_modules", "dist"}
 SRC_EXT = (".cs", ".xaml")
