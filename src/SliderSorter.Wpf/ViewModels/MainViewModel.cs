@@ -359,8 +359,7 @@ public partial class MainViewModel : ObservableObject
     /// </summary>
     private void QueueLogFlush()
     {
-        var app = System.Windows.Application.Current;
-        if (app is null)
+        if (System.Windows.Application.Current is null)
         {
             FlushLog(); // 无 Dispatcher（单测、设计器）：退化成同步刷新
             return;
@@ -369,7 +368,13 @@ public partial class MainViewModel : ObservableObject
             return;
         _logFlushQueued = true;
         // Background 优先级：低于 Render，等本轮布局/渲染排完后刷一次即可
-        app.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Background,
+        //
+        // 投给**本 VM 自己的**调度器，而不是 Application.Current.Dispatcher。生产里两者是同一条线程；
+        // 测试宿主里可以不同：MainWindowCommandTests 在自己那条 STA 线程上造 MainWindow（连带这个 VM），
+        // 而 Application.Current 属于 WpfHost 的常驻线程——投过去就等于在另一条线程上改 LogLines 那个
+        // ObservableCollection 已挂接的 CollectionView，当场 NotSupportedException 把整个测试进程带走
+        // （CI 上红的正是这个，通过数会停在 36/53 一类的位置）。
+        _uiDispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Background,
             new Action(FlushLog));
     }
 
@@ -530,6 +535,12 @@ public partial class MainViewModel : ObservableObject
     }
 
     private bool _logFlushQueued;
+
+    /// <summary>构造这个 VM 的那条线程的调度器——日志刷新只投到这里（见 <see cref="QueueLogFlush"/>）。
+    /// 字段初始化器跑在构造函数所在的线程上，所以这里天然就是"VM 自己的 UI 线程"，
+    /// 不必也不该用 <c>Application.Current.Dispatcher</c>（进程级单例可能属于另一条线程）。</summary>
+    private readonly System.Windows.Threading.Dispatcher _uiDispatcher =
+        System.Windows.Threading.Dispatcher.CurrentDispatcher;
 
     partial void OnSelectedWriteModeChanged(WriteModeItem? value)
     {
