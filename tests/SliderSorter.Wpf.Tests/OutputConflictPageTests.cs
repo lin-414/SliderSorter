@@ -31,6 +31,7 @@ public class OutputConflictPageTests
     private static OutputConflictGroup Group(string path, params (string Name, string Owner, int Layer)[] candidates) => new()
     {
         OutputFilePath = path,
+        KeySpellings = [path],
         GenWeights = true,
         Candidates = candidates.OrderBy(c => c.Layer)
             .Select(c => new ConflictCandidate(c.Name, c.Owner, c.Name + ".xml", c.Layer, true))

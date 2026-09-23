@@ -144,7 +144,7 @@ public partial class MainViewModel
             SetGroupCollapsed = SetConflictGroupCollapsed,
             SourceNifOf = name => sourceNif.TryGetValue(name, out var path) ? path : null,
             Save = SaveConflictChoices,
-            BuildSelectionPath = _bsAppDir is null ? "" : BuildSelectionFile.PathFor(_bsAppDir),
+            BuildSelectionPath = ResolveBuildSelectionPath() ?? "",
             Export = ExportConflictChoices,
             Assets = BuildAssetResolver(),
         };
@@ -179,7 +179,18 @@ public partial class MainViewModel
         return roots.Count == 0 ? null : new GameDataResolver(roots);
     }
 
-    /// <summary>只动本次扫描认得的冲突路径：其它 BodySlide 安装留下的、或对应模组已消失的条目都不碰。</summary>
+    /// <summary>BuildSelection.xml 的落点：只有 BodySlide 程序目录这一个选择，**不跟随设置里的输出位置**。
+    /// 分组文件按项目路径（MO2 下是虚拟 Data 的汇聚点）读，能经模组供上去；这个文件只从 exe 目录读
+    /// （<see cref="BuildSelectionFile"/> 的注释里有源码出处），跟着输出位置写进模组就等于 BodySlide 读不到。
+    /// 还没选中 BodySlide 安装时为 null。</summary>
+    private string? ResolveBuildSelectionPath() => _bsAppDir is null ? null : BuildSelectionFile.PathFor(_bsAppDir!);
+
+    /// <summary>只动本次扫描认得的冲突路径：其它 BodySlide 安装留下的、或对应模组已消失的条目都不碰。
+    /// <para>
+    /// 一组冲突里成员声明的路径可能只差大小写（分组键忽略大小写，见 <see cref="OutputConflicts.Detect"/>），
+    /// 而设置是按逐字节存的——所以清理时要把这组的<b>所有</b>拼写都清掉，否则留着另一拼写的老选择
+    /// 会被忽略大小写的视图重新认成"已指定"，用户点了清除却清不干净。
+    /// </para></summary>
     private void SaveConflictChoices(IReadOnlyDictionary<string, string> working)
     {
         if (Scan is not { } scan)
@@ -188,18 +199,24 @@ public partial class MainViewModel
         var changed = false;
         foreach (var group in ConflictGroups)
         {
-            var path = group.OutputFilePath;
-            var chosen = working.TryGetValue(path, out var name) && !string.IsNullOrEmpty(name) ? name : null;
+            var chosen = working.TryGetValue(group.OutputFilePath, out var name) && !string.IsNullOrEmpty(name)
+                ? name
+                : null;
             // 候选里已经没有它了（模组被禁用/卸载）——别把死选择存回去
             if (chosen is not null && !group.Candidates.Any(c => c.Name == chosen))
                 chosen = null;
 
-            if (chosen is null)
-                changed |= Settings.OutputChoices.Remove(path);
-            else if (!Settings.OutputChoices.TryGetValue(path, out var old) || old != chosen)
+            foreach (var spelling in group.KeySpellings)
             {
-                Settings.OutputChoices[path] = chosen;
-                changed = true;
+                if (chosen is null)
+                    changed |= Settings.OutputChoices.Remove(spelling);
+                else if (spelling != group.OutputFilePath)
+                    changed |= Settings.OutputChoices.Remove(spelling); // 统一存到规范拼写那条
+                else if (!Settings.OutputChoices.TryGetValue(spelling, out var old) || old != chosen)
+                {
+                    Settings.OutputChoices[spelling] = chosen;
+                    changed = true;
+                }
             }
         }
 
@@ -212,16 +229,14 @@ public partial class MainViewModel
         OutputConflictCount = CrossModConflicts.Count;
     }
 
+    /// <summary>导出：展开成"每种拼写一条"由 Core 算（<see cref="OutputConflicts.ExportEntries"/>），
+    /// 这里只负责落点与反馈。</summary>
     private (bool Ok, string? Message) ExportConflictChoices()
     {
-        if (string.IsNullOrEmpty(_bsAppDir))
+        if (ResolveBuildSelectionPath() is not { } path)
             return (false, L10n.Tr("L.Msg_NoBodySlideDir"));
-
-        var path = BuildSelectionFile.PathFor(_bsAppDir);
-        var managed = ConflictGroups.Select(g => g.OutputFilePath).ToList();
-        var desired = Settings.OutputChoices
-            .Where(p => managed.Contains(p.Key, StringComparer.Ordinal))
-            .ToDictionary(p => p.Key, p => p.Value, StringComparer.Ordinal);
+        var managed = OutputConflicts.ManagedPaths(ConflictGroups);
+        var desired = OutputConflicts.ExportEntries(ConflictGroups);
         if (desired.Count == 0)
             return (false, L10n.Tr("L.Msg_ConflictNothingToExport"));
 
@@ -229,6 +244,6 @@ public partial class MainViewModel
             return (false, error ?? L10n.Tr("L.Msg_ExportFail"));
 
         Log(L10n.TrF("L.Log_BuildSelWritten", written, removed, path));
-        return (true, L10n.TrF("L.Msg_BuildSelWritten", written, removed));
+        return (true, L10n.TrF("L.Msg_BuildSelWritten", written, removed, path));
     }
 }

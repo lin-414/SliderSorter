@@ -121,9 +121,100 @@ public class SliderSetScannerTests
         Assert.Contains(result.Warnings, w => w.Contains("L.Core_ScanParseFail"));
     }
 
+    /// <summary>BodySlide 分两批枚举滑块组文件：先把 <c>*.osp</c> 整批读一遍，再读 <c>*.xml</c> 整批
+    /// （<c>BodySlideApp.cpp:837-839</c>，两次 GetAllFiles 追加进同一个数组）。于是 .osp 里的 set 名
+    /// 整体赢过 .xml 里的同名 set，<b>与模组优先级无关</b>——弱层的 .osp 会盖掉强层的 .xml。</summary>
     [Fact]
-    public void AppDirKindScansSingleRealDirectory()
+    public void OspFileWinsOverXmlFileEvenFromAWeakerLayer()
     {
+        using var temp = new TempDir();
+        var gameData = temp.Sub("Data");
+        temp.File("mods", "A", "CalienteTools", "BodySlide", "SliderSets", "ZStrong.xml",
+            SliderSetXml("Shared"));
+        temp.File("mods", "B", "CalienteTools", "BodySlide", "SliderSets", "AWeak.osp",
+            SliderSetXml("Shared"));
+
+        var mods = new List<(ModEntry, string)>
+        {
+            (new ModEntry("A", true, false, false, 0), temp.Sub("mods", "A")),
+            (new ModEntry("B", true, false, false, 1), temp.Sub("mods", "B")),
+        };
+        var result = SliderSetScanner.Scan(VirtualResolution(gameData, @"CalienteTools\BodySlide"), mods);
+
+        var shared = Assert.Single(result.Outfits, o => o.Name == "Shared");
+        Assert.Equal("B", shared.OwnerLabel);
+        Assert.True(shared.HasConflict);
+    }
+
+    /// <summary>同名判重忽略大小写：BodySlide 的 <c>outfitNameSource</c> 是
+    /// <c>std::map&lt;..., case_insensitive_compare&gt;</c>（<c>BodySlideApp.h:125</c>）。
+    /// 只按 Ordinal 分就会把"FOO"当成 BodySlide 也加载了的第二个服装，导出的 choice 它逐字节比不中。</summary>
+    [Fact]
+    public void SetNamesDifferingOnlyByCaseAreTheSameOutfit()
+    {
+        using var temp = new TempDir();
+        var gameData = temp.Sub("Data");
+        temp.File("mods", "A", "CalienteTools", "BodySlide", "SliderSets", "FromA.xml",
+            "<SliderSetInfo version=\"2\"><SliderSet name=\"Dup\"><OutputPath>meshes/a</OutputPath></SliderSet></SliderSetInfo>");
+        temp.File("mods", "B", "CalienteTools", "BodySlide", "SliderSets", "FromB.xml",
+            "<SliderSetInfo version=\"2\"><SliderSet name=\"DUP\"><OutputPath>meshes/b</OutputPath></SliderSet></SliderSetInfo>");
+
+        var mods = new List<(ModEntry, string)>
+        {
+            (new ModEntry("A", true, false, false, 0), temp.Sub("mods", "A")),
+            (new ModEntry("B", true, false, false, 1), temp.Sub("mods", "B")),
+        };
+        var result = SliderSetScanner.Scan(VirtualResolution(gameData, @"CalienteTools\BodySlide"), mods);
+
+        var dup = Assert.Single(result.Outfits, o => o.Name.Equals("dup", StringComparison.OrdinalIgnoreCase));
+        Assert.Equal("Dup", dup.Name); // 保留先见者的写法
+        Assert.Equal(@"meshes\a", dup.OutputFilePath);
+        Assert.True(dup.HasConflict);
+        // 弱层那个同名 set 根本不进清单，它声明的输出路径也就无从参与输出文件冲突
+        Assert.DoesNotContain(result.Outfits, o => o.OutputFilePath == @"meshes\b");
+    }
+
+    /// <summary>老格式（根上 <c>version</c> 缺省或 &lt; 1）里数据目录叫 <c>&lt;SetFolder&gt;</c>：
+    /// BodySlide 打开文件时就地把它改名成 <c>&lt;DataFolder&gt;</c>（<c>SliderSet.cpp:705-746</c>），
+    /// 于是源网格路径照 <c>ShapeData \ SetFolder \ SourceFile</c> 才拼得出来（预览不至于变纯色）。</summary>
+    [Fact]
+    public void LegacyVersionZeroSetFolderResolvesTheSourceMesh()
+    {
+        using var temp = new TempDir();
+        var gameData = temp.Sub("Data");
+        temp.File("mods", "A", "CalienteTools", "BodySlide", "SliderSets", "Old.xml",
+            "<SliderSetInfo><SliderSet name=\"Ancient\">" +
+            "<SetFolder>Sub</SetFolder><SourceFile>old</SourceFile></SliderSet></SliderSetInfo>");
+        temp.File("mods", "A", "CalienteTools", "BodySlide", "ShapeData", "Sub", "old.nif", "not a real nif");
+
+        var mods = new List<(ModEntry, string)> { (new ModEntry("A", true, false, false, 0), temp.Sub("mods", "A")) };
+        var result = SliderSetScanner.Scan(VirtualResolution(gameData, @"CalienteTools\BodySlide"), mods);
+
+        var outfit = Assert.Single(result.Outfits);
+        Assert.NotNull(outfit.SourceNif);
+        Assert.EndsWith(Path.Combine("ShapeData", "Sub", "old.nif"), outfit.SourceNif);
+    }
+
+    /// <summary>&lt;OutputPath&gt; 里的空白原样保留：BodySlide 用的是 tinyxml2 的
+    /// <c>GetText()</c>（<c>SliderSet.cpp:834</c>），默认解析选项不跳空白，所以这些空白会进它的冲突键。
+    /// 我们 Trim 的话导出的 <c>path</c> 就成了它查不到的另一个键。</summary>
+    [Fact]
+    public void OutputPathKeepsSurroundingWhitespaceLikeGetText()
+    {
+        using var temp = new TempDir();
+        var gameData = temp.Sub("Data");
+        temp.File("mods", "A", "CalienteTools", "BodySlide", "SliderSets", "Padded.xml",
+            "<SliderSetInfo version=\"2\"><SliderSet name=\"Padded\">" +
+            "<OutputPath>meshes/foo </OutputPath></SliderSet></SliderSetInfo>");
+
+        var mods = new List<(ModEntry, string)> { (new ModEntry("A", true, false, false, 0), temp.Sub("mods", "A")) };
+        var result = SliderSetScanner.Scan(VirtualResolution(gameData, @"CalienteTools\BodySlide"), mods);
+
+        Assert.Equal(@"meshes\foo ", Assert.Single(result.Outfits).OutputFilePath);
+    }
+
+    [Fact]
+    public void AppDirKindScansSingleRealDirectory()    {
         using var temp = new TempDir();
         var appDir = temp.Sub("BS");
         Directory.CreateDirectory(System.IO.Path.Combine(appDir, "SliderSets"));

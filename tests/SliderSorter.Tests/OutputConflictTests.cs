@@ -84,6 +84,64 @@ public class OutputConflictTests
         Assert.False(outfit.GenWeights);
     }
 
+    /// <summary>GenWeights 属性值按 tinyxml2 的读法判（<c>lib/TinyXML-2/tinyxml2.cpp:624-649</c>）：
+    /// 先按整数读前缀（0x 前缀走十六进制），0 为否、非 0 为是；否则只接受**大小写完全一致**的
+    /// true/True/TRUE 与 false/False/FALSE；再其它写法一律解析失败→回落到缺省值"是"。
+    /// 早先按"0/false/no 不分大小写即为否"判，于是 <c>no</c> 与 <c>FaLsE</c> 被算成否，
+    /// 而 BodySlide 那边仍是是——带权重的 _0/_1 后缀就标错了。</summary>
+    [Theory]
+    [InlineData("0", false)]
+    [InlineData(" 0", false)]  // 前导空白照样能读出整数
+    [InlineData("-0", false)]
+    [InlineData("0x0", false)]
+    [InlineData("1", true)]
+    [InlineData("2", true)]
+    [InlineData("-1", true)]
+    [InlineData("0x1f", true)]
+    [InlineData("true", true)]
+    [InlineData("True", true)]
+    [InlineData("TRUE", true)]
+    [InlineData("false", false)]
+    [InlineData("False", false)]
+    [InlineData("FALSE", false)]
+    [InlineData("no", true)]      // 它读不懂 → 缺省"是"
+    [InlineData("off", true)]
+    [InlineData("FaLsE", true)]   // 大小写不完全一致 → 读不懂 → 缺省"是"
+    [InlineData("falsey", true)]
+    [InlineData("", true)]        // 空属性值同样算读不懂
+    public void GenWeightsAttributeIsParsedTheWayTinyxmlReadsBool(string value, bool expected)
+    {
+        using var temp = new TempDir();
+        var scan = ScanTwoMods(temp,
+            Doc(Set("Solo", PathA, "extra", value)),
+            Doc(Set("Other")));
+
+        Assert.Equal(expected, Assert.Single(scan.Outfits, o => o.Name == "Solo").GenWeights);
+    }
+
+    /// <summary>输出的 <c>_0/_1</c> 还是单个 <c>.nif</c>，由**赢家**那个 set 的 GenWeights 决定：
+    /// BodySlide 显示的后缀取当前激活的 set、产物取真正被建的那个 set（<c>BodySlideApp.cpp:4007-4009</c>）。
+    /// 恒取最强层就会在"赢家是较弱那个"时标错。</summary>
+    [Fact]
+    public void TargetSuffixFollowsTheWinnerNotTheStrongestLayer()
+    {
+        using var temp = new TempDir();
+        var scan = ScanTwoMods(temp,
+            Doc(Set("Strong", PathA, "extra")),            // 带权重，层序最强
+            Doc(Set("Weak", PathA, "extra", "0")));        // 不带权重
+
+        var undecided = Assert.Single(OutputConflicts.Detect(scan));
+        Assert.True(undecided.GenWeights);
+        Assert.Equal(CoreStrings.Format("L.Core_OutputConf_Weighted", undecided.OutputFilePath),
+            undecided.TargetDisplay);
+
+        var pickedWeak = Assert.Single(OutputConflicts.Detect(scan,
+            new Dictionary<string, string> { [undecided.OutputFilePath] = "Weak" }));
+        Assert.False(pickedWeak.GenWeights);
+        Assert.Equal(CoreStrings.Format("L.Core_OutputConf_Single", pickedWeak.OutputFilePath),
+            pickedWeak.TargetDisplay);
+    }
+
     [Fact]
     public void OutputFileWithoutGenWeightsStillMeansWeights()
     {
@@ -183,17 +241,104 @@ public class OutputConflictTests
     }
 
     [Fact]
-    public void PathComparisonIsCaseSensitiveBecauseBodySidesIs()
+    public void PathComparisonIgnoresCaseBecauseBodySlideGroupsThatWay()
     {
         using var temp = new TempDir();
         var scan = ScanTwoMods(temp,
             Doc(Set("Upper", "meshes/Foo")),
             Doc(Set("Lower", "meshes/foo")));
 
-        // BodySlide 侧是 std::map<std::string,...>（逐字节比较），两个大小写不同的路径是两个不同的键：
-        // 我们若按忽略大小写聚类，就会导出一条 BodySlide 永远读不到的选择
-        Assert.Empty(OutputConflicts.Detect(scan));
-        Assert.All(scan.Outfits, o => Assert.False(o.HasOutputConflict));
+        // BodySlide 的分组容器是 std::map<..., case_insensitive_compare>（BodySlideApp.h:202，
+        // 从 v5.1 到 master 都是）：两个大小写不同的写法在它眼里是**一组**冲突，批建会弹窗。
+        // 我们若按 Ordinal 分就是两组各一人、谁都不算冲突——那正好漏掉这个功能存在的理由。
+        var group = Assert.Single(OutputConflicts.Detect(scan));
+        // 规范键取第一个成员的原样写法（std::map 也保留首次插入的键拼写），斜杠已换成反斜杠
+        Assert.Equal(@"meshes\Foo", group.OutputFilePath);
+        // 两种拼写都记着：导出时各写一条，BodySlide 那条区分大小写的查询（BuildSelection.h:21）才必中一次
+        Assert.Equal(new[] { @"meshes\Foo", @"meshes\foo" }, group.KeySpellings);
+        Assert.Equal(2, group.Candidates.Count);
+        Assert.True(group.CrossMod);
+        // 树里两行都该点亮「（输出冲突）」——BodySlide 批建时就是拿这一组来弹窗的
+        Assert.All(scan.Outfits, o => Assert.True(o.HasOutputConflict));
+    }
+
+    /// <summary>一组里两种拼写都写进 BuildSelection.xml：BodySlide 查选择的那张表区分大小写
+    /// （<c>BuildSelection.h:21</c>），而它的组键拼写取决于自己的目录遍历顺序（USVFS 下无从得知），
+    /// 所以把所有拼写各写一条才必定命中；未指定的组不进结果，但仍在托管范围内（旧条目要跟着清掉）。</summary>
+    [Fact]
+    public void ExportCoversEverySpellingOfAGroup()
+    {
+        using var temp = new TempDir();
+        var scan = ScanTwoMods(temp,
+            Doc(Set("Upper", "meshes/Foo")),
+            Doc(Set("Lower", "meshes/foo")));
+
+        var undecided = Assert.Single(OutputConflicts.Detect(scan));
+        Assert.Equal(new[] { @"meshes\Foo", @"meshes\foo" }, undecided.KeySpellings);
+        Assert.Empty(OutputConflicts.ExportEntries([undecided]));
+        Assert.Equal(new[] { @"meshes\Foo", @"meshes\foo" },
+            OutputConflicts.ManagedPaths([undecided]).OrderBy(k => k, StringComparer.Ordinal).ToArray());
+
+        var decided = Assert.Single(OutputConflicts.Detect(scan,
+            new Dictionary<string, string> { [@"meshes\Foo"] = "Lower" }));
+        var entries = OutputConflicts.ExportEntries([decided]);
+        Assert.Equal(new[] { @"meshes\Foo", @"meshes\foo" },
+            entries.Keys.OrderBy(k => k, StringComparer.Ordinal).ToArray());
+        Assert.All(entries.Values, value => Assert.Equal("Lower", value));
+    }
+
+    /// <summary>设置里存着旧的另一拼写：先把键归到规范拼写上，界面才看得到自己做过的决定。
+    /// 不归一的话该组显示"未指定"，而保存"未指定"=清掉这一组的所有拼写——打开一次页面就把决定抹了。
+    /// 与本组无关的键（别的实例、别的安装留下的）必须一条不少地带走。</summary>
+    [Fact]
+    public void LegacyAlternateSpellingMovesOntoTheCanonicalKey()
+    {
+        using var temp = new TempDir();
+        var scan = ScanTwoMods(temp,
+            Doc(Set("Upper", "meshes/Foo")),
+            Doc(Set("Lower", "meshes/foo")));
+        var groups = OutputConflicts.Detect(scan);
+        var group = Assert.Single(groups);
+
+        var legacy = new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            [@"meshes\foo"] = "Lower",          // 同一组的另一种拼写
+            [@"meshes\other"] = "Unrelated",    // 别人的键
+        };
+        var normalized = OutputConflicts.NormalizeKeys(groups, legacy);
+
+        Assert.Equal(new[] { @"meshes\Foo", @"meshes\other" },
+            normalized.Keys.OrderBy(k => k, StringComparer.Ordinal).ToArray());
+        Assert.Equal("Lower", normalized[@"meshes\Foo"]);
+        Assert.Equal("Unrelated", normalized[@"meshes\other"]);
+
+        // 两种拼写都有值时，规范拼写那条赢（它才是界面显示的那一条）
+        var both = new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            [@"meshes\foo"] = "Upper",
+            [@"meshes\Foo"] = "Lower",
+        };
+        Assert.Equal("Lower", Assert.Single(OutputConflicts.NormalizeKeys(groups, both)).Value);
+    }
+
+    [Fact]
+    public void ChoiceResolvesAcrossSpellingsButNotAcrossSetNameCase()
+    {
+        using var temp = new TempDir();
+        var scan = ScanTwoMods(temp,
+            Doc(Set("Strong", "meshes/Foo")),
+            Doc(Set("Weak", "meshes/foo")));
+
+        // 选择表按忽略大小写套到组上：老设置里留着的是另一种拼写，那也是用户对这一组做过的决定
+        var fromOtherSpelling = Assert.Single(OutputConflicts.Detect(scan,
+            new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase) { [@"MESHES\FOO"] = "Weak" }));
+        Assert.Equal("Weak", fromOtherSpelling.Chosen?.Name);
+
+        // 但 choice 的**值**（set 名）仍逐字节比：BodySlide 侧 choice != no、std::find、
+        // choices.Index(c) 全是精确比较，大小写错了它就认不出，我们也别装作认得出
+        var wrongCaseName = Assert.Single(OutputConflicts.Detect(scan,
+            new Dictionary<string, string> { [@"meshes\Foo"] = "weak" }));
+        Assert.Null(wrongCaseName.Chosen);
     }
 
     [Fact]
@@ -252,20 +397,6 @@ public class OutputConflictTests
         var cleared = OutputConflicts.Clear(
             new[] { groups.Single(g => g.OutputFilePath == PathA) }, picked);
         Assert.Equal(new[] { PathB }, cleared.Keys.ToArray());
-    }
-
-    [Fact]
-    public void ChoicesAreLookedUpByteWiseEvenFromAnIgnoreCaseDictionary()
-    {
-        using var temp = new TempDir();
-        var scan = ScanTwoMods(temp,
-            Doc(Set("Strong", "meshes/Foo")),
-            Doc(Set("Weak", "meshes/foo")));
-
-        // 调用方递来忽略大小写的字典（JSON 反序列化不保证比较器），也不能把选择串到另一个大小写的键上
-        var ignoreCase = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase) { ["MESHES/FOO"] = "Hijack" };
-        foreach (var group in OutputConflicts.Detect(scan, ignoreCase))
-            Assert.Null(group.Chosen);
     }
 
     [Fact]
@@ -354,6 +485,7 @@ public class OutputConflictTests
     private static OutputConflictGroup Conflict(string path, params string[] setNames) => new()
     {
         OutputFilePath = path,
+        KeySpellings = [path],
         GenWeights = true,
         Candidates = setNames
             .Select((name, i) => new ConflictCandidate(name, "Mod", name + ".xml", i, true))

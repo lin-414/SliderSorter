@@ -179,7 +179,10 @@ public partial class OutputConflictPage : UserControl
     public void ShowRequest(ConflictRequest request)
     {
         _request = request;
-        _working = new Dictionary<string, string>(request.Choices, StringComparer.Ordinal);
+        // 键先归到规范拼写上（分组忽略大小写之后，设置里可能存的是同一组的另一种写法）：
+        // 不归一，这一组会显示成"未指定"，而"未指定"在保存时是要清掉整组的——等于打开一次页面
+        // 就把用户做过的决定抹了。见 OutputConflicts.NormalizeKeys。
+        _working = OutputConflicts.NormalizeKeys(request.Groups, request.Choices);
         _textures = request.Assets is { } assets ? new PreviewTextureCache(assets) : null;
         // 新清单：上一轮的"只看某组"未必还在（组名改了、那个组没冲突了），交给 SyncGroupFilter 重新定
         _groupFilter = null;

@@ -9,7 +9,7 @@ public enum WriteMode
     Auto = 0,
     /// <summary>写到 BodySlide.exe 旁的 SliderGroups。</summary>
     BodySlideDir = 1,
-    /// <summary>写到 MO2 专用小模组（mods\SliderSorter\CalienteTools\BodySlide\SliderGroups）。</summary>
+    /// <summary>写到 MO2 专用小模组（mods\SliderSorter Output\CalienteTools\BodySlide\SliderGroups）。</summary>
     Mo2Mod = 2,
     /// <summary>写到游戏真实 Data（GameDataPath\CalienteTools\BodySlide\SliderGroups）。</summary>
     RealGameData = 3,
@@ -49,8 +49,15 @@ public class AppSettings
     public List<string> SuppressedPrompts { get; set; } = new();
 
     /// <summary>输出文件冲突的赢家选择：BodySlide 口径的输出路径（反斜杠、不含扩展名）→ slider set 名。
-    /// 与 BodySlide 的 BuildSelection.xml 用同一套键、同样逐字节区分大小写，也不按实例分区——
-    /// BodySlide 自己就只有一份全局的 BuildSelection.xml。写回时只提交当前扫描仍然确认存在的冲突，
+    /// 键与 BodySlide 的 BuildSelection.xml 同一套、存取都<b>逐字节区分大小写</b>——它的
+    /// <c>BuildSelection::outputChoice</c> 用的就是默认比较器的 <c>std::map</c>（<c>BuildSelection.h:21</c>），
+    /// 大小写错了它就查不到。也不按实例分区——BodySlide 自己就只有一份全局的 BuildSelection.xml。
+    /// <para>
+    /// 注意这与"哪些路径算同一组冲突"是两回事：分组那一层忽略大小写
+    /// （<c>outFileCount</c> 的 <c>case_insensitive_compare</c>，见 <see cref="OutputConflicts.Detect"/>）。
+    /// 所以同一组可能有多个拼写的键，规范键取首个成员的写法，导出时每种拼写各写一条。
+    /// </para>
+    /// 写回时只提交当前扫描仍然确认存在的冲突，
     /// 所以别的实例留下的条目既不会被误用、也不会被误删。</summary>
     public Dictionary<string, string> OutputChoices { get; set; } = new();
 

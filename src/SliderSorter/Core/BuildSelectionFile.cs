@@ -5,7 +5,14 @@ using System.Xml.Linq;
 namespace SliderSorter.Core;
 
 /// <summary>
-/// BodySlide 的 <c>BuildSelection.xml</c>（BodySlide 程序目录下的 <c>Config.xml</c> 同级）：
+/// BodySlide 的 <c>BuildSelection.xml</c>：只认 <c>Config["AppDir"] + PathSep + "BuildSelection.xml"</c>
+/// （BodySlideApp.cpp:1196），而 AppDir 就是 BodySlide.exe 自己所在的目录，<c>Config.xml</c> 改不了它
+/// （<c>SetDefaultValue</c> 标为 isDefault，<c>SaveConfig</c> 不写 isDefault 条目）。
+/// <para>
+/// 这一点和分组文件不是一回事：分组读的是 <c>ProjectUtil::GetProjectPath() + "/SliderGroups"</c>
+/// （同文件 :3338），MO2 启动时那条路径是虚拟 Data 的汇聚点，所以分组能经模组供上去；
+/// 这个文件走的是 exe 目录，跟着「输出位置」写到模组里 BodySlide 就再也读不到了。
+/// </para>
 /// 记录"同一个输出文件由哪个 slider set 来建"，BodySlide 读到就不再弹窗询问。
 /// 本工具只维护自己认得的那些 <c>&lt;OutputChoice&gt;</c>，其余节点（含 <c>&lt;ZapChoice&gt;</c>）原样保留。
 /// </summary>
@@ -16,6 +23,7 @@ public static class BuildSelectionFile
     /// <summary>覆盖已有文件前，原件的备份后缀。</summary>
     public const string BackupSuffix = ".bak";
 
+    /// <summary>唯一有效的落点：BodySlide 程序目录（<c>Config.xml</c> 同级）。见类型注释。</summary>
     public static string PathFor(string bodySlideAppDir) => Path.Combine(bodySlideAppDir, FileName);
 
     /// <summary>读出现有的输出选择（path → choice）。文件不存在算成功且结果为空——首次导出就是这种情况。</summary>
@@ -35,11 +43,24 @@ public static class BuildSelectionFile
 
     /// <summary>
     /// 把 <paramref name="desired"/> 写进 <paramref name="path"/>。
-    /// <paramref name="managedPaths"/> 划出本工具负责的范围：范围内的旧条目按 desired 覆盖或删除，
-    /// 范围外的条目以及所有非 OutputChoice 节点都不动。写前备份成 <c>.bak</c>，再经临时文件整体替换。
+    /// <paramref name="managedPaths"/> 划出本工具负责的范围：范围内的旧条目原位改成 desired 里的值、
+    /// desired 里没有（或值为空）的就删掉，范围外的条目以及注释、其它节点和原有的先后顺序一律不动。
+    /// 写前备份成 <c>.bak</c>，再经临时文件整体替换。
+    /// <para>
+    /// 原位改而不是"删光重建"：tinyxml2 的 <c>NextSiblingElement(name)</c> 会跳过异名兄弟一路找下去
+    /// （<c>lib/TinyXML-2/tinyxml2.cpp:1053-1062</c>），所以 <c>OutputChoice</c> 与 <c>ZapChoice</c>
+    /// 交错排列它照样读得到——早先"碰到第一个异名兄弟就停、故必须连续排在最前"的说法是 pugixml 的语义，
+    /// 照它做只会白改用户的文件（连带把注释和原有的先后顺序一起丢掉）。
+    /// </para>
+    /// <para>
+    /// 匹配一律按<b>逐字节</b>：BodySlide 更新条目时用的是 <c>choice.first.compare(attrPath) == 0</c>
+    /// （<c>BuildSelection.cpp:206-235</c>），存进去的选择又由区分大小写的 <c>std::map</c> 查回
+    /// （<c>BuildSelection.h:21</c>）。同一路径的重复条目合并成一条，是为了让它"改第一个匹配元素"
+    /// 与"读取时最后一条覆盖"落在同一个元素上。
+    /// </para>
     /// </summary>
     /// <param name="written">新增或改动的条目数。</param>
-    /// <param name="removed">被删除的条目数（用户在工具里取消了选择）。</param>
+    /// <param name="removed">被删除的条目数（用户在工具里取消了选择，或同一路径的重复条目被合并）。</param>
     public static bool TryExport(string path, IReadOnlyDictionary<string, string> desired,
         IEnumerable<string> managedPaths, out int written, out int removed, out string? error)
     {
@@ -60,32 +81,55 @@ public static class BuildSelectionFile
         }
 
         var root = doc!.Root!;
-        var before = ReadChoices(root);
-        var others = root.Elements().Where(e => e.Name.LocalName != "OutputChoice").ToList();
-
-        // 范围外的既有选择保持不变
-        var after = before.Where(p => !managed.Contains(p.Key))
-            .ToDictionary(p => p.Key, p => p.Value, StringComparer.Ordinal);
-        foreach (var (key, choice) in desired)
+        var byPath = new Dictionary<string, List<XElement>>(StringComparer.Ordinal);
+        foreach (var element in root.Elements("OutputChoice"))
         {
-            if (choice.Length == 0)
-                after.Remove(key); // 空串 = 未决定：不写条目，让 BodySlide 继续问
-            else
-                after[key] = choice;
+            var key = element.Attribute("path")?.Value;
+            if (string.IsNullOrEmpty(key) || !managed.Contains(key))
+                continue; // 路径缺失的、以及不归我们管的（别的安装/别的实例留下的）都不碰
+            if (!byPath.TryGetValue(key!, out var list))
+                byPath[key!] = list = [];
+            list.Add(element);
         }
 
-        written = after.Count(p => !before.TryGetValue(p.Key, out var old) || old != p.Value);
-        removed = before.Count(p => !after.ContainsKey(p.Key));
+        foreach (var (key, elements) in byPath)
+        {
+            var choice = desired.TryGetValue(key, out var value) ? value : "";
+            if (choice.Length == 0)
+            {
+                // 空 = 未决定：不写条目，让 BodySlide 继续问
+                foreach (var element in elements)
+                {
+                    element.Remove();
+                    removed++;
+                }
+                continue;
+            }
+
+            for (var i = 1; i < elements.Count; i++)
+            {
+                elements[i].Remove();
+                removed++;
+            }
+            var keeping = elements[0];
+            if (!string.Equals(keeping.Attribute("choice")?.Value, choice, StringComparison.Ordinal))
+            {
+                keeping.SetAttributeValue("choice", choice);
+                written++;
+            }
+        }
+
+        // 文件里原本没有的键：按 Ordinal 顺序追加在末尾，于是同一份选择导出两次会得到完全相同的内容
+        foreach (var (key, choice) in desired
+                     .Where(p => managed.Contains(p.Key) && p.Value.Length > 0 && !byPath.ContainsKey(p.Key))
+                     .OrderBy(p => p.Key, StringComparer.Ordinal))
+        {
+            root.Add(new XElement("OutputChoice", new XAttribute("path", key), new XAttribute("choice", choice)));
+            written++;
+        }
+
         if (written == 0 && removed == 0 && File.Exists(path))
             return true; // 没有可写的改动，也就不必碰用户的文件
-
-        // BodySlide 用 NextSiblingElement("OutputChoice") 遍历，碰到第一个异名兄弟就停
-        //（BuildSelection.cpp:14-27），所以这些条目必须连续排在其它元素之前。
-        root.RemoveNodes();
-        foreach (var (key, choice) in after.OrderBy(p => p.Key, StringComparer.Ordinal))
-            root.Add(new XElement("OutputChoice", new XAttribute("path", key), new XAttribute("choice", choice)));
-        foreach (var element in others)
-            root.Add(element);
 
         try
         {

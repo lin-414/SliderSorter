@@ -18,7 +18,10 @@ public class OutfitEntry
     /// <summary>BodySlide 是否为其生成带权重的 _0/_1 双份 nif（&lt;OutputFile GenWeights&gt;，缺省为 true）。</summary>
     public bool GenWeights { get; init; } = true;
 
-    /// <summary>发现该 set 的覆盖层序号（0 = 最强模组）。层序即文件冲突时的胜负顺序。</summary>
+    /// <summary>发现该 set 的覆盖层序号（0 = 最强模组）。<para>
+    /// 注意它只是本工具自己的排序与"游戏会读到哪一个"的判据，**不是** BodySlide 判定冲突胜负的依据：
+    /// BodySlide 看不到模组层序，它按目录遍历顺序分组，没存过选择时默认勾的是**该组第一个被发现**的成员
+    /// （<c>BodySlideApp.cpp:4289</c> 的 <c>j == 0</c>）。</para></summary>
     public int LayerIndex { get; init; }
 
     /// <summary>有**别的模组**的 set 与本 set 写同一个输出文件（BodySlide 的输出文件冲突）。
@@ -61,7 +64,9 @@ public sealed record ScanProgress(ScanPhase Phase, int Current, int Total, int F
 /// 按 BodySlide 的实际行为扫描服装（滑块组）：
 /// 有效项目路径若是虚拟 Data 之下的目录（MO2 常态），则按 modlist 优先级模拟 USVFS 覆盖——
 /// 相对路径相同的文件由更强的模组获胜；然后对获胜文件解析 &lt;SliderSet name="..."&gt;，
-/// 同名滑块组先见者胜（与 BodySlideApp::LoadSliderSets 一致，成员名大小写敏感、不做任何变换）。
+/// 同名滑块组先见者胜（与 BodySlideApp::LoadSliderSets 一致：它按 <c>outfitNameSource</c> 判重，
+/// 而那个容器是 <c>std::map&lt;std::string, std::string, case_insensitive_compare&gt;</c>
+/// ——<c>BodySlideApp.h:125</c>——所以"同名"是**忽略大小写**的，且只折 ASCII 字母）。
 /// 顺带读 &lt;OutputPath&gt; / &lt;OutputFile&gt;，按 BodySlide 的口径拼出每个 set 的输出文件路径，
 /// 供「输出文件冲突」判定使用（见 <see cref="OutputConflicts"/>）。
 /// 只扫各层 <c>SliderSets</c> 目录下的 *.xml / *.osp——BodySlide 也只认这一处。
@@ -157,8 +162,9 @@ public static class SliderSetScanner
                 continue;
             }
 
-            // 层内文件顺序决定同名滑块组的归属（先见者胜），必须确定：显式按相对路径排序，
+            // 层内文件顺序决定"同名不同文件"里谁先被解析，必须确定：显式按相对路径排序，
             // 对齐 BodySlide 的 wxDir::GetAllFiles 在 NTFS 上返回的字面序，避免依赖文件系统枚举顺序。
+            // （*.osp 与 *.xml 分成两批这件事在后面的 loadOrder 里单独处理——那才是 BodySlide 真有的行为。）
             files.Sort(StringComparer.OrdinalIgnoreCase);
 
             foreach (var file in files)
@@ -200,28 +206,50 @@ public static class SliderSetScanner
                     progress?.Report(new ScanProgress(ScanPhase.Parsing, done, winners.Count, winners.Count));
             });
 
-        // 结果顺序 = winners 顺序 → 文件内出现顺序，显式用 List 承载（不靠 Dictionary 的枚举顺序：
-        // 那是实现细节，换个运行时/实现就可能变，而"先见者胜"是必须稳定的对外行为）。
-        // HashSet 负责判重，firstIndex 只用于回查首个条目以打冲突标记。
+        // 同名 set 归谁，按 BodySlide 的**加载顺序**判：它先按 *.osp 把整个目录读一遍、再按 *.xml 读第二遍
+        //（BodySlideApp.cpp:837-839 是两次 GetAllFiles 追加进同一个数组），所以一个 .osp 里的 set 名
+        // 总是赢过 .xml 里的同名 set，与模组优先级无关。第二、第三判据仍用层序与路径序——
+        // BodySlide 那趟目录遍历的真实顺序在 USVFS 下无从得知，而"更强的模组先赢"是本工具一贯的口径。
+        var loadOrder = Enumerable.Range(0, winners.Count)
+            .OrderBy(i => SetFilePriority(winners[i].RelPath))
+            .ThenBy(i => winners[i].LayerIndex)
+            .ThenBy(i => winners[i].RelPath, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        // 名字 → 拥有它的那一条（winners 下标 + 文件内下标）。判重忽略大小写：BodySlide 的 outfitNameSource
+        // 是 case_insensitive_compare（只折 ASCII），.NET 侧与之等价的就是 OrdinalIgnoreCase（同样只折 ASCII）。
+        // 声明次数 >1 即"同名先见者胜之外还有人被丢掉"，也就是树里要标注的 HasConflict。
+        var owner = new Dictionary<string, (int Winner, int Set)>(StringComparer.OrdinalIgnoreCase);
+        var declarations = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        foreach (var i in loadOrder)
+        {
+            var sets = setsPerFile[i];
+            for (var j = 0; j < sets.Count; j++)
+            {
+                owner.TryAdd(sets[j].Name, (i, j));
+                declarations[sets[j].Name] = declarations.GetValueOrDefault(sets[j].Name) + 1;
+            }
+        }
+
+        // 产出顺序不变（winners 顺序 → 文件内出现顺序，显式用 List 承载：字典的枚举顺序是实现细节，
+        // 而"清单里服装的先后"是用户看得见的对外行为），只是每条都要过一遍"你是不是同名里的名主"。
         var outfits = new List<OutfitEntry>();
-        var seenNames = new HashSet<string>(StringComparer.Ordinal);
-        var firstIndex = new Dictionary<string, int>(StringComparer.Ordinal);
         for (var i = 0; i < winners.Count; i++)
         {
             var (rel, label, _, layerIndex) = winners[i];
             // 警告也按文件顺序合并，保证多次扫描的警告次序稳定
             if (errorPerFile[i] is { } error)
                 result.Warnings.Add(error);
-            foreach (var set in setsPerFile[i])
+            var fileSets = setsPerFile[i];
+            for (var j = 0; j < fileSets.Count; j++)
             {
-                if (!seenNames.Add(set.Name))
+                var set = fileSets[j];
+                if (owner[set.Name] != (i, j))
                 {
-                    outfits[firstIndex[set.Name]].HasConflict = true;
-                    // 重名的第二个 set 对 BodySlide 而言根本不会被加载（先见者胜），
+                    // 重名的另一个 set 对 BodySlide 而言根本不会被加载（先见者胜），
                     // 所以它声明的输出路径也不参与输出文件冲突——不能记在这里。
                     continue;
                 }
-                firstIndex[set.Name] = outfits.Count;
                 outfits.Add(new OutfitEntry
                 {
                     Name = set.Name,
@@ -230,6 +258,7 @@ public static class SliderSetScanner
                     OutputFilePath = set.OutputFilePath,
                     GenWeights = set.GenWeights,
                     LayerIndex = layerIndex,
+                    HasConflict = 1 < declarations[set.Name],
                     SourceNif = ResolveSourceNif(shapeDataIndex, set.DataFolder, set.SourceFile),
                 });
             }
@@ -242,11 +271,14 @@ public static class SliderSetScanner
     }
 
     /// <summary>按输出路径聚类，给"与别的模组争用同一目标文件"的 set 打标记。
-    /// 分组键用 Ordinal：BodySlide 侧是 <c>std::map&lt;std::string, ...&gt;</c>，逐字节比较、区分大小写，
-    /// 我们多标或漏标都会让它读回的 BuildSelection 条目对不上号。</summary>
+    /// 分组键忽略大小写：BodySlide 侧的 <c>outFileCount</c> 是
+    /// <c>std::map&lt;std::string, std::vector&lt;std::string&gt;, case_insensitive_compare&gt;</c>
+    /// （<c>BodySlideApp.h:202</c>，从 v5.1 到 master 都是），所以 <c>Meshes/Foo</c> 与 <c>meshes/foo</c>
+    /// 在它眼里是**一组**冲突、批建时会弹窗；这里若按 Ordinal 分就成了两组各一人、谁都不算冲突，
+    /// 于是这个功能正好漏掉它存在的理由。模组名仍按 Ordinal 去重（那是本工具自己的概念）。</summary>
     private static void MarkOutputConflicts(List<OutfitEntry> outfits)
     {
-        var owners = new Dictionary<string, HashSet<string>>(StringComparer.Ordinal);
+        var owners = new Dictionary<string, HashSet<string>>(StringComparer.OrdinalIgnoreCase);
         foreach (var outfit in outfits)
         {
             if (outfit.OutputFilePath is not { } path)
@@ -259,6 +291,16 @@ public static class SliderSetScanner
         foreach (var outfit in outfits)
             if (outfit.OutputFilePath is { } path)
                 outfit.HasOutputConflict = 1 < owners[path].Count;
+    }
+
+    /// <summary>BodySlide 枚举滑块组文件的批次：<c>*.osp</c> 那一批整体先于 <c>*.xml</c> 那一批
+    /// （两次 <c>wxDir::GetAllFiles</c> 追加进同一个数组），所以跨批次的同名 set 由 .osp 获胜。</summary>
+    private static int SetFilePriority(string relativePath)
+    {
+        var ext = Path.GetExtension(relativePath);
+        if (ext.Equals(".osp", StringComparison.OrdinalIgnoreCase))
+            return 0;
+        return ext.Equals(".xml", StringComparison.OrdinalIgnoreCase) ? 1 : 2;
     }
 
     /// <summary>解析 &lt;SliderSet name="..."&gt;——服装名就是这个 name 属性，逐字符原样使用。</summary>
@@ -297,6 +339,10 @@ public static class SliderSetScanner
         try
         {
             using var reader = XmlReader.Create(path, settings);
+            // 老格式（根上 version 缺省或 < 1）里数据目录叫 <SetFolder>：BodySlide 在打开文件时
+            // 就地把它改名成 <DataFolder> 并把 version 补成 1（SliderSet.cpp:705-746），
+            // 于是解析时两种名字都会以 <DataFolder> 出现。这里等价地两个都认。
+            var dataFolderNames = (string[]?)null; // null = 还没读到根元素
             string? name = null;
             string? rawOutputPath = null;
             string? rawOutputFile = null;
@@ -311,10 +357,15 @@ public static class SliderSetScanner
             {
                 if (field is null)
                     return;
-                var value = text.ToString().Trim();
-                text.Clear();
                 var taken = field;
                 field = null;
+                // OutputPath / OutputFile 不 Trim：BodySlide 用的是 tinyxml2 的 GetText()，元素内的空白与
+                // 换行会原样进字符串、进而进冲突键；Trim 了就会导出一个它读不到的键。
+                // 数据目录与源网格名只用来在磁盘上找文件，那里的空白是作者手滑，去掉才对得上网格。
+                var value = taken is "OutputPath" or "OutputFile"
+                    ? text.ToString()
+                    : text.ToString().Trim();
+                text.Clear();
                 if (value.Length == 0)
                     return;
                 // 同名元素出现多次时取第一个，对齐 BodySlide 的 FirstChildElement("OutputPath")
@@ -327,6 +378,7 @@ public static class SliderSetScanner
                         rawOutputFile ??= value;
                         break;
                     case "DataFolder":
+                    case "SetFolder":
                         dataFolder ??= value;
                         break;
                     case "SourceFile":
@@ -359,6 +411,13 @@ public static class SliderSetScanner
                 switch (reader.NodeType)
                 {
                     case XmlNodeType.Element:
+                        if (dataFolderNames is null && reader.Depth == 0)
+                        {
+                            var declared = reader.GetAttribute("version");
+                            dataFolderNames = ParseIntPrefix(declared) >= 1
+                                ? new[] { "DataFolder" }
+                                : new[] { "DataFolder", "SetFolder" };
+                        }
                         if (reader.LocalName == "SliderSet" && reader.NamespaceURI.Length == 0)
                         {
                             Commit(); // 上一个 set 收尾
@@ -371,11 +430,12 @@ public static class SliderSetScanner
                         field = null;
                         if (name is null || reader.Depth != setDepth + 1)
                             continue; // 只认 set 的直接子元素：嵌套层级里的同名元素不算
-                        if (reader.LocalName is "OutputPath" or "OutputFile" or "DataFolder" or "SourceFile")
+                        if (reader.LocalName is "OutputPath" or "OutputFile" or "SourceFile"
+                            || (dataFolderNames?.Contains(reader.LocalName) ?? false))
                         {
                             field = reader.LocalName;
                             if (field == "OutputFile")
-                                genWeights = ParseTrue(reader.GetAttribute("GenWeights"));
+                                genWeights = ParseBool(reader.GetAttribute("GenWeights"), defaultValue: true);
                         }
                         break;
 
@@ -403,14 +463,85 @@ public static class SliderSetScanner
     }
 
     /// <summary>
-    /// 复刻 tinyxml2 的 <c>BoolAttribute(name, true)</c>：属性写成 0 / false / no（不分大小写）才算否，
-    /// 其余任何取值、以及属性缺省都算"是"。
+    /// 复刻 tinyxml2 的 <c>BoolAttribute(name, defaultValue)</c>（<c>lib/TinyXML-2/tinyxml2.cpp:624-649</c>）：
+    /// 先按整数读前缀（<c>%d</c>，带 <c>0x</c> 前缀时按 <c>%x</c>），0 为否、非 0 为是；否则只接受
+    /// **大小写完全一致**的 <c>true/True/TRUE</c> 与 <c>false/False/FALSE</c>；再其它写法——包括
+    /// <c>no</c>、<c>off</c>、<c>FaLsE</c> 这类它读不懂的值——解析失败，回落到 <paramref name="defaultValue"/>。
+    /// <para>
+    /// 原先按"0/false/no 不分大小写即为否"判，于是 <c>GenWeights="no"</c> 与 <c>GenWeights="FaLsE"</c>
+    /// 被算成否，而 BodySlide 那边仍是是：带权重的 <c>_0/_1</c> 后缀就标错了。
+    /// </para>
     /// </summary>
-    private static bool ParseTrue(string? attribute) =>
-        attribute is null
-        || !(attribute.Equals("0", StringComparison.OrdinalIgnoreCase)
-             || attribute.Equals("false", StringComparison.OrdinalIgnoreCase)
-             || attribute.Equals("no", StringComparison.OrdinalIgnoreCase));
+    private static bool ParseBool(string? attribute, bool defaultValue)
+    {
+        if (string.IsNullOrEmpty(attribute))
+            return defaultValue;
+        if (TryReadIntPrefix(attribute!, out var number))
+            return number != 0;
+        switch (attribute)
+        {
+            case "true":
+            case "True":
+            case "TRUE":
+                return true;
+            case "false":
+            case "False":
+            case "FALSE":
+                return false;
+        }
+        return defaultValue;
+    }
+
+    /// <summary>复刻 tinyxml2 <c>ToInt</c> 对属性值的读法：跳过前导空白、可选正负号，
+    /// <c>0x</c>/<c>0X</c> 前缀走十六进制、否则读十进制；一个像样的数字都读不出来就返回 false
+    /// （"12abc" 读到 12 算成功，"abc"、"-"、"+ 5" 算失败——和 <c>sscanf</c> 一致）。</summary>
+    private static bool TryReadIntPrefix(string s, out int value)
+    {
+        value = 0;
+        var i = 0;
+        while (i < s.Length && IsAsciiSpace(s[i]))
+            i++;
+        var negative = false;
+        if (i < s.Length && (s[i] == '+' || s[i] == '-'))
+        {
+            negative = s[i] == '-';
+            i++;
+        }
+        var hex = i + 1 < s.Length && s[i] == '0' && (s[i + 1] == 'x' || s[i + 1] == 'X');
+        if (hex)
+            i += 2;
+
+        long accumulated = 0;
+        var digits = 0;
+        for (; i < s.Length; i++)
+        {
+            var digit = HexDigit(s[i]);
+            if (digit < 0 || (!hex && 9 < digit))
+                break;
+            // 溢出无所谓：tinyxml2 那边是 UB，而我们只用到"是不是 0"
+            accumulated = accumulated * (hex ? 16 : 10) + digit;
+            if (accumulated > int.MaxValue)
+                accumulated = int.MaxValue;
+            digits++;
+        }
+        if (digits == 0)
+            return false;
+        value = (int)(negative ? -accumulated : accumulated);
+        return true;
+    }
+
+    /// <summary>按 <c>IntAttribute</c> 的读法取根元素的 <c>version</c>：缺省或读不出数字都算 0
+    /// （BodySlide 由此判定老格式，<c>SliderSet.cpp:701</c>）。</summary>
+    private static int ParseIntPrefix(string? attribute) =>
+        !string.IsNullOrEmpty(attribute) && TryReadIntPrefix(attribute!, out var parsed) ? parsed : 0;
+
+    private static bool IsAsciiSpace(char c) => c is ' ' or '\t' or '\n' or '\v' or '\f' or '\r';
+
+    private static int HexDigit(char c) =>
+        c is >= '0' and <= '9' ? c - '0'
+        : c is >= 'a' and <= 'f' ? c - 'a' + 10
+        : c is >= 'A' and <= 'F' ? c - 'A' + 10
+        : -1;
 
     /// <summary>
     /// 按 BodySlide <c>SliderSetFile::GetSetOutputFilePath</c>（SliderSet.cpp:826-841）拼出输出文件路径：

@@ -53,14 +53,14 @@ public class BuildSelectionFileTests
         Assert.True(BuildSelectionFile.TryRead(path, out var back, out error));
         Assert.Null(error);
         Assert.Equal(desired, back);
-        // 条目顺序固定（按路径 Ordinal），不然每次导出都产出一个纯换序的 diff
+        // 新增的条目按路径 Ordinal 追加，既有条目留在原位：同一份选择导出两次才能得到同样的文件
         var doc = XDocument.Load(path);
         Assert.Equal(new[] { PathB, PathA },
             doc.Root!.Elements("OutputChoice").Select(e => e.Attribute("path")!.Value).ToArray());
     }
 
     [Fact]
-    public void ExportKeepsForeignEntriesAndPutsOutputChoicesFirst()
+    public void ExportKeepsForeignEntriesAndTheOriginalOrder()
     {
         using var temp = new TempDir();
         var path = temp.File("BuildSelection.xml", Existing(ours: new[] { $"{PathA}=Old" }));
@@ -74,24 +74,30 @@ public class BuildSelectionFileTests
         var doc = XDocument.Load(path);
         var names = doc.Root!.Elements().Select(e => e.Name.LocalName).ToList();
         Assert.Equal(new[] { "OutputChoice", "OutputChoice", "ZapChoice" }, names);
-        // 别人（其它 BodySlide 组/旧版本）写的条目不能被动过
-        Assert.Equal("Someone Else",
-            doc.Root!.Elements("OutputChoice").Single(e => e.Attribute("path")!.Value == "meshes\\other\\thing")
-                .Attribute("choice")!.Value);
+        // 别人的条目（其它 BodySlide 组/旧版本写的）不能被动过，位置也不能被挪
+        var foreign = doc.Root!.Elements("OutputChoice")
+            .Single(e => e.Attribute("path")!.Value == "meshes\\other\\thing");
+        Assert.Equal("Someone Else", foreign.Attribute("choice")!.Value);
+        Assert.Equal("Strong", doc.Root!.Elements("OutputChoice")
+            .First(e => e.Attribute("path")!.Value == PathA).Attribute("choice")!.Value);
         Assert.True(BuildSelectionFile.TryRead(path, out var back, out _));
         Assert.Equal("Strong", back[PathA]);
         Assert.Equal(2, back.Count);
     }
 
+    /// <summary>交错排列它照样读得到：tinyxml2 的 <c>NextSiblingElement(name)</c>
+    /// 会跳过异名兄弟一路找下去（<c>lib/TinyXML-2/tinyxml2.cpp:1053-1062</c>）。
+    /// 早先"碰到第一个异名兄弟就停、所以必须把 OutputChoice 连续排在最前"是 pugixml 的语义，
+    /// 照它做等于白改用户的文件——所以这里断言的是**顺序原封不动**。</summary>
     [Fact]
-    public void OutputChoicesStayContiguousBecauseBodySlideStopsAtTheFirstAlienSibling()
+    public void InterleavedEntriesStayWhereTheyAre()
     {
         using var temp = new TempDir();
-        // 一份"ZapChoice 夹在 OutputChoice 中间"的文件：BodySlide 的遍历会在 ZapChoice 处停下，
-        // 后面的 OutputChoice 直接被无视。导出后必须把它们排到连续的最前面。
+        // 一份"ZapChoice 夹在两个 OutputChoice 中间"的文件，外加一条注释
         var path = temp.File("BuildSelection.xml",
             "<BuildSelection>\n" +
             $"  <OutputChoice path=\"{PathA}\" choice=\"Old\"/>\n" +
+            "  <!-- 用户自己的笔记 -->\n" +
             "  <ZapChoice project=\"CBBE\" zap=\"3BBB\" choice=\"1\"/>\n" +
             $"  <OutputChoice path=\"{PathB}\" choice=\"Stale\"/>\n" +
             "</BuildSelection>\n");
@@ -101,10 +107,36 @@ public class BuildSelectionFileTests
         Assert.Null(error);
 
         var doc = XDocument.Load(path);
-        var names = doc.Root!.Elements().Select(e => e.Name.LocalName).ToList();
-        Assert.Equal(new[] { "OutputChoice", "OutputChoice", "ZapChoice" }, names);
-        Assert.Equal("Stale", // PathB 不在托管范围内，原样留着
-            doc.Root!.Elements("OutputChoice").First(e => e.Attribute("path")!.Value == PathB).Attribute("choice")!.Value);
+        var names = doc.Root!.Nodes().Select(n => n is XElement e ? e.Name.LocalName : n.NodeType.ToString()).ToList();
+        Assert.Equal(new[] { "OutputChoice", "Comment", "ZapChoice", "OutputChoice" }, names);
+        Assert.Equal("Stale", // PathB 不在托管范围内，原样留着，也留在原位
+            doc.Root!.Elements("OutputChoice").Last().Attribute("choice")!.Value);
+        Assert.Equal("Strong",
+            doc.Root!.Elements("OutputChoice").First().Attribute("choice")!.Value);
+    }
+
+    /// <summary>同一路径被重复登记（手改文件、或两个工具都写过）：BodySlide 读取时是"最后一条覆盖"、
+    /// 更新时是"改第一个匹配"，两个判据落在不同元素上就会自相矛盾。托管范围内我们合并成一条。</summary>
+    [Fact]
+    public void DuplicateManagedEntriesCollapseIntoTheFirstOne()
+    {
+        using var temp = new TempDir();
+        var path = temp.File("BuildSelection.xml",
+            "<BuildSelection>\n" +
+            $"  <OutputChoice path=\"{PathA}\" choice=\"First\"/>\n" +
+            $"  <OutputChoice path=\"{PathA}\" choice=\"Second\"/>\n" +
+            "</BuildSelection>\n");
+
+        Assert.True(BuildSelectionFile.TryExport(path,
+            new Dictionary<string, string>(StringComparer.Ordinal) { [PathA] = "Strong" },
+            new[] { PathA }, out var written, out var removed, out _));
+        Assert.Equal(1, written);
+        Assert.Equal(1, removed);
+
+        var doc = XDocument.Load(path);
+        var entries = doc.Root!.Elements("OutputChoice").ToList();
+        var only = Assert.Single(entries);
+        Assert.Equal("Strong", only.Attribute("choice")!.Value);
     }
 
     [Fact]
