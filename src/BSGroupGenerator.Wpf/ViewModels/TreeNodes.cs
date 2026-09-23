@@ -26,6 +26,24 @@ public partial class NodeVM : ObservableObject
     [ObservableProperty] private bool _isConflict;
     [ObservableProperty] private bool _isPlaceholder;
 
+    /// <summary>「组内 x/y」徽标文本，空串 = 不显示徽标。
+    ///
+    /// 原先这一段是拼进 <see cref="Text"/> 的（"模组名　[组内 2/5]"），于是同一个字符串里
+    /// 混了三种东西：模组名、计数、以及靠方括号自造的层级感。后果有两个：
+    /// ① 徽标没法单独设色/加底，长模组名被 TextTrimming 截断时会把徽标一起吃掉，
+    ///    最重要的"这个模组有多少已进组"反而最先消失；
+    /// ② 换语言要重拼整串文本，而重拼就得知道前缀长什么样——`BaseHeader` 那个属性
+    ///    正是为了绕开"按前缀做字符串剥离"才存在的。
+    /// 拆成独立属性之后，视图侧把它做成有底色的徽标，且它挨着 TextBlock 的**外侧**，
+    /// 截断只会吃掉名字，徽标永远在。</summary>
+    [ObservableProperty] private string _badgeText = "";
+
+    /// <summary>徽标是否要占位。视图里绑定它比绑 BadgeText 的转换器更省一次字符串比较，
+    /// 也让「隐藏而非折叠」这个决定能写在视图层（隐藏可保持左右两列不对不齐）。</summary>
+    public bool HasBadge => BadgeText.Length > 0;
+
+    partial void OnBadgeTextChanged(string value) => OnPropertyChanged(nameof(HasBadge));
+
     private bool _isExpanded;
     public bool IsExpanded
     {

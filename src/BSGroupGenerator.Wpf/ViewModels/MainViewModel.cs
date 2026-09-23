@@ -13,14 +13,37 @@ namespace BSGroupGenerator.Wpf.ViewModels;
 public sealed record WriteModeItem(WriteMode Mode, string Label);
 
 /// <summary>设置页「界面主题 / 界面语言」下拉项：Value 是 ThemeManager/L10n 认的键，Label 随语言变。
-/// 语言那一项的 Label 恒为各语言自己的写法（中文 / English / Русский / Français）——
-/// 把俄语界面翻坏了时，那是唯一还能认出「这里能切回中文」的线索。</summary>
+/// 语言那四项（中文 / English / Русский / Français）的 Label 恒为各语言自己的写法——
+/// 把俄语界面翻坏了时，那是唯一还能认出「这里能切回中文」的线索，所以它们不进语言文件。
+/// 「跟随系统」是唯一的例外：它描述的是行为不是语言名，法/俄用户该看到自己的说法，走 L.Settings_LanguageSystem。</summary>
 public sealed record OptionItem(string Value, string Label);
 
-/// <summary>组列表项。</summary>
+/// <summary>内联提示条的级别。与日志级别分开：日志是"发生了什么"的流水账，
+/// 提示条是"你现在该做什么"的一句话——同一件事可能只进提示条不进日志，或者反过来。</summary>
+public enum BannerKind
+{
+    /// <summary>一般提示（"先勾选要搬运的服装"）。中性底色。</summary>
+    Info,
+
+    /// <summary>警告（"配置指向的目录不存在"）。琥珀底色。</summary>
+    Warn,
+
+    /// <summary>错误（"写入失败"）。红底色。</summary>
+    Danger,
+}
+
+/// <summary>内联提示条。取代了一批"说了等于没说、但刚好挡在窗口正中间"的模态弹窗——
+/// 那些提示（先选组、先勾选、没有可撤销的）都是**非破坏性**的，用户看完要做的
+/// 永远是"回到刚才那块控件继续操作"。模态框强制先点确定、还会挡住刚看的位置，
+/// 是这个流程里最没必要的打断。破坏性确认（删除组、清理失效服装）仍走模态框。</summary>
+public sealed record BannerMessage(BannerKind Kind, string Text);
+
+/// <summary>组列表项。CountText 单独成串：组名右对齐的数字用等宽字体单独一列，
+/// 长组名截断时不会把计数一起吃掉（原来拼在 Display 里，截断点落在数字上就看不见成员数了）。</summary>
 public sealed record GroupItem(string Name, int Count)
 {
-    public string Display => $"{Name}　({Count})";
+    public string Display => Name;
+    public string CountText => Count.ToString();
 }
 
 public partial class MainViewModel : ObservableObject
@@ -52,6 +75,24 @@ public partial class MainViewModel : ObservableObject
 
     public void NotifyUser(string title, string message, bool warning = false) =>
         NotifyHandler?.Invoke(title, message, warning);
+
+    // ── 内联提示条（非破坏性提示的出口）──────────────────────────────
+    // 分工：破坏性/需要用户抉择的一律走 NotifyUser 的模态框（删除组、清理失效服装、
+    // 未保存就退出）；"你少做了一步"这类纯提示走 ShowBanner，就近显示在触发它的控件旁边。
+    [ObservableProperty] private BannerMessage? _banner;
+
+    /// <summary>提示条的可见性。用「有没有内容」而不是另一个 bool：两者分开会出现
+    /// "bool 已复位、内容还在"或反过来的中间态，那正是闪一下又冒出来的成因。</summary>
+    public bool HasBanner => Banner is not null;
+
+    partial void OnBannerChanged(BannerMessage? value) => OnPropertyChanged(nameof(HasBanner));
+
+    /// <summary>显示一条内联提示。同一时刻只留一条：连续两次失败（例如连点两下"加入组"）
+    /// 叠成两条会顶掉布局，而两条说的是同一件事。</summary>
+    public void ShowBanner(BannerKind kind, string text) => Banner = new BannerMessage(kind, text);
+
+    [RelayCommand]
+    private void DismissBanner() => Banner = null;
 
     /// <summary>视图注入：打开规则归组编辑器（非模态，同一个编辑器不叠加第二个窗口）。
     /// 返回是否已就绪——「规则预设」窗口据此决定要不要关掉自己。
@@ -104,9 +145,97 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty] private string _infoLine = L10n.Tr("L.Vm_NotScanned");
     [ObservableProperty] private string _statusCounts = L10n.Tr("L.Vm_NotScanned");
     [ObservableProperty] private string _outputText = L10n.Tr("L.Vm_OutputNone");
-    [ObservableProperty] private ObservableCollection<GroupItem> _groups = [];
+    /// <summary>组列表。<b>永远是同一个实例，只就地增删，不换集合</b>——
+    /// 见 <see cref="GroupsView"/>：ListBox 绑的是那个构造期一次性建立的投影，
+    /// 一旦把本属性指向新集合，投影就永远停在旧实例上，列表从此一片空白
+    /// （Store 里明明有组，双击空白还能弹出当前组，看着像"组丢了"）。
+    /// 因此这里刻意不给 setter：换集合这件事在编译期就被挡住。</summary>
+    public ObservableCollection<GroupItem> Groups { get; } = [];
+
     [ObservableProperty] private int _selectedGroupIndex = -1;
     [ObservableProperty] private string _groupInfo = L10n.Tr("L.Vm_NoGroupSelected");
+
+    /// <summary>组列表过滤词。与左树的时装/模组过滤互不影响——那两个筛的是「可加入的服装」，
+    /// 这个筛的是「已有的组」，组多到几十个时才有用。</summary>
+    [ObservableProperty] private string _groupFilterText = "";
+
+    /// <summary>过滤后的组列表视图。<see cref="Groups"/> 始终是完整列表（SelectedGroupIndex 的语义、
+    /// 保存顺序、右键菜单都依赖它），过滤只影响这里绑给 ListBox 的投影。
+    /// <para>
+    /// ⚠️ 本属性**没有变更通知**，所以它绑定的那个集合实例必须长命——与 <see cref="Groups"/> 是同生共死的关系。
+    /// </para></summary>
+    public System.ComponentModel.ICollectionView GroupsView { get; }
+
+    partial void OnGroupFilterTextChanged(string value)
+    {
+        OnPropertyChanged(nameof(IsGroupFilterActive));
+        GroupsView.Refresh();
+    }
+
+    /// <summary>过滤是否处于激活状态（过滤框非空）——空结果提示据此区分「一个组都没有」和「都被滤掉了」。</summary>
+    public bool IsGroupFilterActive => GroupFilterText.Trim().Length > 0;
+
+    /// <summary>「撤销」按钮的可用性。Store.CanUndo 的变化没有通知源，
+    /// 每次分组操作后由 RefreshGroupsList / RefreshTransferState 统一推一次。</summary>
+    [ObservableProperty] private bool _canUndo;
+
+    // ── 扫描状态指示器 ──────────────────────────────────────────────
+    /// <summary>上一次扫描完成的时刻。null = 本次运行还没成功扫描过。
+    /// 扫描是这两份成果的共同前置，而"上次扫描是什么时候"原先只藏在折叠日志里——
+    /// 用户看到一份清单无从判断它是不是已经过期（装了新模组之后尤其危险）。</summary>
+    [ObservableProperty] private DateTime? _lastScanAt;
+
+    /// <summary>扫描状态一行摘要（"上次扫描：3 分钟前 · 模组 120 · 服装 840"）。
+    /// 未扫描时给引导文案，而不是留空——空白会被读成"这栏坏了"。
+    /// 注意别和 <see cref="ScanStatusText"/> 混：那个是扫描中遮罩上的进度文字。</summary>
+    public string ScanSummaryText => LastScanAt is null
+        ? L10n.Tr("L.Scan_StatusNever")
+        : L10n.TrF("L.Scan_StatusAt", DescribeAge(DateTime.Now - LastScanAt.Value), StatusCountsShort);
+
+    /// <summary>扫描结果是否可能已过期（超过 10 分钟）。只用来调颜色，不做任何拦截——
+    /// 判定"真的过期了"需要重扫，而那正是用户点「重新扫描」要做的事，不需要工具替他下结论。</summary>
+    public bool IsScanStale => LastScanAt is not null && DateTime.Now - LastScanAt.Value > TimeSpan.FromMinutes(10);
+
+    partial void OnLastScanAtChanged(DateTime? value)
+    {
+        OnPropertyChanged(nameof(ScanSummaryText));
+        OnPropertyChanged(nameof(IsScanStale));
+    }
+
+    /// <summary>状态栏那句的简版（"模组 120 · 服装 840"），供扫描指示器复用。
+    /// 不复用 StatusCounts 是因为那句还带"已分配/未分配"，对"上次扫描"这个语境是噪音。</summary>
+    private string StatusCountsShort => Scan is null
+        ? L10n.Tr("L.Word_None")
+        : L10n.TrF("L.Scan_CountsShort", WalkRoots().Count(n => n.Kind == NodeKind.Mod), Scan.Outfits.Count);
+
+    /// <summary>把时长说成人话。刻意不分"秒/分/小时"以外的档——超过一天的情况在这类
+    /// 桌面工具的会话长度里不存在，多写档位只会多几行译文。</summary>
+    private static string DescribeAge(TimeSpan age) =>
+        age.TotalSeconds < 60 ? L10n.TrF("L.Age_JustNow", (int)age.TotalSeconds)
+        : age.TotalMinutes < 60 ? L10n.TrF("L.Age_Minutes", (int)age.TotalMinutes)
+        : L10n.TrF("L.Age_Hours", (int)age.TotalHours);
+
+    /// <summary>环境是否还没配好（缺实例或缺 BodySlide 目录）。设置页据此在最上方挂引导条。
+    /// 两个条件缺一不可：只选实例不选 BodySlide 仍然扫不了，反之亦然。</summary>
+    public bool ShowsUnconfiguredBanner => SelectedInstance is null || SelectedBodySlide is null;
+
+    /// <summary>引导条的内容。用 BannerMessage 复用 InlineBannerTemplate，不另做一套样式。</summary>
+    public BannerMessage? UnconfiguredBanner =>
+        ShowsUnconfiguredBanner ? new BannerMessage(BannerKind.Info, L10n.Tr("L.Settings_Unconfigured")) : null;
+
+    /// <summary>「重新扫描」是否可用：至少要选中 BodySlide 目录才有东西可扫。
+    /// 不给它绑 IsBusy——扫描中遮罩会盖住整页，那期间点不到它，绑了只是多一个状态。</summary>
+    public bool CanRescan => _bsAppDir is not null;
+
+    /// <summary>环境配置状态变了就通知这两个派生属性。
+    /// 由 OnSelectedInstanceChanged / OnSelectedBodySlideChanged 调用——
+    /// CommunityToolkit 的 partial 钩子每个属性只能有一个，所以统一走这个私有方法。</summary>
+    private void RaiseConfigState()
+    {
+        OnPropertyChanged(nameof(ShowsUnconfiguredBanner));
+        OnPropertyChanged(nameof(UnconfiguredBanner));
+        OnPropertyChanged(nameof(CanRescan));
+    }
     [ObservableProperty] private bool _isScanning;
     [ObservableProperty] private bool _isDetecting;
     [ObservableProperty] private string _scanStatusText = "";
@@ -234,6 +363,14 @@ public partial class MainViewModel : ObservableObject
 
     public MainViewModel()
     {
+        // 组列表的过滤投影：CollectionViewSource 绑在 Groups 上，Filter 读 GroupFilterText，
+        // GroupFilterText 一变就 Refresh()。用投影而不是每次过滤都重建一个 ObservableCollection，
+        // 是因为 ListBox 的 SelectedItem 要跨过滤保持——重建集合会把选中项丢掉。
+        // 推论：这里拿到的是**Groups 那一个实例**的投影，所以 Groups 只能就地更新（见其属性注释）。
+        GroupsView = System.Windows.Data.CollectionViewSource.GetDefaultView(Groups);
+        GroupsView.Filter = o => o is GroupItem g &&
+            TextFilter.Matches(g.Name, GroupFilterText);
+
         WriteModes = BuildWriteModes();
         _selectedWriteMode = WriteModes.FirstOrDefault(m => m.Mode == Settings.WriteMode) ?? WriteModes[0];
 
@@ -241,7 +378,12 @@ public partial class MainViewModel : ObservableObject
         ThemeOptions = BuildThemeOptions();
         _selectedThemeOption = ThemeOptions.FirstOrDefault(o => o.Value == ThemeManager.Current) ?? ThemeOptions[0];
         LanguageOptions = BuildLanguageOptions();
-        _selectedLanguageOption = LanguageOptions.FirstOrDefault(o => o.Value == L10n.Current) ?? LanguageOptions[0];
+        // 回填按**设置里选的那一项**（L10n.Normalize(Settings.UiLanguage)）而不是生效语言（L10n.Current）：
+        // 选了「跟随系统」时两者不等，按 Current 回填会让下拉显示成系统恰好命中的那种语言，
+        // "跟随系统"看起来像是没选上。走 Normalize 而不是直接比 Settings.UiLanguage，
+        // 是因为设置文件里可能有手改出来的未知值（那些值生效语言已回落到 zh）。
+        _selectedLanguageOption = LanguageOptions.FirstOrDefault(o => o.Value == L10n.Normalize(Settings.UiLanguage))
+            ?? LanguageOptions[0];
 
         ReloadInstances();
     }
@@ -270,8 +412,12 @@ public partial class MainViewModel : ObservableObject
         new OptionItem(ThemeManager.Light, L10n.Tr("L.Theme_Light")),
     ]);
 
+    /// <summary>语言下拉项。「跟随系统」排第一（新装默认就是它，见 AppSettings.UiLanguage）：
+    /// 它是"我要什么行为"，后四项是"我要哪种语言"——两种意图混排在一个列表里，
+    /// 放在最前才读得通，也让绝大多数非中文用户一进来就落在正确的那一项上。</summary>
     private static ObservableCollection<OptionItem> BuildLanguageOptions() => new(
     [
+        new OptionItem(L10n.System, L10n.Tr("L.Settings_LanguageSystem")),
         new OptionItem(L10n.Zh, "中文"),
         new OptionItem(L10n.En, "English"),
         new OptionItem(L10n.Ru, "Русский"),
@@ -289,9 +435,14 @@ public partial class MainViewModel : ObservableObject
         Settings.Save();
     }
 
+    /// <summary>语言下拉：换项即热切换并落盘。落盘的是**设置值本身**（可能是 "system"），
+    /// 不是算出来的语言码——存语言码等于"跟随系统"只用一次，之后用户在 Windows 里换了显示语言也不会再跟。
+    /// 去重比的是设置里选的那一项（Normalize 之后）而非生效语言（L10n.Current）：
+    /// 英文系统上用户手动点一下「English」，生效语言恰好也是 en，比 Current 就会把它当成"没变化"
+    /// 直接忽略，设置里那句 "system" 永远清不掉。</summary>
     partial void OnSelectedLanguageOptionChanged(OptionItem? value)
     {
-        if (value is null || _localizing || value.Value == L10n.Current)
+        if (value is null || _localizing || value.Value == L10n.Normalize(Settings.UiLanguage))
             return;
         L10n.Apply(value.Value);
         Settings.UiLanguage = value.Value;
@@ -308,8 +459,10 @@ public partial class MainViewModel : ObservableObject
         SelectedWriteMode = WriteModes.FirstOrDefault(m => m.Mode == currentMode);
         // 换 ItemsSource 会把 ComboBox 的选中项清成 null，所以按「当前生效值」重新回填；
         // _localizing 挡掉回填触发的 OnChanged，免得换语言顺带把主题/语言又 Apply 一遍。
+        // 语言这一项回填的是设置里选的那一项（Normalize 之后）而不是生效语言，理由见
+        // OnSelectedLanguageOptionChanged。
         var currentTheme = ThemeManager.Current;
-        var currentLang = L10n.Current;
+        var currentLang = L10n.Normalize(Settings.UiLanguage);
         ThemeOptions = BuildThemeOptions();
         SelectedThemeOption = ThemeOptions.FirstOrDefault(o => o.Value == currentTheme);
         LanguageOptions = BuildLanguageOptions();
@@ -386,6 +539,7 @@ public partial class MainViewModel : ObservableObject
     partial void OnSelectedInstanceChanged(Mo2Instance? value)
     {
         InvalidateModDirCache(); // 换了实例 = 换了 mods 根目录，探测结果整体作废
+        RaiseConfigState(); // 选/取消选实例 → 未配置引导条的显隐跟着变
         if (value is null)
         {
             Profiles = [];
@@ -473,6 +627,7 @@ public partial class MainViewModel : ObservableObject
             Settings.LastBodySlideDir = value.AppDir;
             Settings.Save();
         }
+        RaiseConfigState(); // BodySlide 目录决定 CanRescan 与"未配置"引导条的显隐
         _ = RunScanAsync();
     }
 
@@ -640,6 +795,10 @@ public partial class MainViewModel : ObservableObject
             RebuildTree();
             return;
         }
+
+        // 扫描真正成功了才记时间戳。上面那条提前返回的路径（有效路径解析不出）
+        // 不能算一次成功扫描——否则指示器会说"刚刚扫描过"，而实际上什么都没读到。
+        LastScanAt = DateTime.Now;
 
         var kindText = KindText(outcome.Resolution.Kind);
         var game = string.IsNullOrEmpty(SelectedInstance?.GameName) ? L10n.Tr("L.Word_Unknown") : SelectedInstance!.GameName;

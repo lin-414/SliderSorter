@@ -347,4 +347,146 @@ public class OutputConflictTests
             CoreStrings.Localizer = previous;
         }
     }
+
+    // ── 按用户分组分类（界面上"看各个分组之中的冲突"）──
+    // 分类不碰扫描，所以这几条直接造冲突组：要验的是归类与标记规则，不是 BodySlide 的口径。
+
+    private static OutputConflictGroup Conflict(string path, params string[] setNames) => new()
+    {
+        OutputFilePath = path,
+        GenWeights = true,
+        Candidates = setNames
+            .Select((name, i) => new ConflictCandidate(name, "Mod", name + ".xml", i, true))
+            .ToList(),
+    };
+
+    private static SliderGroup UserGroup(string name, params string[] members) => new(name, members);
+
+    [Fact]
+    public void AConflictIsListedUnderEveryGroupThatHasAMemberInIt()
+    {
+        var conflict = Conflict(PathA, "Bikini Red", "Armor Steel");
+
+        var buckets = OutputConflicts.CategorizeByUserGroup(
+            [conflict],
+            [UserGroup("泳装", "Bikini Red"), UserGroup("护甲", "Armor Steel")]);
+
+        // 判据是"卷入"：两个组各有一件衣服在这条冲突里，它就该同时出现在两处——
+        // 赢家全局只有一个，输掉的那个组的成员就建不出来，两个组都受影响
+        Assert.Equal(new[] { "泳装", "护甲" }, buckets.Select(b => b.GroupName));
+        Assert.All(buckets, b => Assert.Same(conflict, Assert.Single(b.Rows).Conflict));
+        Assert.All(buckets, b => Assert.False(b.Rows[0].IntraCollision));
+        Assert.All(buckets, b => Assert.Equal(0, b.IntraCollisionCount));
+    }
+
+    [Fact]
+    public void IntraCollisionMarksOnlyTheGroupThatFightsItself()
+    {
+        var conflict = Conflict(PathA, "Bikini Red", "Bikini Blue", "Armor Steel");
+
+        var buckets = OutputConflicts.CategorizeByUserGroup(
+            [conflict],
+            [UserGroup("泳装", "Bikini Red", "Bikini Blue"), UserGroup("护甲", "Armor Steel")]);
+
+        // 泳装组自己就有 2 件在争这个文件（最需要人定夺的一档），护甲组只被卷进 1 件。
+        // 这两个问题必须分开答："属不属于这个组"与"这个组内部在不在自相残杀"
+        Assert.True(buckets.Single(b => b.GroupName == "泳装").Rows[0].IntraCollision);
+        Assert.Equal(1, buckets.Single(b => b.GroupName == "泳装").IntraCollisionCount);
+        Assert.False(buckets.Single(b => b.GroupName == "护甲").Rows[0].IntraCollision);
+    }
+
+    [Fact]
+    public void ConflictsInvolvingNoGroupLandInTheUngroupedBucketLast()
+    {
+        var inGroup = Conflict(PathA, "Bikini Red", "Armor Steel");
+        var loose = Conflict(PathB, "Loose One", "Loose Two");
+
+        var buckets = OutputConflicts.CategorizeByUserGroup(
+            [inGroup, loose],
+            [UserGroup("泳装", "Bikini Red")]);
+
+        // 没进任何分组的冲突不能丢——丢了它们会从界面上凭空消失
+        Assert.Equal(new[] { "泳装", "" }, buckets.Select(b => b.GroupName));
+        var ungrouped = buckets[^1];
+        Assert.True(ungrouped.IsUngrouped);
+        Assert.Same(loose, Assert.Single(ungrouped.Rows).Conflict);
+        // 组外的人跟组内的人争，仍算"泳装组的冲突"，不该在未入组里重复出现
+        Assert.DoesNotContain(ungrouped.Rows, r => ReferenceEquals(r.Conflict, inGroup));
+    }
+
+    [Fact]
+    public void BucketsFollowTheUsersGroupOrderAndEmptyGroupsAreDropped()
+    {
+        var buckets = OutputConflicts.CategorizeByUserGroup(
+            [Conflict(PathA, "C One")],
+            [UserGroup("甲"), UserGroup("乙", "C One"), UserGroup("丙", "C One"), UserGroup("丁")]);
+
+        // 桶的顺序 = 用户在「分组生成」页认得的那个顺序（不是字典序、也不是路径序）；
+        // 一条冲突都没卷进来的组不出桶：三十个组里只有两个有冲突时，那二十八个空头只是噪声
+        Assert.Equal(new[] { "乙", "丙" }, buckets.Select(b => b.GroupName));
+    }
+
+    [Fact]
+    public void NoUserGroupsMeansASingleUngroupedBucket()
+    {
+        var buckets = OutputConflicts.CategorizeByUserGroup([Conflict(PathA, "A", "B")], []);
+
+        // 还没建组时全部归"未入组"：视图据此决定不做分类（否则每行头上会多一条空的「未入组」）
+        var only = Assert.Single(buckets);
+        Assert.True(only.IsUngrouped);
+        Assert.False(only.Rows[0].IntraCollision);
+    }
+
+    [Fact]
+    public void DuplicateMemberEntriesDoNotFakeAnIntraCollision()
+    {
+        // 手改分组 XML 能把同一件衣服登记两遍；那不该被当成"组内两件衣服互撞"
+        var buckets = OutputConflicts.CategorizeByUserGroup(
+            [Conflict(PathA, "Bikini Red", "Armor Steel")],
+            [UserGroup("泳装", "Bikini Red", "Bikini Red")]);
+
+        Assert.False(Assert.Single(buckets).Rows[0].IntraCollision);
+    }
+
+    [Fact]
+    public void MemberMatchingIsCaseSensitiveLikeBodySlide()
+    {
+        // BodySlide 的组成员匹配是逐字节精确比较（见 SliderGroupFile 的注释）。
+        // 这里若按忽略大小写匹配，界面上会显示出 BodySlide 根本不会认的归属
+        var buckets = OutputConflicts.CategorizeByUserGroup(
+            [Conflict(PathA, "bikini red", "Armor Steel")],
+            [UserGroup("泳装", "Bikini Red")]);
+
+        Assert.True(Assert.Single(buckets).IsUngrouped);
+    }
+
+    [Fact]
+    public void OneConflictCanBeIntraForOneGroupAndMerelyInvolvedForOthers()
+    {
+        var conflict = Conflict(PathA, "A1", "A2", "B1", "C1");
+
+        var buckets = OutputConflicts.CategorizeByUserGroup(
+            [conflict],
+            [UserGroup("甲", "A1", "A2"), UserGroup("乙", "B1"), UserGroup("丙", "C1")]);
+
+        // 一条冲突横跨三个组：甲 2 件（互撞）、乙 1 件、丙 1 件 —— 三个桶各一份，标记不同
+        Assert.Equal(new[] { "甲", "乙", "丙" }, buckets.Select(b => b.GroupName));
+        Assert.Equal(new[] { true, false, false }, buckets.Select(b => b.Rows[0].IntraCollision));
+        Assert.Equal(1, buckets.Sum(b => b.IntraCollisionCount));
+    }
+
+    [Fact]
+    public void RowsWithinABucketKeepTheConflictOrder()
+    {
+        var later = Conflict(PathB, "B1", "B2");
+        var earlier = Conflict(PathA, "A1", "A2");
+
+        var buckets = OutputConflicts.CategorizeByUserGroup(
+            [later, earlier],
+            [UserGroup("甲", "A1", "B1")]);
+
+        // 桶内保持 Detect 给出的顺序（按输出路径），界面据此渲染——换个顺序只是随机抖动，
+        // 但列表每次重建都换序会让人以为内容变了
+        Assert.Equal(new[] { later, earlier }, Assert.Single(buckets).Rows.Select(r => r.Conflict));
+    }
 }

@@ -15,6 +15,8 @@ public partial class App : Application
     {
         // 按设置加载色板与语言。既须在 StartupUri 窗口创建前完成，也须早于下面的单实例提示
         //（提示文案走 L10n，语言尚未装载时会回落到键名）
+        // 设置里的语言可能是 "system"（跟随系统）：L10n.Apply 在这里一次性解析成具体语言，
+        // 之后全程序只认 L10n.Current，不必再各自判断一次。
         // 登记为进程共享实例：ViewModel 直接取用，不必再各自 Load 一遍（见 AppSettings.Shared）
         var settings = Core.AppSettings.Use(Core.AppSettings.Load());
         ThemeManager.Apply(settings.UiTheme);

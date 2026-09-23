@@ -45,9 +45,14 @@ public partial class SettingsPage : UserControl
         {
             case nameof(MainViewModel.IsManualExpanded) when _vm.IsManualExpanded:
                 ShowManual();
-                // 单列之后帮助与关于落在长列底部：F1 从别的页过来时，展开的面板其实在视口之外。
+                // 只在**不是用户自己点的**时候滚：F1 从别的页过来时，展开的面板在视口之外，
+                // 不滚过去等于没响应；但用户亲手点开折叠条时，那颗控件本来就在眼前，
+                // 再替他把页面滚一下是多余的跳动。
+                // ToggleButton 的双向绑定让两条入口汇到同一个 PropertyChanged，只能靠标志位区分。
                 // 排到 Loaded 再滚——Visibility 刚变时这一节还没量出高度，此刻滚等于没滚。
-                Dispatcher.BeginInvoke(() => ManualHost.BringIntoView(), DispatcherPriority.Loaded);
+                if (!_manualToggledByUser)
+                    Dispatcher.BeginInvoke(() => ManualHost.BringIntoView(), DispatcherPriority.Loaded);
+                _manualToggledByUser = false;
                 break;
             case nameof(MainViewModel.IsDiagnosticsExpanded) when _vm.IsDiagnosticsExpanded && _diagLang != L10n.Current:
                 RefreshDiagnostics();
@@ -55,13 +60,28 @@ public partial class SettingsPage : UserControl
         }
     }
 
+    /// <summary>本次「使用说明」的展开是否由用户点折叠条发起（决定要不要自动滚到面板）。
+    ///
+    /// 为什么不用 ToggleButton.Checked 事件置位：那个事件的触发时机与 TwoWay 绑定回写 VM
+    /// 的先后**没有保证**。若回写先到，PropertyChanged 先跑、标志还是 false，就会白滚一次。
+    /// 改在 ToggleButton 的鼠标/键盘入口上记录意图，一定早于绑定回写，时序上不可能反过来。
+    /// 用 PreviewMouseLeftButtonDown + PreviewKeyDown 而不是 Click：Click 同样晚于绑定回写。</summary>
+    private bool _manualToggledByUser;
+
+    private void ManualToggle_UserInput(object sender, System.Windows.Input.InputEventArgs e)
+    {
+        // 只在"即将展开"时记录：收起时不需要滚动，标志留给下一次展开判断
+        if (ManualToggle.IsChecked != true)
+            _manualToggledByUser = true;
+    }
+
     // 目录选择走 VM 上注入的 FolderPicker（宿主是壳窗口）：这里再 new 一个 OpenFolderDialog
     // 就会出现两套弹框、两套 owner，且页面没有窗口身份时第二套只能无主弹出。
-    private void AddMo2_Click(object sender, RoutedEventArgs e)
+    private void SelectInstanceDir_Click(object sender, RoutedEventArgs e)
     {
         var dir = _vm.FolderPicker?.Invoke(L10n.Tr("L.Pick_Mo2Dir"));
         if (dir is not null)
-            _vm.AddMo2Directory(dir);
+            _vm.SelectInstanceDirectory(dir);
     }
 
     private void BrowseBodySlide_Click(object sender, RoutedEventArgs e)
@@ -71,9 +91,8 @@ public partial class SettingsPage : UserControl
             _vm.UseBodySlideDirectory(dir);
     }
 
-    // ── 使用说明 / 诊断信息：按钮只翻展开态，正文由上面的 OnViewModelChanged 备好 ──
-    private void ManualToggle_Click(object sender, RoutedEventArgs e) =>
-        _vm.IsManualExpanded = !_vm.IsManualExpanded;
+    // ── 使用说明 / 诊断信息：展开态由 DisclosureToggle（ToggleButton）双向绑到 VM，
+    //    这里不再有 Click 处理函数。正文由上面的 OnViewModelChanged 备好。 ──
 
     /// <summary>正文只在展开时构建（60+ 段，收起时白建），换过语言后重建一次。</summary>
     private void ShowManual()
@@ -83,9 +102,6 @@ public partial class SettingsPage : UserControl
         ManualViewer.Document = HelpDocument.Build();
         _manualLang = L10n.Current;
     }
-
-    private void DiagnosticsToggle_Click(object sender, RoutedEventArgs e) =>
-        _vm.IsDiagnosticsExpanded = !_vm.IsDiagnosticsExpanded;
 
     private void DiagnosticsRefresh_Click(object sender, RoutedEventArgs e) => RefreshDiagnostics();
 

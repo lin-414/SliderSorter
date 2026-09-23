@@ -3,7 +3,17 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <!-- 规则预设页：说明工作流，查看/编辑/删除已保存预设。
          「新建预设…」「编辑所选…」拉起的是规则归组编辑器（独立非模态窗口），
-         它保存预设后回到这一页时列表会自己刷新（见 code-behind 的 IsVisibleChanged）。 -->
+         它保存预设后回到这一页时列表会自己刷新（见 code-behind 的 IsVisibleChanged）。
+
+         为什么从单列改成左右分栏：
+         原先列表项自带 Title + Detail 两行，预设一多就变成一片密排文字——
+         想找"哪条是往 UBE 组加的"必须逐条读两行。分栏后左列只留标题（一屏能放的行数翻倍），
+         右列显详情与可执行动作，扫视成本从 O(条数 × 2 行) 降到 O(条数)。
+         这与「分组生成」页左右分栏是同一套信息架构：左边挑，右边看/改。
+
+         列宽用 * + 固定详情宽 + *？不：右栏按内容取宽会在长关键字下把左列挤没。
+         取 1.15* : * —— 列表略宽于详情，与主界面的左右比接近，
+         且两列都随窗口缩放，窄窗口下不会出现某一列被压到 0。 -->
     <Grid Margin="12,6,12,4">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
@@ -19,27 +29,58 @@
                        Text="{DynamicResource L.RulePresets_Steps}" />
         </StackPanel>
 
-        <ListBox Grid.Row="1" x:Name="List" BorderBrush="{DynamicResource B.Border}" BorderThickness="1"
-                 MouseDoubleClick="List_DoubleClick"
-                 ScrollViewer.HorizontalScrollBarVisibility="Disabled">
-            <ListBox.ItemTemplate>
-                <DataTemplate>
-                    <StackPanel Margin="2,4">
-                        <TextBlock Text="{Binding Title}" FontWeight="Bold"
+        <!-- 左：预设列表（只显标题，紧凑）+ 右：所选预设的详情 -->
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="1.15*" />
+                <ColumnDefinition Width="10" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <Grid Grid.Column="0">
+                <ListBox x:Name="List" BorderBrush="{DynamicResource B.Border}" BorderThickness="1"
+                         SelectionChanged="List_SelectionChanged"
+                         MouseDoubleClick="List_DoubleClick"
+                         ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <!-- 左列只留标题：详情移到右栏。名称过长时省略号收尾并挂 ToolTip，
+                                 整条 Title 仍可从右栏读到 -->
+                            <TextBlock Text="{Binding Title}" Margin="2,4" FontWeight="Bold"
+                                       TextTrimming="CharacterEllipsis"
+                                       ToolTip="{Binding Title}"
+                                       Foreground="{DynamicResource B.Text}" />
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+
+                <!-- 居中的空状态提示必须允许换行：按内容宽度排列时会比面板还宽，两侧一起溢出 -->
+                <TextBlock x:Name="EmptyHint" Text="{DynamicResource L.RulePresets_Empty}"
+                           Foreground="{DynamicResource B.TextDim}" FontStyle="Italic"
+                           TextWrapping="Wrap" TextAlignment="Center" Margin="16,0"
+                           HorizontalAlignment="Center" VerticalAlignment="Center" IsHitTestVisible="False" />
+            </Grid>
+
+            <!-- 右：详情。没选中任何一条时整栏换成一句引导（与左列空状态互斥出现：
+                 左列空＝一条预设都没有，右栏空＝有预设但没选中） -->
+            <Border Grid.Column="2" Background="{DynamicResource B.Panel}"
+                    BorderBrush="{DynamicResource B.Border}" BorderThickness="1" CornerRadius="4"
+                    Padding="12">
+                <Grid>
+                    <StackPanel x:Name="DetailPanel" Visibility="Collapsed">
+                        <TextBlock x:Name="DetailTitle" TextWrapping="Wrap" FontWeight="Bold"
                                    Foreground="{DynamicResource B.Text}" />
-                        <TextBlock Text="{Binding Detail}" FontSize="12" Margin="0,2,0,0"
-                                   TextWrapping="Wrap"
+                        <TextBlock x:Name="DetailBody" TextWrapping="Wrap" Margin="0,8,0,0"
                                    Foreground="{DynamicResource B.TextDim}" />
                     </StackPanel>
-                </DataTemplate>
-            </ListBox.ItemTemplate>
-        </ListBox>
 
-        <!-- 居中的空状态提示必须允许换行：按内容宽度排列时会比面板还宽，两侧一起溢出 -->
-        <TextBlock Grid.Row="1" x:Name="EmptyHint" Text="{DynamicResource L.RulePresets_Empty}"
-                   Foreground="{DynamicResource B.TextDim}" FontStyle="Italic"
-                   TextWrapping="Wrap" TextAlignment="Center" Margin="16,0"
-                   HorizontalAlignment="Center" VerticalAlignment="Center" IsHitTestVisible="False" />
+                    <TextBlock x:Name="DetailHint" Text="{DynamicResource L.RulePresets_NoSelection}"
+                               Foreground="{DynamicResource B.TextDim}" FontStyle="Italic"
+                               TextWrapping="Wrap" TextAlignment="Center"
+                               HorizontalAlignment="Center" VerticalAlignment="Center" />
+                </Grid>
+            </Border>
+        </Grid>
 
         <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,8,0,0">
             <Button Content="{DynamicResource L.RulePresets_New}" Click="NewPreset_Click" MinWidth="96" MinHeight="28"

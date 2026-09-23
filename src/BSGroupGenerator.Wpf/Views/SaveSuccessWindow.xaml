@@ -5,8 +5,8 @@
         ShowInTaskbar="False" Background="{DynamicResource B.Window}"
         FontFamily="{StaticResource AppFont}" FontSize="13" Style="{StaticResource AppWindow}">
     <StackPanel Margin="18">
-        <TextBlock Text="{DynamicResource L.SaveOk_Heading}" FontSize="16" FontWeight="Bold"
-                   Foreground="{DynamicResource B.Text}" />
+        <!-- 标题走字阶的 H2（SectionTitleText，16）：与设置页的段标题同号 -->
+        <TextBlock Text="{DynamicResource L.SaveOk_Heading}" Style="{StaticResource SectionTitleText}" />
         <TextBlock x:Name="MessageText" Margin="0,10,0,0" TextWrapping="Wrap"
                    Foreground="{DynamicResource B.Text}" />
         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,16,0,4">

@@ -37,39 +37,6 @@
                         Click="Apply_Click" MinWidth="110" />
             </StackPanel>
         </StackPanel>
-        <TreeView x:Name="Tree" Margin="10,4,10,0">
-            <TreeView.ItemTemplate>
-                <HierarchicalDataTemplate ItemsSource="{Binding Children}">
-                    <StackPanel Orientation="Horizontal">
-                        <CheckBox IsChecked="{Binding IsChecked, UpdateSourceTrigger=PropertyChanged}"
-                                  VerticalAlignment="Center" Margin="0,0,5,0">
-                            <CheckBox.Style>
-                                <!-- 「没有符合筛选条件的服装」这类提示行不该带勾选框 -->
-                                <Style TargetType="CheckBox" BasedOn="{StaticResource {x:Type CheckBox}}">
-                                    <Style.Triggers>
-                                        <DataTrigger Binding="{Binding IsPlaceholder}" Value="True">
-                                            <Setter Property="Visibility" Value="Collapsed" />
-                                        </DataTrigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </CheckBox.Style>
-                        </CheckBox>
-                        <TextBlock Text="{Binding Text}" VerticalAlignment="Center">
-                            <TextBlock.Style>
-                                <Style TargetType="TextBlock">
-                                    <Setter Property="Foreground" Value="{DynamicResource B.Text}" />
-                                    <Style.Triggers>
-                                        <DataTrigger Binding="{Binding IsSeparator}" Value="True">
-                                            <Setter Property="Foreground" Value="{DynamicResource B.TextDim}" />
-                                            <Setter Property="FontWeight" Value="Bold" />
-                                        </DataTrigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </TextBlock.Style>
-                        </TextBlock>
-                    </StackPanel>
-                </HierarchicalDataTemplate>
-            </TreeView.ItemTemplate>
-        </TreeView>
+        <TreeView x:Name="Tree" Margin="10,4,10,0" ItemTemplate="{StaticResource NodeRowTemplate}" />
     </DockPanel>
 </Window>

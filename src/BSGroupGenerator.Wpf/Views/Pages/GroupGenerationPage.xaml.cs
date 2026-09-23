@@ -20,6 +20,9 @@ public partial class GroupGenerationPage : UserControl
         // 用户预期它同时被选中。实现放在视图侧，理由见 TreeSelection。
         OutfitTree.ContextMenuOpening += (_, e) =>
             TreeSelection.SelectRow(e.OriginalSource as DependencyObject, OutfitTree);
+        // 空格勾选 / 左右展开折叠 / 上下移动行。不接这一套的话，纯键盘用户能选中行却勾不上它——
+        // 详见 TreeKeyboard 的类注释。
+        TreeKeyboard.Attach(OutfitTree);
         DataContextChanged += (_, _) => AdoptViewModel();
     }
 
@@ -102,8 +105,15 @@ public partial class GroupGenerationPage : UserControl
     /// 所以这里走 VM 上注入的委托，而不是把页面转成 MainWindow 再调方法。</summary>
     private void Rules_Click(object sender, RoutedEventArgs e) => _vm.RuleEditorOpener?.Invoke(null);
 
-    private void Groups_DoubleClick(object sender, System.Windows.Input.MouseButtonEventArgs e) =>
+    /// <summary>双击某一行 = 看它的成员。落在空白处不算——<see cref="ViewMembers_Click"/> 取的是
+    /// <c>Store.Current</c>（当前选中的组）而不是被双击的那一行，所以不校验命中行的话，
+    /// 双击列表空白区也会弹出当前组的成员窗口，看起来像"列表里有看不见的行"。</summary>
+    private void Groups_DoubleClick(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    {
+        if (GroupList.ContainerFromElement(e.OriginalSource as DependencyObject) is not ListBoxItem)
+            return;
         ViewMembers_Click(sender, e);
+    }
 
     // ── 日志区（默认折叠成一行摘要）────────────────────────────────────
     private void LogToggle_Click(object sender, RoutedEventArgs e)

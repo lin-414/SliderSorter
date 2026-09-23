@@ -41,6 +41,25 @@ public sealed class OutputConflictGroup
         : CoreStrings.Format("L.Core_OutputConf_Single", outputFilePath);
 }
 
+/// <summary>一条冲突挂在某个分组名下时的一行：冲突本身 + 它对该分组是否属"组内互撞"。</summary>
+public sealed record GroupedConflict(OutputConflictGroup Conflict, bool IntraCollision);
+
+/// <summary>一个分组名下的冲突清单，或"未入组"那一桶。</summary>
+public sealed class UserGroupConflicts
+{
+    /// <summary>分组名；空串是"未入组"——候选里没有任何 set 属于任何分组。
+    /// 用空串当哨兵而不是本地化文案：Core 层不持有界面文字，显示名由视图取词。</summary>
+    public required string GroupName { get; init; }
+
+    /// <summary>该组名下的冲突，顺序与 <see cref="OutputConflicts.Detect"/> 一致（按输出路径）。</summary>
+    public required IReadOnlyList<GroupedConflict> Rows { get; init; }
+
+    public bool IsUngrouped => GroupName.Length == 0;
+
+    /// <summary>其中"该组自己就有 ≥2 个成员争同一个输出文件"的条数。</summary>
+    public int IntraCollisionCount => Rows.Count(r => r.IntraCollision);
+}
+
 /// <summary>从扫描结果里算出输出文件冲突，并把用户的选择套上去。</summary>
 public static class OutputConflicts
 {
@@ -106,6 +125,74 @@ public static class OutputConflicts
         var result = new Dictionary<string, string>(existing, StringComparer.Ordinal);
         foreach (var group in groups)
             result.Remove(group.OutputFilePath);
+        return result;
+    }
+
+    /// <summary>按用户分组给冲突分类，供界面"直观地看各个分组之中的冲突"。
+    ///
+    /// 归类判据是**卷入**：某个分组只要有成员出现在这条冲突的候选里，这条冲突就归到它名下。
+    /// 一条冲突因此可能同时挂在多个分组下，而那是对的——它确实同时影响那几个组的批建结果：
+    /// 赢家全局只有一个，输掉的那个组的成员就不会被建出来。
+    /// 没有任何分组成员卷入的冲突进"未入组"那一桶（<see cref="UserGroupConflicts.GroupName"/> 为空串），
+    /// 不能丢——丢了它们会从界面上凭空消失。
+    ///
+    /// 每行另带 <see cref="GroupedConflict.IntraCollision"/>：该组自己就有 ≥2 个成员卷入。
+    /// 那是"分组之中"最需要人定夺的一档——争的是组内两件衣服，与组外的人无关，
+    /// 而界面上"这条冲突属不属于这个组"和"这个组内部在不在自相残杀"是两个问题，故分成两个字段。
+    ///
+    /// 桶按 <paramref name="userGroups"/> 的给定顺序返回（即「分组生成」页组列表的顺序，
+    /// 也就是用户认得的那个顺序），空桶不返回；"未入组"桶（若有内容）恒排最后。
+    /// 组内成员按 Ordinal 精确比较，与 BodySlide 的成员匹配一致（<see cref="SliderGroupFile"/> 的约定）。</summary>
+    public static List<UserGroupConflicts> CategorizeByUserGroup(
+        IEnumerable<OutputConflictGroup> conflicts, IReadOnlyList<SliderGroup> userGroups)
+    {
+        // set 名 → 它所属的分组名。分组里重复登记同一个成员（手改分组 XML 能造出来）只按一次算，
+        // 否则"≥2 个成员卷入"会被同一件衣服的两条重复记录冒充成组内互撞。
+        var groupsOfMember = new Dictionary<string, List<string>>(StringComparer.Ordinal);
+        foreach (var group in userGroups)
+            foreach (var member in group.Members)
+            {
+                if (!groupsOfMember.TryGetValue(member, out var names))
+                    groupsOfMember[member] = names = [];
+                if (!names.Contains(group.Name, StringComparer.Ordinal))
+                    names.Add(group.Name);
+            }
+
+        var byGroup = new Dictionary<string, List<GroupedConflict>>(StringComparer.Ordinal);
+        var ungrouped = new List<GroupedConflict>();
+        foreach (var conflict in conflicts)
+        {
+            // 这条冲突里，每个分组各有几个成员卷入
+            var involved = new Dictionary<string, int>(StringComparer.Ordinal);
+            foreach (var candidate in conflict.Candidates)
+                if (groupsOfMember.TryGetValue(candidate.Name, out var names))
+                    foreach (var name in names)
+                        involved[name] = involved.GetValueOrDefault(name) + 1;
+
+            if (involved.Count == 0)
+            {
+                ungrouped.Add(new GroupedConflict(conflict, false));
+                continue;
+            }
+
+            foreach (var (name, count) in involved)
+            {
+                if (!byGroup.TryGetValue(name, out var rows))
+                    byGroup[name] = rows = [];
+                rows.Add(new GroupedConflict(conflict, count >= 2));
+            }
+        }
+
+        var result = new List<UserGroupConflicts>();
+        // 同名分组在 userGroups 里出现两次（调用方递来重名列表）时只出一桶：
+        // byGroup 是按名字存的，不去重就会把同一份 rows 挂两遍。
+        var emitted = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var group in userGroups)
+            if (emitted.Add(group.Name) && byGroup.TryGetValue(group.Name, out var rows))
+                result.Add(new UserGroupConflicts { GroupName = group.Name, Rows = rows });
+
+        if (ungrouped.Count > 0)
+            result.Add(new UserGroupConflicts { GroupName = "", Rows = ungrouped });
         return result;
     }
 }

@@ -55,4 +55,34 @@ public class Mo2DiscoveryTests
             Mo2Discovery.GlobalRootOverride = previous;
         }
     }
+
+    /// <summary>程序目录（有 ModOrganizer.exe、无 ini）被认出来是"安装根目录"，
+    /// 但**不登记为实例**——这条判据只用于把提示分流到「这是程序目录，不是实例目录」，
+    /// 不参与登记（登记判据始终只有 ModOrganizer.ini）。
+    ///
+    /// 非便携安装（MO2 官方安装器）就是这种布局：exe 在程序目录，实例数据在
+    /// %LOCALAPPDATA%\ModOrganizer\&lt;实例名&gt;。用户凭直觉选程序目录是高频误操作。</summary>
+    [Fact]
+    public void InstallRootIsRecognizedButNotRegistered()
+    {
+        using var temp = new TempDir();
+        var installRoot = temp.Sub("MO2");
+        temp.File("MO2", "ModOrganizer.exe", "");
+
+        Assert.True(Mo2Discovery.IsInstallRoot(installRoot));
+        Assert.Null(Mo2Discovery.CreateFromDirectory(installRoot));
+
+        // 便携安装（exe 与 ini 同目录）不是"程序目录"：它本身就是合法实例，
+        // 提示不该把它引到 %LOCALAPPDATA% 去
+        var portable = temp.Sub("PortableMO2");
+        temp.File("PortableMO2", "ModOrganizer.exe", "");
+        System.IO.File.WriteAllText(IniOf(portable), "[General]\ngameName=Fallout 4\n");
+
+        Assert.False(Mo2Discovery.IsInstallRoot(portable));
+        Assert.NotNull(Mo2Discovery.CreateFromDirectory(portable));
+
+        // 既无 exe 也无 ini 的普通目录，以及不存在的路径，都不是程序目录
+        Assert.False(Mo2Discovery.IsInstallRoot(temp.Sub("Empty")));
+        Assert.False(Mo2Discovery.IsInstallRoot(System.IO.Path.Combine(temp.Path, "Missing")));
+    }
 }

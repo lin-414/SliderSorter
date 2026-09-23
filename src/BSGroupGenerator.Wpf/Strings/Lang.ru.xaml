@@ -17,11 +17,23 @@
     <sys:String x:Key="L.Tab_Settings">Параметры</sys:String>
     <sys:String x:Key="L.Settings_Workspace">Рабочая среда</sys:String>
     <sys:String x:Key="L.Settings_Output">Настройки вывода</sys:String>
+    <sys:String x:Key="L.Settings_Maintenance">Обслуживание</sys:String>
+    <sys:String x:Key="L.Settings_Unconfigured" xml:space="preserve">Ещё не настроено: выберите экземпляр MO2 и папку BodySlide. Это условия сканирования; после настройки будут готовы и группы, и список конфликтов.</sys:String>
+    <sys:String x:Key="L.Scan_StatusNever" xml:space="preserve">В этом сеансе успешного сканирования ещё не было.</sys:String>
+    <sys:String x:Key="L.Scan_StatusAt" xml:space="preserve">Последнее сканирование: {0}　·　{1}</sys:String>
+    <sys:String x:Key="L.Scan_CountsShort" xml:space="preserve">модов {0} · одежды {1}</sys:String>
+    <sys:String x:Key="L.Scan_StatusStaleTip" xml:space="preserve">Результат уже давно не обновлялся. Если вы с тех пор установили моды, нажмите «Просканировать снова».</sys:String>
+    <sys:String x:Key="L.Age_JustNow" xml:space="preserve">{0} сек. назад</sys:String>
+    <sys:String x:Key="L.Age_Minutes" xml:space="preserve">{0} мин. назад</sys:String>
+    <sys:String x:Key="L.Age_Hours" xml:space="preserve">{0} ч. назад</sys:String>
+    <sys:String x:Key="L.Rescan_Tip" xml:space="preserve">Заново просканировать моды и одежду (заодно пересоберёт список конфликтов вывода)</sys:String>
     <sys:String x:Key="L.Settings_CleanupStale" xml:space="preserve">Удалить устаревшие комплекты…</sys:String>
-    <sys:String x:Key="L.Conflict_Rescan" xml:space="preserve">Просканировать снова</sys:String>    <sys:String x:Key="L.Conflict_NoRequest" xml:space="preserve">Показывать нечего. Сначала выполните сканирование на вкладке «Группировка» — возможно, сканирование вообще не нашло конфликтов вывода.</sys:String>
+    <sys:String x:Key="L.Settings_CleanupStaleNote" xml:space="preserve">Убирает из всех групп одежду, которой больше нет в текущих результатах сканирования (мод мог быть удалён или переименован). Это меняет содержимое групп; потребуется подтверждение, отменить можно через Ctrl+Z.</sys:String>
+    <sys:String x:Key="L.Conflict_Rescan" xml:space="preserve">Просканировать снова</sys:String>    <sys:String x:Key="L.Conflict_NoRequest" xml:space="preserve">Показывать нечего. Одно сканирование даёт и группы, и список конфликтов — предварительная группировка не нужна; возможно, сканирование вообще не нашло конфликтов вывода.</sys:String>
     <sys:String x:Key="L.Settings_Appearance">Внешний вид</sys:String>
     <sys:String x:Key="L.Settings_Theme">Тема интерфейса</sys:String>
     <sys:String x:Key="L.Settings_Language">Язык интерфейса</sys:String>
+    <sys:String x:Key="L.Settings_LanguageSystem">Как в системе</sys:String>
     <sys:String x:Key="L.Settings_Help">Справка и о программе</sys:String>
     <sys:String x:Key="L.Settings_CheckUpdate">Проверить обновления</sys:String>
     <sys:String x:Key="L.Settings_UpdateChecking">Проверка обновлений…</sys:String>
@@ -33,13 +45,17 @@
     <sys:String x:Key="L.Main_BodySlide">BodySlide</sys:String>
     <sys:String x:Key="L.Main_Output">Папка вывода</sys:String>
     <sys:String x:Key="L.Main_Refresh">Обновить</sys:String>
-    <sys:String x:Key="L.Main_AddMo2Dir">Добавить папку MO2…</sys:String>
+    <sys:String x:Key="L.Main_SelectInstanceDir">Выбрать папку экземпляра…</sys:String>
     <sys:String x:Key="L.Main_Detect">Автоопределение</sys:String>
     <sys:String x:Key="L.Main_Browse">Обзор…</sys:String>
     <sys:String x:Key="L.Main_FilterOutfits">Фильтр комплектов…</sys:String>
     <sys:String x:Key="L.Main_FilterMods">Фильтр модов…</sys:String>
     <sys:String x:Key="L.Main_UnassignedOnly">Только без группы</sys:String>
     <sys:String x:Key="L.Main_GroupsHeader">Группы</sys:String>
+    <sys:String x:Key="L.Main_FilterGroups">Фильтр по имени группы…</sys:String>
+    <sys:String x:Key="L.Empty_GroupsFiltered">Ни одна группа не подходит под этот фильтр.</sys:String>
+    <sys:String x:Key="L.Main_Undo">Отменить</sys:String>
+    <sys:String x:Key="L.Main_UndoTip">Отменить последнее действие группировки (Ctrl+Z)</sys:String>
     <sys:String x:Key="L.Main_GroupManage">Действия с группой (создать / переименовать / просмотр / правило / удалить)</sys:String>
     <sys:String x:Key="L.Transfer_Add">Добавить в группу →</sys:String>
     <sys:String x:Key="L.Transfer_AddCount">Добавить {0} в группу →</sys:String>
@@ -72,6 +88,7 @@
     <sys:String x:Key="L.Btn_Ok">ОК</sys:String>
     <sys:String x:Key="L.Btn_Cancel">Отмена</sys:String>
     <sys:String x:Key="L.Btn_Close">Закрыть</sys:String>
+    <sys:String x:Key="L.Banner_Dismiss">Скрыть это сообщение</sys:String>
     <sys:String x:Key="L.Btn_Apply">Применить</sys:String>
     <sys:String x:Key="L.Btn_CopyAll">Копировать всё</sys:String>
     <sys:String x:Key="L.Word_Add">добавлено в группу</sys:String>
@@ -103,7 +120,7 @@
     <sys:String x:Key="L.Vm_OutputIs">Вывод: {0}</sys:String>
 
     <!-- Pickers -->
-    <sys:String x:Key="L.Pick_Mo2Dir">Выберите папку экземпляра MO2 (с файлом ModOrganizer.ini) или портативную папку (с ModOrganizer.exe)</sys:String>
+    <sys:String x:Key="L.Pick_Mo2Dir">Выберите папку экземпляра MO2 (с файлом ModOrganizer.ini)</sys:String>
     <sys:String x:Key="L.Pick_BodySlideDir">Выберите папку BodySlide (с файлом Config.xml)</sys:String>
     <sys:String x:Key="L.Pick_CustomOutput">Выберите свою папку вывода</sys:String>
     <sys:String x:Key="L.Pick_ImportGroups">Импорт файла групп BodySlide</sys:String>
@@ -185,7 +202,7 @@
     <sys:String x:Key="L.Msg_SelectGroupFirst">Сначала выберите группу.</sys:String>
     <sys:String x:Key="L.Msg_SelectOutfitsFirst">Сначала отметьте комплекты для удаления (отметьте мод или разделитель, чтобы выбрать их все).</sys:String>
     <sys:String x:Key="L.Msg_ConfirmRemove">Убрать комплектов ({0}) из группы «{1}»?</sys:String>
-    <sys:String x:Key="L.Msg_NeedGroupFirst">Групп пока нет: сначала создайте группу, затем используйте группировку по правилам.</sys:String>
+    <sys:String x:Key="L.Msg_NeedGroupFirst">Групп пока нет. Для группировки по правилам нужна целевая группа — сначала создайте её.</sys:String>
     <sys:String x:Key="L.Msg_NoOutfits">Комплекты ещё не просканированы.</sys:String>
     <sys:String x:Key="L.Msg_ScanIncomplete">Сканирование не завершено или место записи неизвестно.</sys:String>
     <sys:String x:Key="L.Msg_NoGroupsYet">Групп пока нет. Создайте группу и отметьте комплекты.</sys:String>
@@ -195,7 +212,8 @@
     <sys:String x:Key="L.Msg_ScanIncompleteStale">Сканирование не завершено; невозможно определить устаревшие комплекты.</sys:String>
     <sys:String x:Key="L.Msg_NoStale">Устаревших комплектов нет: все участники групп присутствуют в текущем сканировании.</sys:String>
     <sys:String x:Key="L.Msg_CleanupConfirm" xml:space="preserve">{0} комплект(ов) больше не найдены в текущем сканировании (их моды могли быть удалены или переименованы), например: {1}…&#x0a;&#x0a;Удалить их из всех групп? (Ctrl+Z — отмена)</sys:String>
-    <sys:String x:Key="L.Msg_NotMo2Dir">В этой папке нет ModOrganizer.ini, и она не похожа на портативную установку (нет ModOrganizer.exe).</sys:String>
+    <sys:String x:Key="L.Msg_NotMo2Dir">В этой папке нет ModOrganizer.ini — это не папка экземпляра MO2. Выберите папку экземпляра с файлом ModOrganizer.ini (для портативной установки — папку с ModOrganizer.exe).</sys:String>
+    <sys:String x:Key="L.Msg_Mo2InstallDirNotInstance">Это папка программы MO2, а не папка экземпляра. Папка экземпляра содержит ModOrganizer.ini; глобальные экземпляры обычно лежат в подпапке %LOCALAPPDATA%\ModOrganizer и обнаруживаются автоматически — добавлять вручную не нужно.</sys:String>
     <sys:String x:Key="L.Msg_NotBodySlideDir">В этой папке нет Config.xml; это не папка BodySlide.</sys:String>
     <sys:String x:Key="L.Msg_UpToDate">Установлена последняя версия (v{0}).</sys:String>
     <sys:String x:Key="L.Msg_UpdateAvailable" xml:space="preserve">Доступна новая версия {0} (текущая v{1}).&#x0a;&#x0a;Открыть страницу релиза для загрузки?</sys:String>
@@ -238,6 +256,14 @@
     <sys:String x:Key="L.Conflict_UnresolvedSuffix" xml:space="preserve">· без выбора {0}</sys:String>
     <sys:String x:Key="L.Conflict_GroupsHeader" xml:space="preserve">Конфликты</sys:String>
     <sys:String x:Key="L.Conflict_GroupCount" xml:space="preserve">групп: {0}</sys:String>
+    <sys:String x:Key="L.Conflict_GroupsHeaderTip" xml:space="preserve">Список сгруппирован по вашим собственным группам: под каждой — конфликты, в которых участвует её элемент, а конфликты между элементами одной группы помечены. Конфликты без участия групп собраны в «Без группы».</sys:String>
+    <sys:String x:Key="L.Conflict_GroupBucketCount" xml:space="preserve">конфликтов: {0}</sys:String>
+    <sys:String x:Key="L.Conflict_IntraGroup" xml:space="preserve">внутри группы</sys:String>
+    <sys:String x:Key="L.Conflict_IntraGroupCount" xml:space="preserve">из них внутри группы: {0}</sys:String>
+    <sys:String x:Key="L.Conflict_IntraGroupTip" xml:space="preserve">Два или более элементов одной группы пишут один и тот же файл: собраться сможет только один, остальные не будут созданы.</sys:String>
+    <sys:String x:Key="L.Conflict_Ungrouped" xml:space="preserve">Без группы</sys:String>
+    <sys:String x:Key="L.Conflict_GroupFilterAll" xml:space="preserve">Все группы</sys:String>
+    <sys:String x:Key="L.Conflict_GroupFilterTip" xml:space="preserve">Показать только конфликты, в которых участвует элемент этой группы. В списке только те группы, у которых действительно есть конфликты.</sys:String>
     <sys:String x:Key="L.Conflict_CandidatesHeader" xml:space="preserve">Кто строит</sys:String>
     <sys:String x:Key="L.Conflict_PreviewHeader" xml:space="preserve">Просмотр</sys:String>
     <sys:String x:Key="L.Conflict_BatchScope" xml:space="preserve">Для {0} групп в списке:</sys:String>
@@ -315,11 +341,12 @@
     <!-- Rule presets -->
     <sys:String x:Key="L.RulePresets_Title">Шаблоны правил</sys:String>
     <sys:String x:Key="L.RulePresets_Head">Шаблон = одно переиспользуемое правило авто-группировки.</sys:String>
-    <sys:String x:Key="L.RulePresets_Steps" xml:space="preserve">① Нажмите «Новый шаблон…»: выберите целевую группу, заполните ключевые слова, проверьте предпросмотр и нажмите «Сохранить как шаблон».&#x0a;② При обнаружении новых установленных модов нажмите «Применить шаблоны» во всплывающем окне, чтобы запустить все шаблоны автоматически.&#x0a;③ Выберите шаблон и нажмите «Изменить выбранный…» (или дважды щёлкните строку), чтобы изменить его; имя подставляется, поэтому подтверждение перезаписывает шаблон.</sys:String>
+    <sys:String x:Key="L.RulePresets_Steps" xml:space="preserve">Шаблон — это набор условий группировки для повторного использования. Создавать, изменять и удалять их можно в любой момент; шаблоны независимы друг от друга.&#x0a;· Создать или изменить: нажмите «Новый шаблон…» либо выберите шаблон и нажмите «Изменить выбранный…» (или дважды щёлкните строку). Выберите целевую группу, заполните ключевые слова, проверьте предпросмотр. Имя подставляется, поэтому подтверждение перезапишет исходный.&#x0a;· Когда срабатывают: при обнаружении новых установленных модов нажмите «Применить шаблоны» во всплывающем окне; также можно запустить вручную на вкладке «Группировка» через «⋯ → Группировка по правилам».</sys:String>
     <sys:String x:Key="L.RulePresets_New">Новый шаблон…</sys:String>
     <sys:String x:Key="L.RulePresets_Edit">Изменить выбранный…</sys:String>
     <sys:String x:Key="L.RulePresets_Delete">Удалить выбранные</sys:String>
     <sys:String x:Key="L.RulePresets_Empty">Шаблонов пока нет. Нажмите «Новый шаблон…» ниже, чтобы создать первое правило авто-группировки.</sys:String>
+    <sys:String x:Key="L.RulePresets_NoSelection">Выберите шаблон слева, чтобы увидеть подробности.</sys:String>
     <sys:String x:Key="L.RulePresets_RowTitle">{0} → {1} «{2}»</sys:String>
     <sys:String x:Key="L.RulePresets_RowDetail">Ключевые слова модов: {0} · Ключевые слова комплектов: {1} · Исключено: {2}</sys:String>
     <sys:String x:Key="L.RulePresets_UnassignedSuffix" xml:space="preserve"> · только без группы</sys:String>
@@ -372,7 +399,7 @@
     <sys:String x:Key="L.Help_05">4. Сохранение — нажмите «Сохранить файлы групп» внизу или выберите «Файл → Сохранить файлы групп» (Ctrl+S). Каждая группа становится отдельным файлом с именем группы (например, UBE.xml). Затем перезапустите BodySlide (при запуске через MO2 — и MO2).</sys:String>
     <sys:String x:Key="L.Help_H2">2. Быстрый старт (4 шага)</sys:String>
     <sys:String x:Key="L.Help_S2_Top">[Верхняя область настроек]</sys:String>
-    <sys:String x:Key="L.Help_06">Экземпляр MO2: глобальные экземпляры и портативные установки в %LOCALAPPDATA%\ModOrganizer находятся автоматически; «Добавить папку MO2…» указывает папку экземпляра вручную; «Обновить» пересканирует экземпляры.</sys:String>
+    <sys:String x:Key="L.Help_06">Экземпляр MO2: глобальные экземпляры и портативные установки в %LOCALAPPDATA%\ModOrganizer находятся автоматически; «Выбрать папку экземпляра…» позволяет указать папку экземпляра (с файлом ModOrganizer.ini) вручную; «Обновить» пересканирует экземпляры.</sys:String>
     <sys:String x:Key="L.Help_07">Профиль: список всех профилей этого экземпляра. Список включённых модов берётся из modlist.txt этого профиля, в том же порядке, что и левая панель MO2.</sys:String>
     <sys:String x:Key="L.Help_08">BodySlide: ищет среди включённых модов папки с BodySlide*.exe и Config.xml; если ничего не найдено, укажите папку кнопкой «Обзор…».</sys:String>
     <sys:String x:Key="L.Help_09">Каталог вывода: определяет, куда сохраняются файлы групп (см. раздел 6). Справа в строке состояния показан текущий каталог вывода — наведите, чтобы увидеть полный путь.</sys:String>
@@ -380,7 +407,7 @@
     <sys:String x:Key="L.Help_10">Иерархия: разделитель (серый) → мод (жирный, сворачиваемый) → комплекты; тот же порядок, что и в левой панели MO2, показаны только включённые моды с комплектами BodySlide.</sys:String>
     <sys:String x:Key="L.Help_11">Два поля фильтра сверху делают разное: «Фильтр имён комплектов…» ищет только по именам комплектов, «Фильтр имён модов…» — только по именам модов (непрерывная подстрока, без учёта регистра; попадание по имени мода показывает все его комплекты). «Только неназначенные» скрывает комплекты, уже входящие в какую-либо группу.</sys:String>
     <sys:String x:Key="L.Help_12">Отметка лишь помечает то, с чем вы хотите работать — запись происходит только после нажатия «Добавить в группу» / «Убрать из группы» посередине. Отметка мода или разделителя отмечает все его комплекты.</sys:String>
-    <sys:String x:Key="L.Help_13">Значок перед именем комплекта означает, что он уже входит в выбранную группу; [в группе x/всего] после имени мода показывает, сколько его комплектов в этой группе.</sys:String>
+    <sys:String x:Key="L.Help_13">Значок перед именем комплекта означает, что он уже входит в выбранную группу; значок «в группе x/всего» справа от имени мода показывает, сколько его комплектов в этой группе.</sys:String>
     <sys:String x:Key="L.Help_S2_Groups">[Правая панель групп]</sys:String>
     <sys:String x:Key="L.Help_14">Список групп: щелчок выбирает группу (отметки и значки слева обновляются, позиция прокрутки сохраняется), двойной щелчок открывает предпросмотр участников. Создание, переименование, просмотр, группировка по правилам и удаление собраны под «⋯» в заголовке, а также доступны по правому щелчку в списке.</sys:String>
     <sys:String x:Key="L.Help_15">«⋯» → «Группировка по правилам»: пакетная работа по ключевым словам, см. раздел 5.</sys:String>
@@ -417,6 +444,14 @@
     <sys:String x:Key="L.Help_41">· Что такое BSGroupGenerator.files.txt в папке вывода? Манифест программы, используемый для автоматической очистки старых файлов; BodySlide его игнорирует.</sys:String>
     <sys:String x:Key="L.Help_42">· Что-то упало? Исключения записываются в %APPDATA%\BSGroupGenerator\crash.log — можете отправить этот файл разработчику.</sys:String>
     <sys:String x:Key="L.Help_H7">7. Частые вопросы</sys:String>
+
+    <!-- 8. Два независимых результата — что даёт одно сканирование. -->
+    <sys:String x:Key="L.Help_H8">8. Два независимых результата</sys:String>
+    <sys:String x:Key="L.Help_Conflict_Intro">Одно сканирование даёт два результата, независимых друг от друга, по одному на вкладку. Можно выполнить любой из них отдельно — ни один не обязан быть первым.</sys:String>
+    <sys:String x:Key="L.Help_Conflict_A">· Группы (вкладка «Группировка») — распределите одежду по группам и нажмите «Сохранить файлы групп»: будут записаны SliderGroups\*.xml для BodySlide.</sys:String>
+    <sys:String x:Key="L.Help_Conflict_B">· Выбор конфликтов вывода (вкладка «Конфликты вывода») — когда несколько предметов пишут один и тот же файл меша, выберите, какой мод его создаёт, и нажмите «Записать в BodySlide…»: результат попадёт в BuildSelection.xml. Выбор хранится в этой программе до записи; исходный файл сначала сохраняется как .bak.</sys:String>
+    <sys:String x:Key="L.Help_Conflict_C">Каждый пишет свой файл и не перезаписывает другой: после одного сканирования доступны оба результата, в любом порядке, и позже можно вернуться к каждому отдельно.</sys:String>
+    <sys:String x:Key="L.Help_Conflict_D">«Общий вывод внутри одного мода» (сотни перекрасок одной вещи) — это норма, а не конфликт для решения; включите «Только конфликты между модами», чтобы их скрыть.</sys:String>
     <sys:String x:Key="L.Help_Toc">Содержание</sys:String>
     <sys:String x:Key="L.Help_TocHint">Нажмите заголовок, чтобы перейти к разделу.</sys:String>
     <sys:String x:Key="L.Help_Task1">Собрать комплекты одного мода в группу — отметьте этот мод слева (отметка имени мода выбирает все его комплекты) → выберите целевую группу справа → нажмите «Добавить в группу» посередине → нажмите «Сохранить файлы групп».</sys:String>
@@ -432,11 +467,13 @@
     <!-- Tree node text (composed in code, not bound in XAML) -->
     <sys:String x:Key="L.Tree_ConflictSuffix" xml:space="preserve"> (конфликт имён)</sys:String>
     <sys:String x:Key="L.Tree_OutputConfSuffix" xml:space="preserve"> (конфликт вывода)</sys:String>
-    <sys:String x:Key="L.Tree_InGroupBadge">{0} [в группе {1}/{2}]</sys:String>
+    <sys:String x:Key="L.Tree_InGroupBadge">в группе {0}/{1}</sys:String>
     <sys:String x:Key="L.Tree_MatchHeader">{0} (совпадений {1}/{2})</sys:String>
     <sys:String x:Key="L.Tree_NoMatchingMods">(нет модов, подходящих под фильтры)</sys:String>
 
-    <!-- Tree context menu (main window's left list only, see NodeTreeItemStyle in Themes/Controls.xaml) -->
+    <!-- Контекстное меню «развернуть/свернуть всё» (дерево модов слева в главном окне:
+         NodeTreeItemStyle в Themes/Controls.xaml; заголовки групп на странице конфликтов вывода:
+         ConflictGroupMenu в Views/Pages/OutputConflictPage.xaml) -->
     <sys:String x:Key="L.Tree_ExpandAll">Развернуть все</sys:String>
     <sys:String x:Key="L.Tree_CollapseAll">Свернуть все</sys:String>
     <sys:String x:Key="L.Tree_CollapseOthers">Свернуть остальные</sys:String>

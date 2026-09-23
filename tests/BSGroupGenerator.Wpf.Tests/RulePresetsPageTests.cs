@@ -46,12 +46,24 @@ public class RulePresetsPageTests
                 var item = Assert.Single(rows);
 
                 var paths = ListTemplateBindingPaths();
-                // 兜底：解析器写崩时不能"零路径通过"
-                Assert.Equal(["Detail", "Title"], paths.OrderBy(p => p, StringComparer.Ordinal));
+                // 兜底：解析器写崩时不能"零路径通过"。
+                // 去重是必须的：同一个属性可以合法地出现在多个位置上——左列模板就用
+                // Text + ToolTip 两处绑同一个 Title（长名称被省略号截断时，ToolTip 是唯一能看到全名的地方）。
+                // 不去重的话，加一个 ToolTip 就会让这条断言红，而它要守的是"路径能在行类型上求值"，不是"每条只出现一次"。
+                var distinct = paths.Distinct().OrderBy(p => p, StringComparer.Ordinal).ToArray();
+                Assert.Equal(["Title"], distinct);
+
+                // 详情栏的绑定不走模板（是 code-behind 直接赋 Text 的），所以 Title/Detail
+                // 两个属性都得真能在行类型上求值——Detail 现在只经 code-behind 使用，
+                // 但一旦有人把它改成绑定、而属性被改名，这里要能拦住。
+                Assert.NotNull(item.GetType().GetProperty("Detail"));
+                Assert.NotNull(item.GetType().GetProperty("Title"));
 
                 // 对照组：探针本身必须能求值，否则下面无论绑什么都只能得到空串
                 Assert.Equal("5", Evaluate("Length", "hello"));
 
+                // 遍历**全部**路径（含重复）而不是去重后的：去重只是为了让断言列表稳定，
+                // 求值这一步要覆盖每一处真实绑定。
                 foreach (var path in paths)
                 {
                     if (item.GetType().GetProperty(path) is null)
@@ -61,6 +73,14 @@ public class RulePresetsPageTests
                     var text = Evaluate(path, item);
                     if (string.IsNullOrEmpty(text))
                         failures.Add($"绑定 {path} 求值为空串（行会渲染成空白）");
+                }
+
+                // 详情栏由 code-behind 直接填 Text，不经过模板，所以要单独求值一遍：
+                // 这两条属性是右栏的唯一数据源，空了右栏就是一块空白面板。
+                foreach (var path in new[] { "Title", "Detail" })
+                {
+                    if (string.IsNullOrEmpty(Evaluate(path, item)))
+                        failures.Add($"详情栏的 {path} 求值为空串（右栏会渲染成空白）");
                 }
             }
             catch (Exception ex)
@@ -226,6 +246,59 @@ public class RulePresetsPageTests
         finally
         {
             // 预设清单挂在进程级共享的 AppSettings 上，不清就会留给同一进程里的下一个用例
+            vm?.Settings.RulePresets.Clear();
+        }
+    }
+
+    /// <summary>分栏后右栏的两态必须互斥且都真的出现：选中一条显详情，未选中显引导。
+    ///
+    /// 这一类"两态互斥"最容易出的错是**两态同时可见**（先前设置页的空状态就踩过：
+    /// 满列表上飘着一句"还没有可显示的冲突"）。这里两个元素在同一格 Grid 里叠放，
+    /// 靠 Visibility 切换——漏切一个，就会出现引导语压在详情上的画面。
+    /// 另外详情文本必须真的填进去：code-behind 赋值漏了或赋错字段，面板在、字是空的。
+    /// </summary>
+    [Fact]
+    public void DetailPaneSwitchesBetweenSelectionAndHint()
+    {
+        using var scope = IsolatedUserState.Enter();
+        MainViewModel? vm = null;
+
+        try
+        {
+            var result = WpfHost.WithWindow(() =>
+            {
+                vm = new MainViewModel();
+                vm.Settings.RulePresets.AddRange([Preset("P1", "G1"), Preset("P2", "G2")]);
+                return new RulePresetsPage { DataContext = vm };
+            }, host =>
+            {
+                var page = (RulePresetsPage)host;
+                var list = (ListBox)page.FindName("List")!;
+                var panel = (StackPanel)page.FindName("DetailPanel")!;
+                var hint = (TextBlock)page.FindName("DetailHint")!;
+                var title = (TextBlock)page.FindName("DetailTitle")!;
+                var body = (TextBlock)page.FindName("DetailBody")!;
+
+                // 未选中：引导可见、详情收起
+                var (hintOnEmpty, panelOnEmpty) = (hint.Visibility, panel.Visibility);
+
+                // 选中第二条：详情可见、引导收起，且文本非空
+                list.SelectedIndex = 1;
+                WpfHost.Pump();
+                return (hintOnEmpty, panelOnEmpty,
+                        HintOnSelect: hint.Visibility, PanelOnSelect: panel.Visibility,
+                        TitleText: title.Text, BodyText: body.Text);
+            });
+
+            Assert.Equal(Visibility.Visible, result.hintOnEmpty);
+            Assert.Equal(Visibility.Collapsed, result.panelOnEmpty);
+            Assert.Equal(Visibility.Collapsed, result.HintOnSelect);
+            Assert.Equal(Visibility.Visible, result.PanelOnSelect);
+            Assert.False(string.IsNullOrWhiteSpace(result.TitleText), "右栏详情标题是空的");
+            Assert.False(string.IsNullOrWhiteSpace(result.BodyText), "右栏详情正文是空的");
+        }
+        finally
+        {
             vm?.Settings.RulePresets.Clear();
         }
     }

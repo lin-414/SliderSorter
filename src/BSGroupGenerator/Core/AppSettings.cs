@@ -39,8 +39,11 @@ public class AppSettings
     /// <summary>界面主题："boutique"（暗色，默认）或 "light"（上一版亮色）。</summary>
     public string UiTheme { get; set; } = "boutique";
 
-    /// <summary>界面语言："zh"（中文，默认）、"en"、"ru" 或 "fr"。未知值由 L10n.Apply 回落到 "zh"。</summary>
-    public string UiLanguage { get; set; } = "zh";
+    /// <summary>界面语言："system"（跟随系统，默认）、"zh"、"en"、"ru" 或 "fr"。
+    /// 这里存的是**诉求**而不是算出来的语言码——"system" 每次启动按系统 UI 语言现算
+    /// （系统语言不在受支持列表里时由 L10n 回落到 "en"），未知值与 null 回落到 "zh"。
+    /// 存语言码就等于"跟随系统"只用一次，用户在系统里换了显示语言它也不会再跟。</summary>
+    public string UiLanguage { get; set; } = "system";
 
     /// <summary>用户在提示框里勾过「不再提示」的项目（如更新提示）。键由调用方定义，仅做等值比较。</summary>
     public List<string> SuppressedPrompts { get; set; } = new();
@@ -50,6 +53,19 @@ public class AppSettings
     /// BodySlide 自己就只有一份全局的 BuildSelection.xml。写回时只提交当前扫描仍然确认存在的冲突，
     /// 所以别的实例留下的条目既不会被误用、也不会被误删。</summary>
     public Dictionary<string, string> OutputChoices { get; set; } = new();
+
+    /// <summary>「输出冲突与选择」左栏里被**收起**的分组名（空串 = 「未入组」那一桶，
+    /// 与 <see cref="UserGroupConflicts.GroupName"/> 的哨兵同一口径）。
+    /// <para>
+    /// 存"收起的"而不是"展开的"：默认全展开，于是新分组、新用户、以及老设置文件
+    /// 都不需要任何迁移就得到正确行为——多出来的一条只影响它自己那一组。
+    /// </para>
+    /// <para>
+    /// 不按实例/Profile 分区（与 <see cref="OutputChoices"/> 的取舍不同）：那一位是数据，
+    /// 这一位是纯显示偏好。两个实例恰好有同名分组时，最多是"另一个实例里那一组也默认收起"，
+    /// 点一下分组头就复原——不值得为它引入一套分区键。
+    /// </para></summary>
+    public List<string> CollapsedConflictGroups { get; set; } = new();
 
     private static string? _directoryOverride;
 

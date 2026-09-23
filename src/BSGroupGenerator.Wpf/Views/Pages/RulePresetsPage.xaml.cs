@@ -61,9 +61,39 @@ public partial class RulePresetsPage : UserControl
 
     private void Reload()
     {
+        // 重读会重建 _rows，旧的行对象与 ListBox 里的选中项不再对应——
+        // 先把选中索引记住，重建后按新集合的长度夹一下再恢复，
+        // 否则删掉一条后会停在"索引越界"或"选中了别的那条"上。
+        var keep = List.SelectedIndex;
         _rows = RulePresetRow.Build(_vm.Settings.RulePresets);
         List.ItemsSource = _rows;
         EmptyHint.Visibility = _rows.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+
+        if (keep >= 0 && keep < _rows.Count)
+            List.SelectedIndex = keep;
+        else
+            List.SelectedIndex = -1;
+
+        // ItemsSource 换掉后选中项可能已被清空，而 SelectionChanged 不一定再发一次；
+        // 详情栏必须显式同步一次，否则会出现"列表没选中、右栏还留着上一条的详情"。
+        ShowDetail(SelectedRow());
+    }
+
+    private void List_SelectionChanged(object sender, SelectionChangedEventArgs e) =>
+        ShowDetail(SelectedRow());
+
+    private RulePresetRow? SelectedRow() =>
+        List.SelectedIndex >= 0 && List.SelectedIndex < _rows.Count ? _rows[List.SelectedIndex] : null;
+
+    /// <summary>把右栏切到"某条预设的详情"或"未选中"两态。</summary>
+    private void ShowDetail(RulePresetRow? row)
+    {
+        DetailPanel.Visibility = row is null ? Visibility.Collapsed : Visibility.Visible;
+        DetailHint.Visibility = row is null ? Visibility.Visible : Visibility.Collapsed;
+        if (row is null)
+            return;
+        DetailTitle.Text = row.Title;
+        DetailBody.Text = row.Detail;
     }
 
     private void NewPreset_Click(object sender, RoutedEventArgs e) => OpenEditor(null);

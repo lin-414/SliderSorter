@@ -17,11 +17,23 @@
     <sys:String x:Key="L.Tab_Settings">设置</sys:String>
     <sys:String x:Key="L.Settings_Workspace">工作环境</sys:String>
     <sys:String x:Key="L.Settings_Output">输出设置</sys:String>
+    <sys:String x:Key="L.Settings_Maintenance">维护</sys:String>
+    <sys:String x:Key="L.Settings_Unconfigured" xml:space="preserve">还没配置好：请选择 MO2 实例与 BodySlide 目录。这两项是扫描的前提，配好之后分组与冲突清单都会就绪。</sys:String>
+    <sys:String x:Key="L.Scan_StatusNever" xml:space="preserve">本次运行还没有成功扫描过。</sys:String>
+    <sys:String x:Key="L.Scan_StatusAt" xml:space="preserve">上次扫描：{0}　·　{1}</sys:String>
+    <sys:String x:Key="L.Scan_CountsShort" xml:space="preserve">模组 {0} · 服装 {1}</sys:String>
+    <sys:String x:Key="L.Scan_StatusStaleTip" xml:space="preserve">这份结果已经放了一会儿了。如果刚装过模组，点「重新扫描」再动手。</sys:String>
+    <sys:String x:Key="L.Age_JustNow" xml:space="preserve">{0} 秒前</sys:String>
+    <sys:String x:Key="L.Age_Minutes" xml:space="preserve">{0} 分钟前</sys:String>
+    <sys:String x:Key="L.Age_Hours" xml:space="preserve">{0} 小时前</sys:String>
+    <sys:String x:Key="L.Rescan_Tip" xml:space="preserve">重新扫描模组与服装（会一并重算输出冲突清单）</sys:String>
     <sys:String x:Key="L.Settings_CleanupStale" xml:space="preserve">清理失效服装…</sys:String>
-    <sys:String x:Key="L.Conflict_Rescan" xml:space="preserve">重新扫描</sys:String>    <sys:String x:Key="L.Conflict_NoRequest" xml:space="preserve">还没有可显示的冲突。先在「分组生成」页扫描一次——也可能这次扫描根本没发现输出文件冲突。</sys:String>
+    <sys:String x:Key="L.Settings_CleanupStaleNote" xml:space="preserve">把已不在当前扫描结果里的服装从各组剔除（模组可能被卸载或改名）。会改动分组内容，确认后会先备份，且可 Ctrl+Z 撤销。</sys:String>
+    <sys:String x:Key="L.Conflict_Rescan" xml:space="preserve">重新扫描</sys:String>    <sys:String x:Key="L.Conflict_NoRequest" xml:space="preserve">还没有可显示的冲突。扫描一次即可——扫描会同时产出分组与冲突清单，不需要先做分组；也可能这次扫描确实没发现输出文件冲突。</sys:String>
     <sys:String x:Key="L.Settings_Appearance">外观</sys:String>
     <sys:String x:Key="L.Settings_Theme">界面主题</sys:String>
     <sys:String x:Key="L.Settings_Language">界面语言</sys:String>
+    <sys:String x:Key="L.Settings_LanguageSystem">跟随系统</sys:String>
     <sys:String x:Key="L.Settings_Help">帮助与关于</sys:String>
     <sys:String x:Key="L.Settings_CheckUpdate">检查更新</sys:String>
     <sys:String x:Key="L.Settings_UpdateChecking">正在检查更新…</sys:String>
@@ -33,13 +45,17 @@
     <sys:String x:Key="L.Main_BodySlide">BodySlide</sys:String>
     <sys:String x:Key="L.Main_Output">输出位置</sys:String>
     <sys:String x:Key="L.Main_Refresh">刷新</sys:String>
-    <sys:String x:Key="L.Main_AddMo2Dir">添加 MO2 目录…</sys:String>
+    <sys:String x:Key="L.Main_SelectInstanceDir">选择实例目录…</sys:String>
     <sys:String x:Key="L.Main_Detect">自动检测</sys:String>
     <sys:String x:Key="L.Main_Browse">浏览…</sys:String>
     <sys:String x:Key="L.Main_FilterOutfits">过滤服装名…</sys:String>
     <sys:String x:Key="L.Main_FilterMods">过滤模组名…</sys:String>
     <sys:String x:Key="L.Main_UnassignedOnly">仅看未分配</sys:String>
     <sys:String x:Key="L.Main_GroupsHeader">分组</sys:String>
+    <sys:String x:Key="L.Main_FilterGroups">过滤组名…</sys:String>
+    <sys:String x:Key="L.Empty_GroupsFiltered">没有匹配该过滤条件的组。</sys:String>
+    <sys:String x:Key="L.Main_Undo">撤销</sys:String>
+    <sys:String x:Key="L.Main_UndoTip">回退最近一步分组操作（Ctrl+Z）</sys:String>
     <sys:String x:Key="L.Main_GroupManage">组操作（新建 / 重命名 / 查看 / 规则归组 / 删除）</sys:String>
     <sys:String x:Key="L.Transfer_Add">加入组 →</sys:String>
     <sys:String x:Key="L.Transfer_AddCount">加入组（{0}）→</sys:String>
@@ -72,6 +88,7 @@
     <sys:String x:Key="L.Btn_Ok">确定</sys:String>
     <sys:String x:Key="L.Btn_Cancel">取消</sys:String>
     <sys:String x:Key="L.Btn_Close">关闭</sys:String>
+    <sys:String x:Key="L.Banner_Dismiss">收起这条提示</sys:String>
     <sys:String x:Key="L.Btn_Apply">应用</sys:String>
     <sys:String x:Key="L.Btn_CopyAll">复制全部</sys:String>
     <sys:String x:Key="L.Word_Add">加入</sys:String>
@@ -103,7 +120,7 @@
     <sys:String x:Key="L.Vm_OutputIs">输出：{0}</sys:String>
 
     <!-- 选择器 -->
-    <sys:String x:Key="L.Pick_Mo2Dir">选择 MO2 实例目录（含 ModOrganizer.ini）或便携安装目录（含 ModOrganizer.exe）</sys:String>
+    <sys:String x:Key="L.Pick_Mo2Dir">选择 MO2 实例目录（含 ModOrganizer.ini）</sys:String>
     <sys:String x:Key="L.Pick_BodySlideDir">选择 BodySlide 目录（含 Config.xml）</sys:String>
     <sys:String x:Key="L.Pick_CustomOutput">选择自定义输出目录</sys:String>
     <sys:String x:Key="L.Pick_ImportGroups">导入 BodySlide 分组文件</sys:String>
@@ -186,7 +203,7 @@
     <sys:String x:Key="L.Msg_SelectGroupFirst">请先选中一个组。</sys:String>
     <sys:String x:Key="L.Msg_SelectOutfitsFirst">请先勾选要移出的服装（可勾选模组或分隔符批量全选）。</sys:String>
     <sys:String x:Key="L.Msg_ConfirmRemove">确定把 {0} 个服装移出组「{1}」？</sys:String>
-    <sys:String x:Key="L.Msg_NeedGroupFirst">还没有任何组：请先「新建组」，再使用规则归组。</sys:String>
+    <sys:String x:Key="L.Msg_NeedGroupFirst">还没有任何组。规则归组需要一个目标组，请先「新建组」。</sys:String>
     <sys:String x:Key="L.Msg_NoOutfits">尚未扫描到任何服装。</sys:String>
     <sys:String x:Key="L.Msg_ScanIncomplete">尚未完成扫描或无法确定写入位置。</sys:String>
     <sys:String x:Key="L.Msg_NoGroupsYet">当前没有任何组。请先新建组并勾选服装。</sys:String>
@@ -198,7 +215,8 @@
     <sys:String x:Key="L.Msg_CleanupConfirm" xml:space="preserve">有 {0} 个服装已不在当前扫描结果中（所属模组可能被卸载或改名），例如：{1}…
 
 确定从各组剔除？（可 Ctrl+Z 撤销）</sys:String>
-    <sys:String x:Key="L.Msg_NotMo2Dir">该目录下没有 ModOrganizer.ini，也不像便携安装（缺 ModOrganizer.exe）。</sys:String>
+    <sys:String x:Key="L.Msg_NotMo2Dir">该目录下没有 ModOrganizer.ini，不是 MO2 实例目录。请选择含 ModOrganizer.ini 的实例目录（便携安装即 ModOrganizer.exe 所在目录）。</sys:String>
+    <sys:String x:Key="L.Msg_Mo2InstallDirNotInstance">这是 MO2 的程序目录，不是实例目录。实例目录含 ModOrganizer.ini，全局实例通常位于 %LOCALAPPDATA%\ModOrganizer 下的实例子目录，一般已被自动检测，无需手动添加。</sys:String>
     <sys:String x:Key="L.Msg_NotBodySlideDir">该目录下没有 Config.xml，不是 BodySlide 目录。</sys:String>
     <sys:String x:Key="L.Msg_UpToDate">已是最新版本（v{0}）。</sys:String>
     <sys:String x:Key="L.Msg_UpdateAvailable" xml:space="preserve">发现新版本 {0}（当前 v{1}）。
@@ -243,6 +261,14 @@
     <sys:String x:Key="L.Conflict_UnresolvedSuffix" xml:space="preserve">· 未指定 {0} 组</sys:String>
     <sys:String x:Key="L.Conflict_GroupsHeader" xml:space="preserve">冲突组</sys:String>
     <sys:String x:Key="L.Conflict_GroupCount" xml:space="preserve">{0} 组</sys:String>
+    <sys:String x:Key="L.Conflict_GroupsHeaderTip" xml:space="preserve">左栏按你自己的分组分类：每个分组下面是"有该组成员卷入"的冲突，组内互撞的另标出来；没进任何分组的冲突收在「未入组」里。</sys:String>
+    <sys:String x:Key="L.Conflict_GroupBucketCount" xml:space="preserve">{0} 处冲突</sys:String>
+    <sys:String x:Key="L.Conflict_IntraGroup" xml:space="preserve">组内互撞</sys:String>
+    <sys:String x:Key="L.Conflict_IntraGroupCount" xml:space="preserve">其中 {0} 处组内互撞</sys:String>
+    <sys:String x:Key="L.Conflict_IntraGroupTip" xml:space="preserve">同一个分组里有 2 个以上成员写同一个输出文件：批建时只会有一个赢，其余的不会生成。</sys:String>
+    <sys:String x:Key="L.Conflict_Ungrouped" xml:space="preserve">未入组</sys:String>
+    <sys:String x:Key="L.Conflict_GroupFilterAll" xml:space="preserve">全部分组</sys:String>
+    <sys:String x:Key="L.Conflict_GroupFilterTip" xml:space="preserve">只列出有该分组成员卷入的冲突。选项里只出现真的有冲突的分组。</sys:String>
     <sys:String x:Key="L.Conflict_CandidatesHeader" xml:space="preserve">由谁生成</sys:String>
     <sys:String x:Key="L.Conflict_PreviewHeader" xml:space="preserve">预览</sys:String>
     <sys:String x:Key="L.Conflict_BatchScope" xml:space="preserve">对当前列出的 {0} 组：</sys:String>
@@ -320,11 +346,14 @@
     <!-- 规则预设 -->
     <sys:String x:Key="L.RulePresets_Title">规则预设</sys:String>
     <sys:String x:Key="L.RulePresets_Head">预设 = 一条可复用的自动归组规则。</sys:String>
-    <sys:String x:Key="L.RulePresets_Steps" xml:space="preserve">① 点「新建预设…」：选目标组、填关键字，预览确认后点「存为预设」。&#x0a;② 再次扫描发现新装模组时，弹窗里点「按预设分组」会依次执行全部预设，自动完成归组。&#x0a;③ 选中一条后点「编辑所选…」（双击该行也行）即可修改；名称会预填原名，直接确定就是覆盖更新。</sys:String>
+    <sys:String x:Key="L.RulePresets_Steps" xml:space="preserve">预设是一组可复用的归组条件，随时可新建、修改或删除，几条预设互相独立。
+· 新建/修改：点「新建预设…」，或选中一条后点「编辑所选…」（双击该行也行）。选目标组、填关键字，预览确认后保存。名称会预填原名，直接确定即覆盖更新。
+· 何时生效：再次扫描发现新装模组时，弹窗里点「按预设分组」会依次执行全部预设；也可以随时在「分组生成」页用「⋯ → 规则归组」手动跑一次。</sys:String>
     <sys:String x:Key="L.RulePresets_New">新建预设…</sys:String>
     <sys:String x:Key="L.RulePresets_Edit">编辑所选…</sys:String>
     <sys:String x:Key="L.RulePresets_Delete">删除所选</sys:String>
     <sys:String x:Key="L.RulePresets_Empty">还没有预设。点下方「新建预设…」创建第一条自动归组规则。</sys:String>
+    <sys:String x:Key="L.RulePresets_NoSelection">选中左侧一条预设查看详情。</sys:String>
     <sys:String x:Key="L.RulePresets_RowTitle">{0}　→ {1}组「{2}」</sys:String>
     <sys:String x:Key="L.RulePresets_RowDetail">模组关键字：{0}　·　服装关键字：{1}　·　排除：{2}</sys:String>
     <sys:String x:Key="L.RulePresets_UnassignedSuffix" xml:space="preserve">　·　仅未分配</sys:String>
@@ -377,7 +406,7 @@
     <sys:String x:Key="L.Help_05">4. 保存——点底部「保存分组文件」，或用菜单「文件 → 保存分组文件」（Ctrl+S）。每个组生成一个文件，文件名即组名（如 UBE.xml）。完成后重启 BodySlide（通过 MO2 启动的建议连 MO2 一起重启）。</sys:String>
     <sys:String x:Key="L.Help_H2">二、快速上手（4 步）</sys:String>
     <sys:String x:Key="L.Help_S2_Top">【顶部设置区】</sys:String>
-    <sys:String x:Key="L.Help_06">MO2 实例：自动发现 %LOCALAPPDATA%\ModOrganizer 下的全局实例与便携安装；「添加 MO2 目录…」可手动指定实例目录；「刷新」重新扫描实例。</sys:String>
+    <sys:String x:Key="L.Help_06">MO2 实例：自动发现 %LOCALAPPDATA%\ModOrganizer 下的全局实例与便携安装；「选择实例目录…」可手动指定含 ModOrganizer.ini 的实例目录；「刷新」重新扫描实例。</sys:String>
     <sys:String x:Key="L.Help_07">配置 Profile：列出该实例所有可用的 Profile。启用模组列表读取自该 Profile 的 modlist.txt，顺序与 MO2 左侧栏一致。</sys:String>
     <sys:String x:Key="L.Help_08">BodySlide：自动在启用模组中查找含 BodySlide*.exe 与 Config.xml 的目录；找不到时用「浏览…」手动指定。</sys:String>
     <sys:String x:Key="L.Help_09">输出位置：决定分组文件保存到哪里（详见第六章）。状态栏右侧会显示当前输出目录，悬停可看完整路径。</sys:String>
@@ -385,7 +414,7 @@
     <sys:String x:Key="L.Help_10">层级为 分隔符（灰色）→ 模组（加粗，可折叠）→ 服装；顺序与 MO2 左侧栏一致，只显示含 BodySlide 服装的启用模组。</sys:String>
     <sys:String x:Key="L.Help_11">顶部两个过滤框各管一类：「过滤服装名…」只匹配服装名，「过滤模组名…」只匹配模组名（连续子串、不区分大小写；模组名命中会显示该模组全部服装）；「仅看未分配」只显示还没进任何组的服装。</sys:String>
     <sys:String x:Key="L.Help_12">勾选框只是「选中」待操作的内容——点中间的「加入组」/「移出组」才写入。勾选模组或分隔符会自动勾选其下所有服装。</sys:String>
-    <sys:String x:Key="L.Help_13">服装名前的标记 = 该服装已在当前选中的组里；模组标题后的 [组内 x/总数] 表示组内命中情况。</sys:String>
+    <sys:String x:Key="L.Help_13">服装名前的标记 = 该服装已在当前选中的组里；模组标题右侧的「组内 x/总数」徽标表示该模组已有几个服装进组。</sys:String>
     <sys:String x:Key="L.Help_S2_Groups">【右侧组面板】</sys:String>
     <sys:String x:Key="L.Help_14">组列表：单击选中（左侧勾选状态与标注随之切换且不打断浏览位置），双击打开成员预览。新建/重命名/查看/规则归组/删除都收在标题栏右侧的「⋯」里，也可以直接右键组列表。</sys:String>
     <sys:String x:Key="L.Help_15">「⋯」→「规则归组」：按关键字批量操作，详见第五章。</sys:String>
@@ -422,6 +451,20 @@
     <sys:String x:Key="L.Help_41">· 输出目录里多了个 BSGroupGenerator.files.txt？那是本工具的清单文件，用于自动清理旧文件，BodySlide 不会读取它。</sys:String>
     <sys:String x:Key="L.Help_42">· 程序出错了？异常会写入 %APPDATA%\BSGroupGenerator\crash.log，可把该文件发给开发者。</sys:String>
     <sys:String x:Key="L.Help_H7">七、常见问题</sys:String>
+
+    <!-- 八、两份独立成果（扫描的产出边界）
+         这一章存在的理由：本工具一次扫描产出**两份互不依赖**的成果——
+         ①分组（写成 SliderGroups\*.xml）与 ②输出冲突选择（写进 BuildSelection.xml）。
+         此前帮助文档通篇只讲分组这条线，"输出冲突与选择"页在目录里根本没有入口，
+         而页面被打不开的用户第一个想到的就是翻帮助。数据模型既然是并列的，
+         文档结构也必须并列：把它单列一章，而不是塞进"快速上手"当第 5 步
+         （那又变成暗示线性顺序了）。 -->
+    <sys:String x:Key="L.Help_H8">八、两份独立成果</sys:String>
+    <sys:String x:Key="L.Help_Conflict_Intro">扫描一次会产生两份互不依赖的成果，分别落在两个标签页里。可以直接做其中任意一件，不必先完成另一件。</sys:String>
+    <sys:String x:Key="L.Help_Conflict_A">① 分组（「分组生成」页）——把服装划进组，点「保存分组文件」写出 SliderGroups\*.xml，供 BodySlide 读取滑块组。</sys:String>
+    <sys:String x:Key="L.Help_Conflict_B">② 输出冲突选择（「输出冲突与选择」页）——多件服装写出同一个身体网格文件时，选定由哪个模组生成，点「写入 BodySlide…」写进 BuildSelection.xml。选择结果只存在本工具里，写入前原文件会备份为 .bak。</sys:String>
+    <sys:String x:Key="L.Help_Conflict_C">两者各写各的文件，互不覆盖：只要扫描过一次，两份成果就都可用，顺序随意，之后也都能重新进入单独修改。</sys:String>
+    <sys:String x:Key="L.Help_Conflict_D">「同一模组内部共用输出文件」（一件衣服的几百个配色）是常态，默认不算需要处理的冲突；勾「只看跨模组冲突」可把它们滤掉。</sys:String>
     <sys:String x:Key="L.Help_Toc">目录</sys:String>
     <sys:String x:Key="L.Help_TocHint">点标题可跳到对应章节。</sys:String>
     <sys:String x:Key="L.Help_Task1">把某个模组的服装归到一组 —— 左侧勾选该模组（勾模组名 = 全选其下服装）→ 右侧选中目标组 → 点中间的「加入组」→ 点「保存分组文件」。</sys:String>
@@ -437,11 +480,12 @@
     <!-- 模组树节点文本（代码拼接，非 XAML 绑定） -->
     <sys:String x:Key="L.Tree_ConflictSuffix">（同名冲突）</sys:String>
     <sys:String x:Key="L.Tree_OutputConfSuffix" xml:space="preserve">（输出冲突）</sys:String>
-    <sys:String x:Key="L.Tree_InGroupBadge">{0}　[组内 {1}/{2}]</sys:String>
+    <sys:String x:Key="L.Tree_InGroupBadge">组内 {0}/{1}</sys:String>
     <sys:String x:Key="L.Tree_MatchHeader">{0}（匹配 {1}/{2}）</sys:String>
     <sys:String x:Key="L.Tree_NoMatchingMods">（没有符合过滤条件的模组）</sys:String>
 
-    <!-- 模组树右键菜单（只挂主窗口左侧列表，见 Themes/Controls.xaml 的 NodeTreeItemStyle） -->
+    <!-- 整列展开/折叠的右键菜单（主窗口左侧模组树：Themes/Controls.xaml 的 NodeTreeItemStyle；
+         输出冲突页的分组头：Views/Pages/OutputConflictPage.xaml 的 ConflictGroupMenu） -->
     <sys:String x:Key="L.Tree_ExpandAll">全部展开</sys:String>
     <sys:String x:Key="L.Tree_CollapseAll">全部折叠</sys:String>
     <sys:String x:Key="L.Tree_CollapseOthers">折叠其他</sys:String>

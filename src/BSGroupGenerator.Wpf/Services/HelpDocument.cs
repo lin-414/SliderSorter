@@ -15,7 +15,9 @@ namespace BSGroupGenerator.Wpf.Services;
 /// 所以抽到这里——FlowDocument 只能被一个宿主持有，故每次调用现造一份。</summary>
 public static class HelpDocument
 {
-    /// <summary>目录项 → 章节锚点。键与标题 Paragraph 的 Name 一一对应。</summary>
+    /// <summary>目录项 → 章节锚点。键与标题 Paragraph 的 Name 一一对应。
+    /// 顺序即正文顺序：第八章讲"一次扫描的两份成果"，排在常见问题之后——
+    /// 它是概念说明而非操作步骤，放前面会打断"先学会做一件事"的主线。</summary>
     private static readonly (string Key, string Anchor)[] Toc =
     [
         ("L.Help_H1", "sec1"),
@@ -25,6 +27,7 @@ public static class HelpDocument
         ("L.Help_H5", "sec5"),
         ("L.Help_H6", "sec6"),
         ("L.Help_H7", "sec7"),
+        ("L.Help_H8", "sec8"),
     ];
 
     public static FlowDocument Build()
@@ -163,6 +166,14 @@ public static class HelpDocument
         doc.Blocks.Add(P(L10n.Tr("L.Help_40")));
         doc.Blocks.Add(P(L10n.Tr("L.Help_41")));
         doc.Blocks.Add(P(L10n.Tr("L.Help_42")));
+
+        // 八、两份独立成果
+        doc.Blocks.Add(H("L.Help_H8", "sec8"));
+        doc.Blocks.Add(P(L10n.Tr("L.Help_Conflict_Intro")));
+        doc.Blocks.Add(P(L10n.Tr("L.Help_Conflict_A")));
+        doc.Blocks.Add(P(L10n.Tr("L.Help_Conflict_B")));
+        doc.Blocks.Add(P(L10n.Tr("L.Help_Conflict_C")));
+        doc.Blocks.Add(P(L10n.Tr("L.Help_Conflict_D")));
 
         return doc;
     }

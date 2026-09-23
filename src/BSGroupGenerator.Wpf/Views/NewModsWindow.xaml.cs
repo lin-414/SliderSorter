@@ -58,6 +58,9 @@ public partial class NewModsWindow : Window
         FilterBox.TextChanged += (_, _) => Rebuild();
         ModFilterBox.TextChanged += (_, _) => Rebuild();
 
+        // 空格勾选 / 左右展开折叠 / 上下移动行（见 TreeKeyboard）
+        TreeKeyboard.Attach(Tree);
+
         Rebuild();
     }
 

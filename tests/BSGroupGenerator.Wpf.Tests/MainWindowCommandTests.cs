@@ -57,10 +57,9 @@ public class MainWindowCommandTests(ITestOutputHelper output)
                 {
                     // MainWindow.xaml 用了 {StaticResource AppWindow}/{StaticResource RowLabel} 等，
                     // 解析时必须在 Application 资源里找到（pack URI 必须带程序集名）。
-                    app.Resources.MergedDictionaries.Add(new ResourceDictionary
-                    {
-                        Source = new Uri("pack://application:,,,/BSGroupGenerator;component/Themes/Controls.xaml"),
-                    });
+                    // 走 WpfHost 的共享清单：漏一份的表现是"页面里的 StaticResource 抛异常"，
+                    // 看着像页面写错、实际是宿主没搭全资源环境。
+                    WpfHost.AddAppDictionaries(app);
                 }
 
                 var window = new MainWindow();

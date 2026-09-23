@@ -31,7 +31,7 @@ public partial class MainWindow : Window
         _vm.SuppressibleConfirmHandler = (title, message, suppressKey) =>
             Notify.Show(this, title, message, NotifyKind.Question, NotifyButtons.OkCancel,
                 settings: _vm.Settings, suppressKey: suppressKey) == NotifyResult.Primary;
-        // 目录/文件框也在这一层：设置页里的「添加 MO2 目录」「浏览…」复用它们，
+        // 目录/文件框也在这一层：设置页里的「选择实例目录」「浏览…」复用它们，
         // owner 才是真正有窗口身份的壳。
         _vm.FolderPicker = description => PickFolder(description);
         _vm.FilePicker = _ => PickImportFile();

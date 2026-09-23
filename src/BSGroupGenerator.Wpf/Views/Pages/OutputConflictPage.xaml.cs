@@ -1,15 +1,18 @@
+using System.Collections;
 using System.ComponentModel;
 using System.Numerics;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Media3D;
 using BSGroupGenerator.Core;
 using BSGroupGenerator.Wpf.Services;
 using BSGroupGenerator.Wpf.ViewModels;
+using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace BSGroupGenerator.Wpf.Views.Pages;
 
@@ -22,6 +25,11 @@ namespace BSGroupGenerator.Wpf.Views.Pages;
 /// </para>
 /// 左侧列表随过滤重建，所以"哪一组被选中"记在 <see cref="_selectedPath"/> 上而不是列表项对象上。
 /// <para>
+/// 左栏还会按用户自己的分组（「分组生成」页那批）分类：每个分组头下面是"有该组成员卷入"的冲突，
+/// 组内互撞的另挂一枚徽标。分类规则在 <see cref="OutputConflicts.CategorizeByUserGroup"/>，
+/// 这里只负责把它渲染成两级列表（<see cref="ListCollectionView"/> + <c>GroupStyle</c>）。
+/// </para>
+/// <para>
 /// 这一页常驻而不是每次现开，所以批量操作与缓存跨标签页切换都还在——换来的是"切走再切回"
 /// 不必重新解码一遍网格。代价是数据得靠 VM 推：<see cref="MainViewModel.CurrentConflict"/> 一变就重建，
 /// 视口的取景/取消则挂在 <see cref="OnTabVisibilityChanged"/> 上（隐藏期量不到尺寸）。
@@ -30,8 +38,71 @@ namespace BSGroupGenerator.Wpf.Views.Pages;
 public partial class OutputConflictPage : UserControl
 {
     /// <summary>冲突组在左栏那一行。<see cref="Name"/> 是文件名（不含目录），
-    /// 完整路径留在 <see cref="Path"/> 里给 ToolTip 与中栏标题用。</summary>
-    private sealed record GroupRow(OutputConflictGroup Group, string Name, string Status, bool Resolved, string Path);
+    /// 完整路径留在 <see cref="Path"/> 里给 ToolTip 与中栏标题用。
+    /// <para>
+    /// <see cref="GroupKey"/> / <see cref="IntraCollision"/> 只在"按分组分类"生效时才有意义：
+    /// 前者让 WPF 把这一行归到某个分组头下面，后者决定要不要挂「组内互撞」徽标。
+    /// 一条冲突可能同时挂在多个分组下，那时它是**多个** <see cref="GroupRow"/>（各一份），
+    /// 所以"当前列出了几组冲突"必须按 <see cref="Group"/> 去重算，不能数行。
+    /// </para></summary>
+    private sealed record GroupRow(OutputConflictGroup Group, string Name, string Status, bool Resolved,
+        string Path, ConflictGroupKey? GroupKey = null, bool IntraCollision = false)
+    {
+        public Visibility IntraVisibility => IntraCollision ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    /// <summary>左栏分组头的键，同时是 <c>CollectionViewGroup.Name</c>——分组头模板的 DataContext
+    /// 是那个 group 对象，不是行，所以文案与计数必须在这里就拼好：模板拿不到页面里的行集合，
+    /// 而"该组有几处冲突"必须跟着过滤词走（显示 3 处、下面只挂 1 行会自相矛盾）。
+    /// <para>
+    /// 计数由整份行集合预先算出，因此同一个分组内必然一致——这是必需的：
+    /// <see cref="PropertyGroupDescription"/> 靠相等合并，而这是个**引用相等**的类，
+    /// 同一个分组必须共用**一个实例**，否则会被拆成两个头。
+    /// </para>
+    /// <para>
+    /// 它还是个可观察对象，因为折叠条的 <c>IsChecked</c> 双向绑在 <see cref="IsExpanded"/> 上：
+    /// 展开态是"这个分组头"自己的状态，挂在键上最自然——挂到页面上就得按组名查表，
+    /// 而每次重建都会换一批键，查表还得自己清理。
+    /// </para></summary>
+    private sealed class ConflictGroupKey : ObservableObject
+    {
+        private readonly Action<string, bool> _persist;
+        private bool _isExpanded;
+
+        public ConflictGroupKey(string name, string label, string countText, string intraText,
+            bool expanded, Action<string, bool> persist)
+        {
+            Name = name;
+            Label = label;
+            CountText = countText;
+            IntraText = intraText;
+            _persist = persist;
+            // 直接赋字段而不是走属性：构造期设的是初始状态，不该被当成用户动作写回设置
+            _isExpanded = expanded;
+        }
+
+        public string Name { get; }
+        public string Label { get; }
+        public string CountText { get; }
+        public string IntraText { get; }
+        public bool HasIntra => IntraText.Length > 0;
+
+        /// <summary>这一组是否展开。写回设置的是**收起**，所以这里取反——
+        /// 设置里存的是"收起的那些分组"，空 = 全展开。</summary>
+        public bool IsExpanded
+        {
+            get => _isExpanded;
+            set
+            {
+                if (SetProperty(ref _isExpanded, value))
+                    _persist(Name, !value);
+            }
+        }
+    }
+
+    /// <summary>「只看某组」下拉的一项。<see cref="Value"/> 为 null = 全部分组，空串 = 未入组
+    /// （与 <see cref="UserGroupConflicts.GroupName"/> 的哨兵一致）。</summary>
+    private sealed record GroupFilterItem(string? Value, string Label);
 
     private sealed record CandidateRow(
         string? SetName, string Label, string Info, bool IsWinner, bool Grouped, bool Strongest, string? SourceNif,
@@ -46,6 +117,27 @@ public partial class OutputConflictPage : UserControl
     private Dictionary<string, string> _working = new(StringComparer.Ordinal);
     private string? _selectedPath;
     private bool _rebuilding;
+
+    /// <summary>「只看某组」当前选中的组名；null = 全部分组。存值而不是存下拉的选中项：
+    /// 选项每次重建都是新对象，按值还原才稳。</summary>
+    private string? _groupFilter;
+
+    /// <summary>上一次算分类时的分组指纹（见 <see cref="GroupingSignature"/>）。</summary>
+    private string _groupingSignature = "";
+
+    /// <summary>上一次取词时的语言（<see cref="ApplyTexts"/> 写下）。本页大半文案是代码拼的而不是
+    /// DynamicResource，换语言不会自动跟上；切回本页时按这个记号补一次，见
+    /// <see cref="OnTabVisibilityChanged"/>。<see cref="_bodyOptionsLang"/> 管的是身体下拉那一处。
+    /// 初值为 null = 「还没取过词」。</summary>
+    private string? _textsLang;
+
+    /// <summary>本次重建出的全部分组头（按当前过滤）。右键菜单的「全部展开 / 全部折叠 / 折叠其他」
+    /// 按它作用——与批量动作同一口径：只落在当前列出的那些分组上。收起的分组本来就都在这张表里
+    /// （折叠只影响显示，不从列表里移除），所以"全部展开"能把它们一起放出来。
+    /// <para>
+    /// 从列表的视觉树里找分组头是不行的：分组开了虚拟化，收起的分组连容器都没生成过。
+    /// </para></summary>
+    private IReadOnlyList<ConflictGroupKey> _groupKeys = [];
 
     /// <summary>对话框的宿主：页面自己没有窗口身份，取所在的壳窗口。</summary>
     private Window? Shell => Window.GetWindow(this);
@@ -89,17 +181,12 @@ public partial class OutputConflictPage : UserControl
         _request = request;
         _working = new Dictionary<string, string>(request.Choices, StringComparer.Ordinal);
         _textures = request.Assets is { } assets ? new PreviewTextureCache(assets) : null;
+        // 新清单：上一轮的"只看某组"未必还在（组名改了、那个组没冲突了），交给 SyncGroupFilter 重新定
+        _groupFilter = null;
 
-        IntroLabel.Text = L10n.TrF("L.Conflict_Intro",
-            request.Groups.Count(g => g.CrossMod), request.Groups.Count);
+        ApplyTexts(request);
         // 一组跨模组的都没有时别把列表筛成空的：这时默认显示全部
         OnlyCrossCheck.IsChecked = request.Groups.Any(g => g.CrossMod);
-        OnlyCrossCheck.ToolTip = L10n.TrF("L.Conflict_OnlyCrossModTip",
-            request.Groups.Count(g => g.CrossMod), request.Groups.Count);
-        RescanButton.ToolTip = L10n.Tr("L.Conflict_RescanTip");
-        AutoButton.ToolTip = L10n.Tr("L.Conflict_AutoAllTip");
-        ClearButton.ToolTip = L10n.Tr("L.Conflict_ClearAllTip");
-        ExportButton.ToolTip = L10n.Tr("L.Conflict_ExportTip");
         SetActionsEnabled(request.Groups.Count > 0);
         // 扫完一组冲突都没有时也要留着这句：那种情况下三栏同样是全空的，
         // 而 CurrentConflict 并不是 null（清单是空的，不是没送来）
@@ -111,6 +198,27 @@ public partial class OutputConflictPage : UserControl
 
     private void SetActionsEnabled(bool on) =>
         AutoButton.IsEnabled = ClearButton.IsEnabled = ExportButton.IsEnabled = on;
+
+    /// <summary>本页那些只能由代码拼出的固定文案：说明段与各控件的悬停提示。
+    /// <para>
+    /// 与 <see cref="ShowRequest"/> 里"顺带把状态摆正"的赋值（「只看跨模组」的勾选、按钮可点性、
+    /// 空状态）分开，是因为换语言时只该重跑这一段——把整段 <see cref="ShowRequest"/> 再来一遍，
+    /// 用户特意勾掉的「只看跨模组」会被重新勾上，「只看某组」的筛选也会被清掉。
+    /// 列表里的文案（进度、分组头、状态行、候选行、批量范围）不在这里，它们由
+    /// <see cref="RebuildGroups"/> 现取现拼，见 <see cref="OnTabVisibilityChanged"/>。
+    /// </para></summary>
+    private void ApplyTexts(ConflictRequest request)
+    {
+        IntroLabel.Text = L10n.TrF("L.Conflict_Intro",
+            request.Groups.Count(g => g.CrossMod), request.Groups.Count);
+        OnlyCrossCheck.ToolTip = L10n.TrF("L.Conflict_OnlyCrossModTip",
+            request.Groups.Count(g => g.CrossMod), request.Groups.Count);
+        RescanButton.ToolTip = L10n.Tr("L.Conflict_RescanTip");
+        AutoButton.ToolTip = L10n.Tr("L.Conflict_AutoAllTip");
+        ClearButton.ToolTip = L10n.Tr("L.Conflict_ClearAllTip");
+        ExportButton.ToolTip = L10n.Tr("L.Conflict_ExportTip");
+        _textsLang = L10n.Current;
+    }
 
     private OutputConflictGroup? SelectedGroup => (GroupList.SelectedItem as GroupRow)?.Group;
 
@@ -138,12 +246,16 @@ public partial class OutputConflictPage : UserControl
 
     private DirectionalLight? _keyLight;
 
-    /// <summary>当前过滤条件下看到的组（批量操作只作用于它们——筛出来一批"某某模组的"再点自动选择，
-    /// 不该顺手改掉屏幕外的组）。</summary>
-    private List<OutputConflictGroup> VisibleGroups() =>
-        ((GroupList.ItemsSource as IEnumerable<GroupRow>) ?? Array.Empty<GroupRow>())
-        .Select(r => r.Group)
-        .ToList();
+    /// <summary>当前过滤条件下看到的冲突（批量操作只作用于它们——筛出来一批"某某模组的"再点自动选择，
+    /// 不该顺手改掉屏幕外的组）。一条冲突可能挂在多个分组下（界面上就是多行），故按 Group 去重：
+    /// <see cref="OutputConflicts.AutoPick"/> 对同一个输出路径重复应用是幂等的，多算几遍不出错，
+    /// 但「对当前列出的 N 组」里的 N 必须是冲突数而不是行数。</summary>
+    private List<OutputConflictGroup> VisibleGroups()
+    {
+        if (GroupList.ItemsSource is not IEnumerable source)
+            return [];
+        return source.OfType<GroupRow>().Select(r => r.Group).Distinct().ToList();
+    }
 
     /// <summary>生效中的选择。设置里可能留着一条指向已消失 set 的死选择，那种情况按"未指定"处理。</summary>
     private string? ChosenOf(OutputConflictGroup group) =>
@@ -191,16 +303,44 @@ public partial class OutputConflictPage : UserControl
     {
         if (_request is not { } request)
             return;
+
+        // 分类算在**未过滤**的全量清单上，行本身再按各道过滤筛：下拉的选项不该边打字边变，
+        // 而分组头里的计数按筛完的行算（见 ConflictGroupKey）。
+        var buckets = OutputConflicts.CategorizeByUserGroup(request.Groups, request.UserGroups());
+        // 没有任何分组卷入（没建组，或建了但一件都没卷进来）时不做分类：那时全部行会挂在
+        // 一个「未入组」头下面，那条头不带任何信息，只是把列表整体下移一行。
+        var grouping = buckets.Any(b => !b.IsUngrouped);
+        SyncGroupFilter(buckets, grouping);
+
         var filter = FilterBox.Text.Trim();
-        // 先按"只看跨模组"筛出这一轮处理的范围，再在范围内套过滤词：计数说的是用户眼前这份清单
+        // "只看跨模组"定的是这一轮的范围，用集合查比逐行 Any 便宜，也让下面计数的分母现成
         var pool = OnlyCrossCheck.IsChecked == true
-            ? request.Groups.Where(g => g.CrossMod).ToList()
-            : request.Groups;
-        var rows = new List<GroupRow>();
-        foreach (var group in pool)
+            ? request.Groups.Where(g => g.CrossMod).ToHashSet()
+            : null;
+
+        // 按**桶**而不是按冲突遍历：WPF 按首次出现建立分组，所以行按桶排下来，
+        // 分组头的顺序就等于桶的顺序（组列表顺序 → 未入组），与「分组生成」页的组列表一致。
+        var kept = new List<(OutputConflictGroup Group, string GroupName, bool Intra)>();
+        foreach (var bucket in buckets)
+            foreach (var row in bucket.Rows)
+            {
+                if (pool is not null && !pool.Contains(row.Conflict))
+                    continue;
+                if (filter.Length > 0 && !MatchesFilter(row.Conflict, filter))
+                    continue;
+                if (_groupFilter is not null && bucket.GroupName != _groupFilter)
+                    continue;
+                kept.Add((row.Conflict, bucket.GroupName, row.IntraCollision));
+            }
+
+        // 「只看某组」筛到单个分组时，那一组一律展开：用户刚点名要看它，却因为上次收起过
+        // 而只看到一条光杆标题，会以为这一组没冲突。此时也不把展开态写回设置（见 BuildGroupKeys）。
+        var forceExpand = _groupFilter is not null;
+        var keys = BuildGroupKeys(request, kept, forceExpand);
+        _groupKeys = keys.Values.ToList();
+        var rows = new List<GroupRow>(kept.Count);
+        foreach (var (group, groupName, intra) in kept)
         {
-            if (filter.Length > 0 && !MatchesFilter(group, filter))
-                continue;
             var chosen = ChosenOf(group);
             rows.Add(new GroupRow(
                 group,
@@ -209,29 +349,191 @@ public partial class OutputConflictPage : UserControl
                     ? L10n.Tr("L.Conflict_StatusUnresolved")
                     : L10n.TrF("L.Conflict_StatusChosen", chosen),
                 chosen is not null,
-                group.TargetDisplay));
+                group.TargetDisplay,
+                keys[groupName],
+                intra));
         }
 
         _rebuilding = true;
-        GroupList.ItemsSource = rows;
+        GroupList.ItemsSource = BuildGroupedView(rows, grouping);
         GroupList.SelectedItem =
             rows.Find(r => r.Group.OutputFilePath == _selectedPath) ?? rows.FirstOrDefault();
         _selectedPath = (GroupList.SelectedItem as GroupRow)?.Group.OutputFilePath;
         _rebuilding = false;
 
-        GroupsCountLabel.Text = L10n.TrF("L.Conflict_GroupCount", rows.Count);
-        BatchScopeLabel.Text = L10n.TrF("L.Conflict_BatchScope", rows.Count);
-        var filtering = filter.Length > 0 || OnlyCrossCheck.IsChecked == true;
+        // 一条冲突可能挂在多个分组下，行数因此可能大于冲突数。这两个标签说的都是"有几组冲突"
+        //（批量动作也是按冲突作用），所以按 Group 去重。
+        var listed = rows.Select(r => r.Group).Distinct().Count();
+        GroupsCountLabel.Text = L10n.TrF("L.Conflict_GroupCount", listed);
+        BatchScopeLabel.Text = L10n.TrF("L.Conflict_BatchScope", listed);
+        var filtering = filter.Length > 0 || pool is not null || _groupFilter is not null;
         FilterCountLabel.Text = filtering
-            ? L10n.TrF("L.Conflict_FilterCount", rows.Count, pool.Count)
+            ? L10n.TrF("L.Conflict_FilterCount", listed, pool?.Count ?? request.Groups.Count)
             : "";
         FilterCountLabel.Visibility = filtering ? Visibility.Visible : Visibility.Collapsed;
 
+        _groupingSignature = GroupingSignature();
         UpdateProgress();
         RebuildCandidates();
     }
 
+    /// <summary>把行集合交给列表渲染。有分组时套一层分组描述，WPF 就会按 <c>GroupKey</c>
+    /// 把分组头插在行前面。
+    /// <para>
+    /// 刻意不设 <see cref="PropertyGroupDescription.CustomSort"/>：分组按**首次出现**的顺序建立，
+    /// 而行集合已经按桶排好，那正是我们要的顺序（组列表顺序 → 未入组）。设了反而危险——
+    /// CustomSort 的语义（排"组"还是排"组内元素"）在文档里含糊，万一是后者，
+    /// 比较器会收到 <see cref="GroupRow"/> 而不是键。
+    /// </para></summary>
+    private static ListCollectionView BuildGroupedView(List<GroupRow> rows, bool grouping)
+    {
+        var view = new ListCollectionView(rows);
+        if (grouping)
+            view.GroupDescriptions.Add(new PropertyGroupDescription(nameof(GroupRow.GroupKey)));
+        return view;
+    }
+
+    /// <summary>按已筛出的行造分组头，同一分组共用一个实例。计数在这里算，所以它天然是"过滤后的"。
+    /// 顺序无关：分组头的顺序由行的顺序决定，字典的枚举顺序不参与。
+    /// <para>
+    /// <paramref name="forceExpand"/> 为真（「只看某组」筛到了单个分组）时一律展开、且**不写设置**：
+    /// 那一屏本来就是"我要看这一组"，若它的展开态落了盘，用户在"全部分组"下特意收起的意图
+    /// 会被这一次查看悄悄抹掉。
+    /// </para></summary>
+    private static Dictionary<string, ConflictGroupKey> BuildGroupKeys(
+        ConflictRequest request,
+        IReadOnlyList<(OutputConflictGroup Group, string GroupName, bool Intra)> kept,
+        bool forceExpand)
+    {
+        var counts = new Dictionary<string, int>(StringComparer.Ordinal);
+        var intras = new Dictionary<string, int>(StringComparer.Ordinal);
+        foreach (var (_, name, intra) in kept)
+        {
+            counts[name] = counts.GetValueOrDefault(name) + 1;
+            if (intra)
+                intras[name] = intras.GetValueOrDefault(name) + 1;
+        }
+
+        Action<string, bool> persist = forceExpand ? static (_, _) => { } : request.SetGroupCollapsed;
+        var keys = new Dictionary<string, ConflictGroupKey>(StringComparer.Ordinal);
+        foreach (var (name, count) in counts)
+            keys[name] = new ConflictGroupKey(
+                name,
+                name.Length == 0 ? L10n.Tr("L.Conflict_Ungrouped") : name,
+                L10n.TrF("L.Conflict_GroupBucketCount", count),
+                intras.TryGetValue(name, out var n) && n > 0
+                    ? L10n.TrF("L.Conflict_IntraGroupCount", n)
+                    : "",
+                expanded: forceExpand || !request.IsGroupCollapsed(name),
+                persist);
+        return keys;
+    }
+
+    // ── 分组头的右键菜单：整列的展开 / 折叠（2026-09-23）──
+    //
+    // 与「分组生成」页左侧模组树的同名菜单一致，只是那里的"节点"这里换成了"分组头"：
+    // 树里菜单挂在每一行上，而这一页只有分组头会折叠，冲突行是叶子。
+    //
+    // 菜单项走 Click 而不是命令：菜单是资源里的共享实例（见 OutputConflictPage.xaml 的
+    // ConflictGroupMenu），DataContext 不在逻辑树上继承得到，而三个动作又都是整列的、
+    // 不属于任何一个分组头对象。锚点因此只能从 PlacementTarget 上现取——WPF 在弹出前
+    // 会把它设成被右键的那个元素。
+
+    /// <summary>被右键的那个分组头。菜单挂在分组头的 ToggleButton 上，而它的 DataContext 是
+    /// <see cref="CollectionViewGroup"/>（分组头模板的 DataContext 不是行对象），分组键在 <c>Name</c> 上。
+    /// <para>
+    /// 取不到时只有「折叠其他」什么都不做（另两项本来就作用于整列，不需要锚点）。这条兜底不是
+    /// 为"用户会遇到"准备的——菜单只挂在分组头上，PlacementTarget 必然是其中一个；它挡的是
+    /// 模板被改坏之后"右键哪一组都把别的全折了"这种更难查的错法。
+    /// </para></summary>
+    private static ConflictGroupKey? MenuAnchor(object sender)
+    {
+        if (sender is not MenuItem item)
+            return null;
+        var menu = ItemsControl.ItemsControlFromItemContainer(item) as ContextMenu
+                   ?? item.Parent as ContextMenu;
+        return menu?.PlacementTarget is FrameworkElement { DataContext: CollectionViewGroup group }
+            ? group.Name as ConflictGroupKey
+            : null;
+    }
+
+    /// <summary>「全部展开」：当前列出的每个分组头都展开。</summary>
+    private void ExpandAllGroups_Click(object sender, RoutedEventArgs e) => SetAllGroupsExpanded(true);
+
+    /// <summary>「全部折叠」：当前列出的每个分组头都收起。</summary>
+    private void CollapseAllGroups_Click(object sender, RoutedEventArgs e) => SetAllGroupsExpanded(false);
+
+    /// <summary>批量改展开态。写回设置是 <see cref="ConflictGroupKey.IsExpanded"/> 的 setter 干的，
+    /// 所以批量动作与逐个点折叠条落盘的是同一样东西；「只看某组」那一屏的键拿到的是空回写通道，
+    /// 于是"只是看一眼"依旧不会抹掉用户原先的收起意图。</summary>
+    private void SetAllGroupsExpanded(bool expanded)
+    {
+        foreach (var key in _groupKeys)
+            key.IsExpanded = expanded;
+    }
+
+    /// <summary>「折叠其他」：右键的那一组保持展开（连它一起折了就看不见自己点的是谁），其余全部收起。</summary>
+    private void CollapseOtherGroups_Click(object sender, RoutedEventArgs e)
+    {
+        if (MenuAnchor(sender) is not { } anchor)
+            return;
+        foreach (var key in _groupKeys)
+            if (!ReferenceEquals(key, anchor))
+                key.IsExpanded = false;
+        anchor.IsExpanded = true;
+    }
+
+    /// <summary>重建「只看某组」的选项，并按值还原选中项（组名稳定、选项对象每次都换）。
+    /// 只列**真的有冲突**的分组：一个三十组的用户不该在选项里翻三十行才找到那两组，
+    /// 而左栏的分组头本来也只出现在有冲突的组上，两处口径一致。
+    /// 可选项不足两个时整颗收起（那时它与"全部分组"等价，只是噪声），并把筛选清掉——
+    /// 留着一个既选不中也看不见的筛选值，表现是"列表莫名其妙地少东西"。</summary>
+    private void SyncGroupFilter(IReadOnlyList<UserGroupConflicts> buckets, bool grouping)
+    {
+        var items = new List<GroupFilterItem>();
+        if (grouping)
+        {
+            items.Add(new GroupFilterItem(null, L10n.Tr("L.Conflict_GroupFilterAll")));
+            items.AddRange(buckets.Select(b => new GroupFilterItem(
+                b.GroupName, b.IsUngrouped ? L10n.Tr("L.Conflict_Ungrouped") : b.GroupName)));
+        }
+
+        var show = items.Count > 1;
+        if (!show || (_groupFilter is not null && items.All(i => i.Value != _groupFilter)))
+            _groupFilter = null;
+
+        // 换 ItemsSource 会触发 SelectionChanged，而它会回调 RebuildGroups —— 这里必须挡住，
+        // 否则"重建选项 → 重建列表 → 重建选项"直接递归。_rebuilding 本就在管 GroupList 那一路。
+        var restore = _rebuilding;
+        _rebuilding = true;
+        GroupFilterBox.Visibility = show ? Visibility.Visible : Visibility.Collapsed;
+        GroupFilterBox.DisplayMemberPath = nameof(GroupFilterItem.Label);
+        GroupFilterBox.ItemsSource = items;
+        GroupFilterBox.SelectedItem = items.FirstOrDefault(i => i.Value == _groupFilter) ?? items.FirstOrDefault();
+        _rebuilding = restore;
+    }
+
     private void OnlyCross_Changed(object sender, RoutedEventArgs e) => RebuildGroups();
+
+    private void GroupFilter_Changed(object sender, SelectionChangedEventArgs e)
+    {
+        if (_rebuilding)
+            return;
+        _groupFilter = (GroupFilterBox.SelectedItem as GroupFilterItem)?.Value;
+        RebuildGroups();
+    }
+
+    /// <summary>分组数据的指纹，用来判断"切回本页时要不要重算分类"：分组在「分组生成」页随时会改，
+    /// 而本页只在 <see cref="MainViewModel.CurrentConflict"/> 变化时重建——没有这道检查，
+    /// 切回来看到的会是上一轮的分组头与「已在组内」徽标。
+    /// <para>
+    /// 拼成字符串而不是取哈希：一次标签页切换只算一次，而哈希碰撞的代价是"界面上静默显示旧数据"，
+    /// 那正是这套门禁最不想放过去的一类问题。分隔符用不可能出现在组名/成员名里的控制字符，
+    /// 免得 {"ab","c"} 与 {"a","bc"} 拼出同一个指纹。
+    /// </para></summary>
+    private string GroupingSignature() => _request is null
+        ? ""
+        : string.Join("\n", _request.UserGroups().Select(g => g.Name + "\u0001" + string.Join("\u0002", g.Members)));
 
     private void RebuildCandidates()
     {
@@ -690,8 +992,24 @@ public partial class OutputConflictPage : UserControl
         if (IsVisible)
         {
             EnsureBodyOptions();
+            // 语言是在设置页换的，而这一页常驻、不会因换语言而重建：说明段、进度、分组头、状态行、
+            // 候选行、批量范围全是代码拼的，DynamicResource 那半（列头、按钮、徽标）当场就换了，
+            // 于是切回来看到的是半中半英。按 _textsLang 补一次全量重取词——
+            // 与 RulePresetsPage「切回标签页就 Reload」同一口径。
+            var relang = _textsLang != L10n.Current;
+            // 分组在「分组生成」页随时会改，而本页只在 CurrentConflict 变化时重建：变了就重算分类
+            //（分组头、下拉选项、「已在组内」徽标都是按它算的）。
+            var rebuild = relang || GroupingSignature() != _groupingSignature;
+            if (rebuild)
+            {
+                // 重算分类会把中栏与预览一起重建，所以下面那次"补一次预览"要跳过，
+                // 否则同一行会被解析两遍。
+                if (relang && _request is { } request)
+                    ApplyTexts(request);
+                RebuildGroups();
+            }
             UpdateCamera();
-            if (MeshVisual.Content is null && CandidateList.SelectedItem is CandidateRow row)
+            if (!rebuild && MeshVisual.Content is null && CandidateList.SelectedItem is CandidateRow row)
                 ShowPreview(row);
         }
         else

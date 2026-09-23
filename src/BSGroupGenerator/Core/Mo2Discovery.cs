@@ -59,6 +59,21 @@ public static class Mo2Discovery
         return list.FirstOrDefault();
     }
 
+    /// <summary>该目录是否是 MO2 的**程序目录**（有 ModOrganizer.exe、但没有 ModOrganizer.ini）。
+    ///
+    /// 用途只有一条：把"选错目录"的提示说清楚。MO2 官方安装器把 exe 装在程序目录、实例数据放在
+    /// %LOCALAPPDATA%\ModOrganizer\&lt;实例名&gt;，用户凭直觉去选程序目录是常事，而登记判据只有 ini，
+    /// 于是必然被拒——这时该告诉他的不是"这里没有 exe"，而是"exe 在哪不影响本程序"。
+    /// 本程序从不读取或启动 exe：实例的 mods / profiles / 游戏路径全部来自 ini，
+    /// 所以这里只做提示分流，不参与登记判据。</summary>
+    public static bool IsInstallRoot(string dir)
+    {
+        if (string.IsNullOrWhiteSpace(dir) || !Directory.Exists(dir))
+            return false;
+        return File.Exists(Path.Combine(dir, "ModOrganizer.exe"))
+            && !File.Exists(Path.Combine(dir, "ModOrganizer.ini"));
+    }
+
     private static void TryAdd(List<Mo2Instance> list, HashSet<string> seen, string dir, Mo2InstanceKind kind)
     {
         if (string.IsNullOrWhiteSpace(dir) || !Directory.Exists(dir))

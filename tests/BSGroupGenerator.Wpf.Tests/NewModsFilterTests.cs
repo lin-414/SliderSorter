@@ -38,8 +38,8 @@ public class NewModsFilterTests(ITestOutputHelper output)
             try
             {
                 var app = Application.Current ?? new Application();
-                AddDictionary(app, "Themes/Controls.xaml");   // {StaticResource AppFont}/{StaticResource AppWindow}
-                AddDictionary(app, "Strings/Lang.zh.xaml");   // 过滤框占位提示是 DynamicResource
+                WpfHost.AddAppDictionaries(app);              // {StaticResource AppFont}/{StaticResource AppWindow}/树行样式
+                WpfHost.AddDictionary(app, "Strings/Lang.zh.xaml");   // 过滤框占位提示是 DynamicResource
 
                 var applied = new List<string>();
                 var window = new NewModsWindow(new NewModsRequest
@@ -157,14 +157,6 @@ public class NewModsFilterTests(ITestOutputHelper output)
         foreach (var line in evidence)
             output.WriteLine(line);
         Assert.Null(captured);
-    }
-
-    private static void AddDictionary(Application app, string relative)
-    {
-        var uri = new Uri($"pack://application:,,,/BSGroupGenerator;component/{relative}");
-        if (app.Resources.MergedDictionaries.Any(d => d.Source == uri))
-            return;
-        app.Resources.MergedDictionaries.Add(new ResourceDictionary { Source = uri });
     }
 
     /// <summary>x:Name 生成的字段是 internal，跨程序集取不到；走 FindName（窗口是 XAML 名称域的根）。</summary>

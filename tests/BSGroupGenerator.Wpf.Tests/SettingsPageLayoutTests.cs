@@ -1,5 +1,7 @@
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
+using System.Windows.Media;
 using BSGroupGenerator.Wpf.ViewModels;
 using BSGroupGenerator.Wpf.Views.Pages;
 using Xunit;
@@ -68,13 +70,20 @@ public class SettingsPageLayoutTests
                 root.Measure(new Size(ProbeWidth, ProbeHeight));
                 root.Arrange(new Rect(0, 0, ProbeWidth, ProbeHeight));
                 var panel = Named<StackPanel>(root, "SectionsPanel");
+                // 只数**卡片**：SectionsPanel 里除卡片外还挂着引导条（ContentControl）等非卡片元素，
+                // 曾用 panel.Children.OfType<Border>() 一把抓，加进引导条就得多改一处断言。
                 return (panel.ActualWidth,
-                        panel.Children.OfType<Border>().Select(card => card.ActualWidth).ToArray());
+                        panel.Children.OfType<Border>()
+                            .Where(card => card.Style == (Style)panel.FindResource("SettingCard"))
+                            .Select(card => card.ActualWidth)
+                            .ToArray());
             },
             ProbeWidth, ProbeHeight);
 
-        // 四节就是四张卡片：数错说明有人把某节拆成了两张卡、或塞了别的 Border 进来
-        Assert.Equal(4, cardWidths.Length);
+        // 五节就是五张卡片：工作环境 / 输出设置 / 外观 / 维护 / 帮助与关于。
+        // 数错说明有人把某节拆成了两张卡、或塞了别的卡片级 Border 进来。
+        // 加了新节就改这个数——它是"节与卡一一对应"这条不变式的锚点。
+        Assert.Equal(5, cardWidths.Length);
         Assert.All(cardWidths, width => Assert.Equal(panelWidth, width, precision: 1));
         // 10% 余量给页边距和垂直滚动条（滚动条折算成 DIP 会随 DPI 变），
         // 而把根 Grid 限回 MaxWidth="860" 居中会掉到这一尺寸的六成上下。
@@ -109,6 +118,81 @@ public class SettingsPageLayoutTests
 
         Assert.Equal(Visibility.Visible, results.Manual);
         Assert.Equal(Visibility.Collapsed, results.Diagnostics);
+    }
+
+    /// <summary>折叠条必须是 ToggleButton 且双向绑定：控件状态与 VM 状态互为镜像。
+    ///
+    /// 两个方向都要测，因为它们是两条互不覆盖的失败路径：
+    /// ① 控件 → VM（新写法独有）。原先是普通 Button + Click 处理函数手动翻转布尔值，
+    ///    控件自己不持有状态；换成 ToggleButton 后靠 <c>IsChecked="{Binding ..., Mode=TwoWay}"</c>。
+    ///    漏掉 <c>Mode=TwoWay</c>（ToggleButton.IsChecked 默认是 TwoWay，但显式写出来更稳）
+    ///    或绑错属性，表现是"点了展开、松手弹回去"——而 VM 侧那条测试（F1 方向）照样绿。
+    /// ② 箭头方向随状态转。模板里的 IsChecked 触发器若丢了，箭头永远朝右，
+    ///    用户看不出面板是开是关；这条在布局、绑定、色板门禁里都不会红，只能在这儿量。
+    /// </summary>
+    [Fact]
+    public void DisclosureToggleDrivesTheViewModelBothWays()
+    {
+        MainViewModel? vm = null;
+        var result = WpfHost.WithWindow(
+            () =>
+            {
+                vm = new MainViewModel();
+                return new SettingsPage { DataContext = vm };
+            },
+            host =>
+            {
+                Arrange(host);
+                var manual = Named<ToggleButton>(host, "ManualToggle");
+                var arrow = FindArrow(manual);
+
+                // 初始：VM 是 false，控件必须是未勾选、箭头朝右（0°）
+                Assert.False(manual.IsChecked);
+                Assert.Equal(0.0, ArrowAngle(arrow), precision: 3);
+
+                // ① 控件 → VM：模拟用户点击打开
+                manual.IsChecked = true;
+                Arrange(host);
+                var afterOpenVm = vm!.IsManualExpanded;
+                var afterOpenAngle = ArrowAngle(arrow);
+
+                // ② 再点一次收起
+                manual.IsChecked = false;
+                Arrange(host);
+                return (afterOpenVm, afterOpenAngle, AfterCloseVm: vm!.IsManualExpanded,
+                        AfterCloseAngle: ArrowAngle(arrow));
+            },
+            1440, 900);
+
+        Assert.True(result.afterOpenVm, "点开折叠条没有回写到 VM：面板不会展开");
+        Assert.Equal(90.0, result.afterOpenAngle, precision: 3);
+        Assert.False(result.AfterCloseVm, "再点一次没有收起：VM 还是展开态");
+        Assert.Equal(0.0, result.AfterCloseAngle, precision: 3);
+    }
+
+    /// <summary>折叠条模板里的箭头 Path。按名字找而不是"第 0 个 Path"：
+    /// 模板内元素藏在 Template 里，FindName 对模板命名域不一定生效，用可视化树搜更直白。</summary>
+    private static System.Windows.Shapes.Path FindArrow(DependencyObject root)
+    {
+        foreach (var child in Descendants(root))
+            if (child is System.Windows.Shapes.Path { Name: "arrow" } path)
+                return path;
+        throw new InvalidOperationException("折叠条模板里找不到名为 arrow 的箭头 Path");
+    }
+
+    private static double ArrowAngle(System.Windows.Shapes.Path arrow) =>
+        arrow.RenderTransform is RotateTransform rotate ? rotate.Angle : double.NaN;
+
+    private static IEnumerable<DependencyObject> Descendants(DependencyObject root)
+    {
+        var count = VisualTreeHelper.GetChildrenCount(root);
+        for (var i = 0; i < count; i++)
+        {
+            var child = VisualTreeHelper.GetChild(root, i);
+            yield return child;
+            foreach (var nested in Descendants(child))
+                yield return nested;
+        }
     }
 
     /// <summary>量三节字段 Grid 的首列：返回「祖先是否开了共享尺寸域」与各列的 (组名, 实宽)。

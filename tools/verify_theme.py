@@ -15,6 +15,7 @@ Themes/Controls.xaml 里 TargetType="Window" 的隐式样式会兜住；实际�
   §4 XAML 里引用的每个 B.* 键是否在两套色板里都存在
   §5 每个 B.* 画刷引用的 C.* 颜色是否真的定义了
   §6 Views/Pages 下的每份页面是否真的被壳（Views/MainWindow.xaml）引用
+  §7 各资源字典之间的 x:Key 是否重名（后合并的会静默覆盖先合并的）
 
 §1/§2 只作用于根 <Window>：Views/Pages 下的页面根是 <UserControl>，背景/前景/字体由壳继承而来，
 套窗口样式既无对应 TargetType 也无意义。但扫描必须是**递归**的——以前只扫 Views/*.xaml，
@@ -213,6 +214,32 @@ def main() -> int:
         if not orphans:
             print(f"  通过（{len(pages)} 份页面全部被壳引用）")
         failures += len(orphans)
+
+    # ── §7 跨字典的 x:Key 不得重名 ──
+    # 挡的是"后合并的字典静默覆盖先合并的"。
+    #
+    # ⚠️ 只查**同时驻留**的那对：Controls.xaml 与 Components.xaml。
+    # 两套色板刻意定义同名 C.* / B.*（同一套语义、两套取值），而 ThemeManager 每次
+    # 只把其中一套装进 Application（另一份被替换掉），所以它们同名是设计意图而非冲突。
+    # 把色板也纳进来会得到五十多条"命中"，那只会把这条检查淹掉、逼后人加白名单。
+    print("\n§7 Controls.xaml 与 Components.xaml 之间是否有重名 x:Key（后者会静默覆盖前者）")
+    live_dicts = [
+        os.path.join(wpf, "Themes", "Controls.xaml"),
+        os.path.join(wpf, "Themes", "Components.xaml"),
+    ]
+    key_owner: dict[str, list[str]] = {}
+    for path in live_dicts:
+        if not os.path.isfile(path):
+            continue
+        # 注释已剥掉：注释里提到某个键名不算定义
+        for key in re.findall(r'x:Key="([^"]+)"', read(path)):
+            key_owner.setdefault(key, []).append(os.path.basename(path))
+    clashes = {k: v for k, v in key_owner.items() if len(v) > 1}
+    for key, owners in sorted(clashes.items()):
+        print(f"  [命中] x:Key=\"{key}\" 在 {', '.join(owners)} 中都定义，后者会覆盖前者")
+    if not clashes:
+        print(f"  通过（{len(key_owner)} 个键名在两份常驻字典间互不重复）")
+    failures += len(clashes)
 
     print()
     if failures:

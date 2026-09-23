@@ -2,7 +2,9 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <!-- 设置页：单列自上而下四节——工作环境、输出设置、外观、帮助与关于
-         （信息架构照搬 boutique 的 SettingsPanelView：页标题 + 纵向堆叠的分节卡片 + 全页共用一条标签轨）。
+         （分节卡片 + 全页共用一条标签轨照搬 boutique 的 SettingsPanelView；
+         它那份信息架构里的页标题没有跟过来——标签头已经写着「设置」，页内再复述一遍是白占一行，
+         另三页也都不在内容区自报家门）。
 
          标签轨靠 Grid.IsSharedSizeScope + 每节首列 SharedSizeGroup="SettingsRail" 对齐，
          而不是照抄 boutique 的 Width="140"：它的标签最长是英文， ours 是法语
@@ -21,30 +23,31 @@
          切页时左边界不跳。
 
          限宽若将来要加回来，得写在根 Grid 而不是滚动区内部：垂直滚动条常驻，
-         限在内层会让卡片比标题左边缘缩进约半个滚动条宽。写在外面，标题与四节
+         限在内层会让卡片比页面左边缘缩进约半个滚动条宽。写在外面，四节
          同属一个内容盒，左边缘对齐是结构保证而非算术。 -->
     <UserControl.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVis" />
     </UserControl.Resources>
     <Grid Margin="12">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="*" />
-        </Grid.RowDefinitions>
-
-        <!-- 页标题复用 L.Tab_Settings：标题与标签头一旦是两个键就必然漂移 -->
-        <TextBlock Grid.Row="0" Style="{StaticResource PageHeading}" Margin="0,0,0,10"
-                   Text="{DynamicResource L.Tab_Settings}" />
-
-        <ScrollViewer Grid.Row="1" x:Name="Scroller"
+        <ScrollViewer x:Name="Scroller"
                       VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
             <StackPanel x:Name="SectionsPanel" Grid.IsSharedSizeScope="True" Margin="0,0,0,12">
 
-                <!-- ── ① 工作环境：MO2 实例与配置 Profile ── -->
+                <!-- 未配置引导：MO2 / BodySlide 都没选就还没有任何可做的事，
+                     而设置页是这四个标签页里唯一的入口。以前这种情况要等用户
+                     自己点一下「保存分组文件」被弹窗告知"尚未完成扫描"才会发现。 -->
+                <ContentControl Content="{Binding UnconfiguredBanner}"
+                                ContentTemplate="{DynamicResource InlineBannerTemplate}"
+                                Visibility="{Binding ShowsUnconfiguredBanner, Converter={StaticResource BoolToVis}}"
+                                Margin="0,0,0,12" />
+
+                <!-- ── ① 工作环境：MO2 实例与配置 Profile ──
+                     放在最前：这两项是后面所有操作的前置条件（没有它们就扫不了、也写不出），
+                     而原先它们和"外观"这种纯偏好混在同一列里，视觉上不分先后。 -->
                 <Border Style="{StaticResource SettingCard}">
                     <StackPanel>
                         <!-- 段头是纯标题，不放动作：boutique 的 GroupBox 头也是纯的。
-                             刷新 / 添加 MO2 目录 排在字段下方右侧——放进字段行的第三列会把
+                             刷新 / 选择实例目录 排在字段下方右侧——放进字段行的第三列会把
                              实例下拉压到 400 上下，实例名就念不全了（同一颗心路见「清理失效服装」）。 -->
                         <TextBlock Style="{StaticResource SettingSectionHeader}"
                                    Text="{DynamicResource L.Settings_Workspace}" />
@@ -55,6 +58,7 @@
                                 <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
                             <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
                                 <RowDefinition Height="Auto" />
                                 <RowDefinition Height="Auto" />
                                 <RowDefinition Height="Auto" />
@@ -71,17 +75,51 @@
                             <ComboBox Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2" Style="{StaticResource FieldCombo}"
                                       ItemsSource="{Binding Profiles}" SelectedItem="{Binding SelectedProfile}" />
 
-                            <StackPanel Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="3" Orientation="Horizontal"
+                            <!-- 扫描状态指示器（把"上次扫描是什么时候"从折叠日志里提出来） -->
+                            <!-- ⚠️ 这里**不能**写 <Style BasedOn="{StaticResource FieldNote}">：
+                                 页面内嵌的 <Style> 里的 BasedOn 是解析期求值的 StaticResource，
+                                 而离屏加载本页（探针/设计器/单测）时资源链上没有 App 级字典，会炸
+                                 XamlParseException。元素上的 Style="{StaticResource X}" 反而没事——
+                                 那是同一套机制，但只有内嵌 Style 这一种写法被探针实际踩到过。
+                                 处置：不用 BasedOn，把 FieldNote 那三个 setter 就地重写一遍。
+                                 代价是三行重复，收益是这个属性在任何加载路径下都成立。 -->
+                            <TextBlock Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="3"
+                                       Text="{Binding ScanSummaryText}"
+                                       TextWrapping="Wrap" Margin="0,6,0,0"
+                                       ToolTip="{DynamicResource L.Scan_StatusStaleTip}">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Foreground" Value="{DynamicResource B.TextDim}" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsScanStale}" Value="True">
+                                                <Setter Property="Foreground" Value="{DynamicResource B.WarnText}" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+
+                            <StackPanel Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="3" Orientation="Horizontal"
                                         HorizontalAlignment="Right" Margin="0,6,0,0">
+                                <!-- 「重新扫描」放在「刷新」左边：刷新只是重读实例列表，
+                                     重扫才是重算服装与冲突清单——后者是用户装完模组后真要的那一下 -->
+                                <Button Content="{DynamicResource L.Conflict_Rescan}" MinWidth="110" Margin="0,0,8,0"
+                                        Command="{Binding DetectBodySlideCommand}"
+                                        ToolTip="{DynamicResource L.Rescan_Tip}"
+                                        IsEnabled="{Binding CanRescan}" />
                                 <Button Content="{DynamicResource L.Main_Refresh}" MinWidth="90" Margin="0,0,8,0"
                                         Command="{Binding RefreshInstancesCommand}" />
-                                <Button Content="{DynamicResource L.Main_AddMo2Dir}" Click="AddMo2_Click" />
+                                <Button Content="{DynamicResource L.Main_SelectInstanceDir}" Click="SelectInstanceDir_Click" />
                             </StackPanel>
                         </Grid>
                     </StackPanel>
                 </Border>
 
-                <!-- ── ② 输出设置：BodySlide 目录、写到哪儿、以及本 Profile 的服装对账 ── -->
+                <!-- ── ② 输出设置：BodySlide 目录与写到哪儿 ──
+                     「清理失效服装」原先挂在这一节的最后：它改的是"这个 Profile 的模组与服装对应关系"，
+                     跟上面 BodySlide 目录确实是同一件事的两头 —— 但它是**破坏性**动作，
+                     却和「浏览…」这种纯选择动作混在同一张卡片里，视觉上没有任何区分。
+                     现独立成「维护」节。 -->
                 <Border Style="{StaticResource SettingCard}">
                     <StackPanel>
                         <TextBlock Style="{StaticResource SettingSectionHeader}"
@@ -96,7 +134,6 @@
                                 <RowDefinition Height="Auto" />
                                 <RowDefinition Height="Auto" />
                                 <RowDefinition Height="Auto" />
-                                <RowDefinition Height="Auto" />
                             </Grid.RowDefinitions>
 
                             <TextBlock Grid.Row="0" Grid.Column="0" Text="{DynamicResource L.Main_BodySlide}"
@@ -106,9 +143,9 @@
                             <StackPanel Grid.Row="0" Grid.Column="2" Orientation="Horizontal" Margin="10,0,0,0"
                                         VerticalAlignment="Center">
                                 <Button Content="{DynamicResource L.Main_Detect}" Command="{Binding DetectBodySlideCommand}"
-                                        MinWidth="90" Margin="0,0,8,0" VerticalAlignment="Center" />
+                                        Style="{StaticResource FieldAction}" Margin="0,0,8,0" />
                                 <Button Content="{DynamicResource L.Main_Browse}" Click="BrowseBodySlide_Click"
-                                        MinWidth="90" VerticalAlignment="Center" />
+                                        Style="{StaticResource FieldAction}" Margin="0" />
                             </StackPanel>
 
                             <TextBlock Grid.Row="1" Grid.Column="0" Text="{DynamicResource L.Main_Output}"
@@ -120,20 +157,14 @@
                                       ItemsSource="{Binding WriteModes}" SelectedItem="{Binding SelectedWriteMode}"
                                       DisplayMemberPath="Label" />
                             <Button Grid.Row="1" Grid.Column="2" Content="{DynamicResource L.Main_Browse}"
-                                    Command="{Binding BrowseForTargetCommand}" MinWidth="90" Margin="10,0,0,0"
-                                    HorizontalAlignment="Right" VerticalAlignment="Center" />
+                                    Command="{Binding BrowseForTargetCommand}"
+                                    Style="{StaticResource FieldAction}" Margin="10,0,0,0"
+                                    HorizontalAlignment="Right" />
 
                             <TextBlock Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="3" Text="{Binding InfoLine}"
-                                       Foreground="{DynamicResource B.TextDim}" Margin="0,6,0,0"
-                                       TextWrapping="Wrap" TextTrimming="CharacterEllipsis"
+                                       Style="{StaticResource FieldNote}"
+                                       TextTrimming="CharacterEllipsis"
                                        MaxHeight="64" ToolTip="{Binding InfoLine}" />
-
-                            <!-- 从「工具」菜单挪来：它改的是这个 Profile 的模组与服装对应关系，
-                                 和上面那条 BodySlide 目录是同一件事的两头，且是低频动作。 -->
-                            <Button Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="3" MinWidth="140"
-                                    Margin="0,8,0,0" HorizontalAlignment="Right"
-                                    Content="{DynamicResource L.Settings_CleanupStale}"
-                                    Command="{Binding CleanupStaleMembersCommand}" />
                         </Grid>
                     </StackPanel>
                 </Border>
@@ -173,7 +204,38 @@
                     </StackPanel>
                 </Border>
 
-                <!-- ── ④ 帮助与关于 ──
+                <!-- ── ④ 维护：破坏性 / 低频动作单独成节 ──
+                     这一节里的按钮都会改动或删除既有数据（而不是改一个设置值），
+                     所以：① 与「浏览…」这类纯选择动作分开；② 按钮走 DangerMenuItem 同族的
+                     危险描边，让"这颗按钮会动数据"在不读文字的情况下也看得出来。 -->
+                <Border Style="{StaticResource SettingCard}">
+                    <StackPanel>
+                        <TextBlock Style="{StaticResource SettingSectionHeader}"
+                                   Text="{DynamicResource L.Settings_Maintenance}" />
+                        <Grid x:Name="MaintenanceGrid">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" SharedSizeGroup="SettingsRail" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+
+                            <TextBlock Grid.Row="0" Grid.Column="0" Text="{DynamicResource L.Settings_CleanupStale}"
+                                       Style="{StaticResource FieldLabel}" />
+                            <Button Grid.Row="0" Grid.Column="1" MinWidth="140" HorizontalAlignment="Left"
+                                    Style="{StaticResource DangerButton}"
+                                    Content="{DynamicResource L.Settings_CleanupStale}"
+                                    Command="{Binding CleanupStaleMembersCommand}" />
+                            <TextBlock Grid.Row="1" Grid.Column="1" Style="{StaticResource FieldNote}"
+                                       TextWrapping="Wrap"
+                                       Text="{DynamicResource L.Settings_CleanupStaleNote}" />
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <!-- ── ⑤ 帮助与关于 ──
                      这一节是散文与折叠区，不是表单，所以不铺字段栅格、也就不占标签轨；
                      它的正文起点是卡片内容盒的左边缘，与前三节的标签同一条线。
                      使用说明 / 诊断信息 / 关于 / 检查更新 以前各是一个独立窗口，从菜单栏点出去。
@@ -192,9 +254,9 @@
                             <Image Grid.Column="0" Source="../../app.ico" Width="40" Height="40" Stretch="Uniform" />
                             <StackPanel Grid.Column="1" Margin="12,0,0,0" VerticalAlignment="Center">
                                 <!-- 应用名是品牌字标，故意不进 Lang 文件（四语同形，且 verify_l10n 扫不到它）。
-                                     16 而不是 18：页标题要是全页最大的字，否则一级层次读不出来。 -->
-                                <TextBlock Text="BS Group Generator" FontSize="16" FontWeight="Bold"
-                                           Foreground="{DynamicResource B.Text}" />
+                                     字号走 H2（SectionTitleText，16）：页标题 18 要当全页最大的字，
+                                     否则一级层次读不出来。 -->
+                                <TextBlock Text="BS Group Generator" Style="{StaticResource SectionTitleText}" />
                                 <TextBlock x:Name="VersionLabel" Foreground="{DynamicResource B.TextDim}" />
                             </StackPanel>
                         </Grid>
@@ -221,33 +283,14 @@
                         <Border Height="1" Background="{DynamicResource B.BorderSoft}" Margin="0,14" />
 
                         <!-- 使用说明：正文 60+ 段，收起时一份都不建（见 code-behind 的 ShowManual）。
-                             箭头 + 折叠这两下照搬日志摘要的写法，不引 Expander——Controls.xaml 没有它的样式。 -->
-                        <Button Click="ManualToggle_Click" Style="{StaticResource DisclosureToggle}">
-                            <StackPanel Orientation="Horizontal">
-                                <Path Data="M 0 0 L 4 4 L 0 8" Stroke="{DynamicResource B.TextDim}" StrokeThickness="1.6"
-                                      Margin="1,0,8,0" VerticalAlignment="Center" RenderTransformOrigin="0.5,0.5">
-                                    <Path.Style>
-                                        <Style TargetType="Path">
-                                            <Setter Property="RenderTransform">
-                                                <Setter.Value>
-                                                    <RotateTransform Angle="0" />
-                                                </Setter.Value>
-                                            </Setter>
-                                            <Style.Triggers>
-                                                <DataTrigger Binding="{Binding IsManualExpanded}" Value="True">
-                                                    <Setter Property="RenderTransform">
-                                                        <Setter.Value>
-                                                            <RotateTransform Angle="90" />
-                                                        </Setter.Value>
-                                                    </Setter>
-                                                </DataTrigger>
-                                            </Style.Triggers>
-                                        </Style>
-                                    </Path.Style>
-                                </Path>
-                                <TextBlock Text="{DynamicResource L.Settings_Manual}" VerticalAlignment="Center" />
-                            </StackPanel>
-                        </Button>
+                             ToggleButton 的 IsChecked 直接绑 VM 的展开态——双向，所以 F1 从壳那边
+                             把 IsManualExpanded 置 true 时，这颗切换钮会自己变成"已展开"，
+                             箭头由样式里的 IsChecked 触发器转 90°，这里不用再画箭头、不用绑 Click。 -->
+                        <ToggleButton x:Name="ManualToggle" Style="{StaticResource DisclosureToggle}"
+                                      Content="{DynamicResource L.Settings_Manual}"
+                                      IsChecked="{Binding IsManualExpanded, Mode=TwoWay}"
+                                      PreviewMouseLeftButtonDown="ManualToggle_UserInput"
+                                      PreviewKeyDown="ManualToggle_UserInput" />
                         <Border x:Name="ManualHost" Height="360" Margin="0,6,0,0" Background="{DynamicResource B.Panel}"
                                 BorderBrush="{DynamicResource B.Border}" BorderThickness="1" CornerRadius="4"
                                 Visibility="{Binding IsManualExpanded, Converter={StaticResource BoolToVis}}">
@@ -257,33 +300,10 @@
 
                         <Border Height="1" Background="{DynamicResource B.BorderSoft}" Margin="0,14" />
 
-                        <!-- 诊断信息 -->
-                        <Button Click="DiagnosticsToggle_Click" Style="{StaticResource DisclosureToggle}">
-                            <StackPanel Orientation="Horizontal">
-                                <Path Data="M 0 0 L 4 4 L 0 8" Stroke="{DynamicResource B.TextDim}" StrokeThickness="1.6"
-                                      Margin="1,0,8,0" VerticalAlignment="Center" RenderTransformOrigin="0.5,0.5">
-                                    <Path.Style>
-                                        <Style TargetType="Path">
-                                            <Setter Property="RenderTransform">
-                                                <Setter.Value>
-                                                    <RotateTransform Angle="0" />
-                                                </Setter.Value>
-                                            </Setter>
-                                            <Style.Triggers>
-                                                <DataTrigger Binding="{Binding IsDiagnosticsExpanded}" Value="True">
-                                                    <Setter Property="RenderTransform">
-                                                        <Setter.Value>
-                                                            <RotateTransform Angle="90" />
-                                                        </Setter.Value>
-                                                    </Setter>
-                                                </DataTrigger>
-                                            </Style.Triggers>
-                                        </Style>
-                                    </Path.Style>
-                                </Path>
-                                <TextBlock Text="{DynamicResource L.Diag_Title}" VerticalAlignment="Center" />
-                            </StackPanel>
-                        </Button>
+                        <!-- 诊断信息。与上面同款：状态在控件上，样式负责画箭头。 -->
+                        <ToggleButton x:Name="DiagnosticsToggle" Style="{StaticResource DisclosureToggle}"
+                                      Content="{DynamicResource L.Diag_Title}"
+                                      IsChecked="{Binding IsDiagnosticsExpanded, Mode=TwoWay}" />
                         <Grid x:Name="DiagnosticsHost" Margin="0,6,0,0"
                               Visibility="{Binding IsDiagnosticsExpanded, Converter={StaticResource BoolToVis}}">
                             <Grid.RowDefinitions>

@@ -394,13 +394,16 @@ public partial class MainViewModel
     /// 未注入时退回普通 ConfirmHandler（单测、无视图场景）。</summary>
     public Func<string, string, string, bool>? SuppressibleConfirmHandler { get; set; }
 
-    // ── 添加 MO2 目录 / BodySlide 浏览 ──
-    public void AddMo2Directory(string path)
+    // ── 选择实例目录 / BodySlide 浏览 ──
+    public void SelectInstanceDirectory(string path)
     {
         var instance = Mo2Discovery.CreateFromDirectory(path);
         if (instance is null)
         {
-            NotifyUser(L10n.Tr("L.Title_Tip"), L10n.Tr("L.Msg_NotMo2Dir"), warning: true);
+            // 登记判据只有 ModOrganizer.ini。用户拿 MO2 的程序目录（有 exe、无 ini）来试是高频误操作，
+            // 这种情形只说"没有 ini"帮不上忙——得点明程序目录不是实例目录，且实例多半已被自动检测到。
+            var key = Mo2Discovery.IsInstallRoot(path) ? "L.Msg_Mo2InstallDirNotInstance" : "L.Msg_NotMo2Dir";
+            NotifyUser(L10n.Tr("L.Title_Tip"), L10n.Tr(key), warning: true);
             return;
         }
         if (!Settings.ExtraMo2Dirs.Contains(instance.InstanceDir, StringComparer.OrdinalIgnoreCase))

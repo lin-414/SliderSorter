@@ -73,6 +73,24 @@
                            MouseLeftButtonUp="Conflicts_Click" Cursor="Hand"
                            Visibility="{Binding HasOutputConflicts, Converter={StaticResource BoolToVis}}" />
             </StatusBarItem>
+            <!-- 扫描状态：扫描是两份成果的共同前置，而它原先只藏在折叠日志里。
+                 挂状态栏是因为它要在**任何一页**都看得见——用户可能在冲突页停留很久，
+                 那时更需要知道这份清单有多新。过期（>10 分钟）转警告色，不弹任何东西。 -->
+            <StatusBarItem>
+                <TextBlock Text="{Binding ScanSummaryText}" TextTrimming="CharacterEllipsis"
+                           ToolTip="{DynamicResource L.Scan_StatusStaleTip}">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="Foreground" Value="{DynamicResource B.TextDim}" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsScanStale}" Value="True">
+                                    <Setter Property="Foreground" Value="{DynamicResource B.WarnText}" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
+            </StatusBarItem>
             <StatusBarItem HorizontalAlignment="Right">
                 <TextBlock x:Name="OutputLink" Text="{Binding OutputText}" Foreground="{DynamicResource B.AccentText}"
                            TextTrimming="CharacterEllipsis" ToolTip="{Binding OutputToolTip}"
@@ -94,15 +112,18 @@
                     <DropShadowEffect BlurRadius="18" ShadowDepth="2" Opacity="0.45" />
                 </Border.Effect>
                 <StackPanel>
-                    <TextBlock Text="{Binding ScanStatusText}" Foreground="{DynamicResource B.Text}"
-                               FontSize="14" FontWeight="Bold" TextWrapping="Wrap" />
+                    <!-- 遮罩里的三段文字正好落在字阶的 H2 / H4 / H4 上（见 Themes/Components.xaml 顶部）。
+                         标题走 SectionTitleText（H2, 16）而不是「正文加粗」：它是这张卡片里唯一的标题，
+                         TextWrapping 要保留（状态文本很长，且各语言长度差得远），所以在这里覆写回来。 -->
+                    <TextBlock Text="{Binding ScanStatusText}" Style="{StaticResource SectionTitleText}"
+                               TextWrapping="Wrap" />
                     <ProgressBar Height="6" Margin="0,14,0,0" Minimum="0" Maximum="100" BorderThickness="0"
                                  Background="{DynamicResource B.BorderSoft}" Foreground="{DynamicResource B.AccentBorder}"
                                  Value="{Binding ScanProgressValue}" IsIndeterminate="{Binding IsDetecting}" />
-                    <TextBlock Text="{Binding ScanProgressDetail}" Foreground="{DynamicResource B.TextDim}"
-                               Margin="0,9,0,0" FontSize="12" TextWrapping="Wrap">
+                    <!-- 明细行是 H4 辅助级；原先写 12，与 CaptionText 的 11 是同一语义的两个号 -->
+                    <TextBlock Text="{Binding ScanProgressDetail}" Margin="0,9,0,0" TextWrapping="Wrap">
                         <TextBlock.Style>
-                            <Style TargetType="TextBlock">
+                            <Style TargetType="TextBlock" BasedOn="{StaticResource CaptionText}">
                                 <Style.Triggers>
                                     <Trigger Property="Text" Value="">
                                         <Setter Property="Visibility" Value="Collapsed" />

@@ -14,6 +14,20 @@ public sealed class ConflictRequest
     /// <summary>该 slider set 是否已经被划进某个分组。</summary>
     public required Func<string, bool> IsGrouped { get; init; }
 
+    /// <summary>用户自己的分组（「分组生成」页那批），按显示顺序。冲突页据此把清单按组分类
+    /// （<see cref="OutputConflicts.CategorizeByUserGroup"/>），于是"这个分组里有哪些冲突"一眼可见。
+    /// 是**活**的取值器而不是快照，理由同 <see cref="IsGrouped"/>：分组在另一页随时会改，
+    /// 而本页只在 <see cref="MainViewModel.CurrentConflict"/> 变化时重建。</summary>
+    public required Func<IReadOnlyList<SliderGroup>> UserGroups { get; init; }
+
+    /// <summary>左栏那个分组当前是不是**收起**的（持久化在设置里）。与 <see cref="UserGroups"/> 一样
+    /// 是活取值器：分组头是每次重建时现造的，而"收起"这个动作就发生在页面上、不经 VM。
+    /// 键是分组名，空串 = 「未入组」那一桶。</summary>
+    public required Func<string, bool> IsGroupCollapsed { get; init; }
+
+    /// <summary>记下某个分组的折叠状态（true = 收起）。页面点一下分组头就会调它。</summary>
+    public required Action<string, bool> SetGroupCollapsed { get; init; }
+
     /// <summary>该 set 的源网格（BodySlide 建它时读的 .nif）在本机的实际路径；解析不到为 null。</summary>
     public required Func<string, string?> SourceNifOf { get; init; }
 
@@ -125,12 +139,33 @@ public partial class MainViewModel
             Groups = ConflictGroups,
             Choices = Settings.OutputChoices,
             IsGrouped = Store.IsInAnyGroup,
+            UserGroups = () => Store.Groups,
+            IsGroupCollapsed = name => Settings.CollapsedConflictGroups.Contains(name, StringComparer.Ordinal),
+            SetGroupCollapsed = SetConflictGroupCollapsed,
             SourceNifOf = name => sourceNif.TryGetValue(name, out var path) ? path : null,
             Save = SaveConflictChoices,
             BuildSelectionPath = _bsAppDir is null ? "" : BuildSelectionFile.PathFor(_bsAppDir),
             Export = ExportConflictChoices,
             Assets = BuildAssetResolver(),
         };
+    }
+
+    /// <summary>记住「输出冲突」页左栏某个分组的折叠状态。改完立刻落盘——这个状态没有"保存"按钮，
+    /// 用户点一下就是最终意图；攒着不写的话，下次启动看到的还是旧状态。
+    /// <para>
+    /// 先判重再写：分组头点开又点回都会走到这里，不判重就是每点一下重写一遍 settings.json。
+    /// </para></summary>
+    private void SetConflictGroupCollapsed(string groupName, bool collapsed)
+    {
+        var names = Settings.CollapsedConflictGroups;
+        var at = names.FindIndex(n => string.Equals(n, groupName, StringComparison.Ordinal));
+        if (collapsed == (at >= 0))
+            return;
+        if (collapsed)
+            names.Add(groupName);
+        else
+            names.RemoveAt(at);
+        Settings.Save();
     }
 
     /// <summary>预览用的数据视图。层序必须和扫描时一模一样（模组从强到弱，最后才是真实的 Data），

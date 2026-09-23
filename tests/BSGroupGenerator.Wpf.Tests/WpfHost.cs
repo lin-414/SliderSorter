@@ -20,6 +20,28 @@ namespace BSGroupGenerator.Wpf.Tests;
 /// 后面每个碰 Application 的用例都遭殃（<c>HelpDocumentTests</c> 就踩过，所以它不建窗口）。</summary>
 public static class WpfHost
 {
+    /// <summary>App.xaml 里合并的那套字典，**顺序一致**。
+    ///
+    /// 为什么要有这个常量：探针与各测试原先各自手写一份列表，加字典时漏改一处，
+    /// 表现就是「页面里的 {StaticResource X} 抛 XamlParseException」——看着像页面写错了，
+    /// 实际是宿主没把资源环境搭全。2026-09-22 加 Themes/Components.xaml 时正是如此：
+    /// 探针、WpfHost、以及另外三个用例文件共五处硬编码列表，一次漏了四处的顺序与内容。
+    /// 新加 app 级字典时**只改这里**（以及 App.xaml 与 layout-probe/Program.cs）。
+    ///
+    /// 顺序不能乱：Components.xaml 的样式 BasedOn 到 Controls.xaml 上，反过来解析期就抛。</summary>
+    public static readonly string[] AppDictionaries =
+    [
+        "Themes/Controls.xaml",
+        "Themes/Components.xaml",
+    ];
+
+    /// <summary>把 App 级字典合并进 Application（幂等）。语言字典由调用方按需追加。</summary>
+    public static void AddAppDictionaries(Application app)
+    {
+        foreach (var relative in AppDictionaries)
+            AddDictionary(app, relative);
+    }
+
     private static readonly Thread UiThread = new(RunUi);
     private static Dispatcher? _dispatcher;
 
@@ -35,7 +57,7 @@ public static class WpfHost
         // 把这条常驻线程一起带崩，后面每个 WithWindow 都进不来。
         if (app.Dispatcher == Dispatcher.CurrentDispatcher)
             app.ShutdownMode = ShutdownMode.OnExplicitShutdown;
-        AddDictionary(app, "Themes/Controls.xaml");
+        AddAppDictionaries(app);
         AddDictionary(app, "Strings/Lang.zh.xaml");
         _dispatcher = Dispatcher.CurrentDispatcher;
         Dispatcher.Run();
@@ -94,8 +116,10 @@ public static class WpfHost
 
     /// <summary>用 pack URI 而不是文件路径：文件路径加载时 XAML 里的 <c>clr-namespace</c> 前缀
     /// 会拿调用方程序集（测试程序集）去解析，Controls.xaml 里的 <c>Setter Property="ui:Watermark.Text"</c>
-    /// 当场解析失败。</summary>
-    private static void AddDictionary(Application app, string relative)
+    /// 当场解析失败。
+    /// 公开是因为几个自己开 STA 线程的用例（MainWindowCommandTests / NewModsFilterTests 等）
+    /// 也要往同一个 Application 上合并字典——它们必须与 <see cref="AppDictionaries"/> 保持一致。</summary>
+    public static void AddDictionary(Application app, string relative)
     {
         var uri = new Uri($"pack://application:,,,/BSGroupGenerator;component/{relative}");
         if (app.Resources.MergedDictionaries.Any(d => d.Source == uri))

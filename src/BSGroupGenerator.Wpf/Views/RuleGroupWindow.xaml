@@ -75,19 +75,10 @@
             <TreeView x:Name="PreviewTree" Grid.Row="7" Grid.Column="0" Grid.ColumnSpan="2" Margin="0,0,0,4">
                 <TreeView.ItemTemplate>
                     <HierarchicalDataTemplate ItemsSource="{Binding Children}">
-                        <TextBlock Text="{Binding Text}">
-                            <TextBlock.Style>
-                                <Style TargetType="TextBlock">
-                                    <Setter Property="Foreground" Value="{DynamicResource B.Text}" />
-                                    <Style.Triggers>
-                                        <DataTrigger Binding="{Binding IsSeparator}" Value="True">
-                                            <Setter Property="Foreground" Value="{DynamicResource B.TextDim}" />
-                                            <Setter Property="FontWeight" Value="Bold" />
-                                        </DataTrigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </TextBlock.Style>
-                        </TextBlock>
+                        <!-- 预览树只读（无勾选框），分隔符着色走共用的 NodeRowText：
+                             它与本窗口 Grid.Resources 里那份隐式 TextBlock 样式是两回事——
+                             后者只管"标签右对齐"这类表单排版，不该管树节点的语义着色。 -->
+                        <TextBlock Text="{Binding Text}" Style="{StaticResource NodeRowText}" />
                     </HierarchicalDataTemplate>
                 </TreeView.ItemTemplate>
             </TreeView>

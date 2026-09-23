@@ -35,8 +35,8 @@ public class NodeTreeContextMenuTests(ITestOutputHelper output)
                 var app = Application.Current ?? new Application();
                 // pack URI 必须带程序集名（Controls.xaml / Lang.*.xaml 都是 Resource）。
                 // 语言字典要在取菜单之前合并：标题是 DynamicResource，取值时去 Application 资源里找。
-                AddDictionary(app, "Themes/Controls.xaml");
-                AddDictionary(app, "Strings/Lang.zh.xaml");
+                WpfHost.AddAppDictionaries(app);
+                WpfHost.AddDictionary(app, "Strings/Lang.zh.xaml");
 
                 var m1 = NewMod("M1");
                 var m2 = NewMod("M2");
@@ -115,14 +115,6 @@ public class NodeTreeContextMenuTests(ITestOutputHelper output)
         foreach (var line in evidence)
             output.WriteLine(line);
         Assert.Null(captured);
-    }
-
-    private static void AddDictionary(Application app, string relative)
-    {
-        var uri = new Uri($"pack://application:,,,/BSGroupGenerator;component/{relative}");
-        if (app.Resources.MergedDictionaries.Any(d => d.Source == uri))
-            return;
-        app.Resources.MergedDictionaries.Add(new ResourceDictionary { Source = uri });
     }
 
     private static ModNodeVM NewMod(string owner) =>

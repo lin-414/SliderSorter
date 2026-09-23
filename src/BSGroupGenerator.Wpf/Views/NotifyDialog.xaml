@@ -48,8 +48,12 @@
             </Path.Style>
         </Path>
 
+        <!-- 正文走字阶的 H3（13，即 AppWindow 继承下来的字号），此处不显式设 FontSize：
+             原先写 13.5，是"比 13 大一点点"的手调值——既不属于任何一级，也没人能记住，
+             于是每加一个弹窗就要再决定一次写几号。保留 LineHeight 是为了多行正文的呼吸感，
+             那是行距不是字阶，不受四级阶梯约束。 -->
         <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding Message}" TextWrapping="Wrap"
-                   Foreground="{DynamicResource B.Text}" FontSize="13.5" LineHeight="20"
+                   Foreground="{DynamicResource B.Text}" LineHeight="20"
                    VerticalAlignment="Top" />
 
         <CheckBox Grid.Row="1" Grid.Column="1" Margin="0,14,0,0"

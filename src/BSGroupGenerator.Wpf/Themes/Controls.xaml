@@ -311,7 +311,17 @@
         </Setter>
     </Style>
 
-    <!-- ── 树：去虚线、舒展行、自绘 chevron、双击展开 ── -->
+    <!-- ── 树：去虚线、舒展行、自绘 chevron、双击展开 ──
+         圆角要自己出模板才有：TreeView 没有 CornerRadius 属性，主题默认模板最外层那个 Border
+         也不从控件取圆角。除 CornerRadius 外逐条照抄默认模板，漏一条就是静默改行为：
+         · Background 从默认模板里的 ScrollViewer 挪到 Border —— 留在 ScrollViewer 上，
+           那块矩形底会正好盖过 Border 的圆角，圆角等于没画；
+         · _tv_scrollviewer_ 这个名字与「IsVirtualizing=True 时把 CanContentScroll 翻成 True」
+           那条触发器成对保留：TreeView 默认按像素滚动，那样虚拟化其实不生效。
+           Setter 的 Property 必须写全 ScrollViewer.CanContentScroll —— 光写 CanContentScroll
+           能编译过，但落不到那层 ScrollViewer 上，容器就按像素模式生成，
+           NodeTreeContextMenuTests 单独跑时正是这样静默失败（成批跑反而看不出来）。
+         刻意不搬默认模板的 IsEnabled=False → SystemColors 触发器：暗色主题下它是一条白底。 -->
     <Style TargetType="TreeView">
         <Setter Property="Background" Value="{DynamicResource B.Card}" />
         <Setter Property="BorderBrush" Value="{DynamicResource B.Border}" />
@@ -320,6 +330,29 @@
         <Setter Property="VirtualizingPanel.IsVirtualizing" Value="True" />
         <Setter Property="VirtualizingPanel.VirtualizationMode" Value="Recycling" />
         <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Disabled" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="TreeView">
+                    <Border Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="4" SnapsToDevicePixels="True">
+                        <ScrollViewer x:Name="_tv_scrollviewer_" CanContentScroll="False" Focusable="False"
+                                      Padding="{TemplateBinding Padding}"
+                                      HorizontalScrollBarVisibility="{TemplateBinding ScrollViewer.HorizontalScrollBarVisibility}"
+                                      VerticalScrollBarVisibility="{TemplateBinding ScrollViewer.VerticalScrollBarVisibility}"
+                                      SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}">
+                            <ItemsPresenter />
+                        </ScrollViewer>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="VirtualizingPanel.IsVirtualizing" Value="True">
+                            <Setter TargetName="_tv_scrollviewer_" Property="ScrollViewer.CanContentScroll" Value="True" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
     </Style>
 
     <Style TargetType="TreeViewItem">
@@ -330,7 +363,11 @@
             <Setter.Value>
                 <ControlTemplate TargetType="TreeViewItem">
                     <StackPanel>
-                        <Border x:Name="row" Background="Transparent" Padding="{TemplateBinding Padding}">
+                        <!-- 行高亮跟着容器一起收圆角，左右内缩 2px 与 ListBoxItem 同档：
+                             否则圆角容器里飘着一条顶到边的方角选中条。
+                             不给上下内缩（ListBoxItem 是 2,1）：树有几千行，每行多 2px 会把整棵树撑高。 -->
+                        <Border x:Name="row" Background="Transparent" CornerRadius="4" Margin="2,0"
+                                Padding="{TemplateBinding Padding}">
                             <Border.InputBindings>
                                 <MouseBinding Command="{Binding ToggleExpandCommand}" MouseAction="LeftDoubleClick" />
                             </Border.InputBindings>
@@ -417,12 +454,41 @@
         <Setter Property="ContextMenu" Value="{StaticResource NodeTreeContextMenu}" />
     </Style>
 
-    <!-- ── 列表 ── -->
+    <!-- ── 列表 ──
+         圆角同样要自己出模板（ListBox 没有 CornerRadius 属性），理由与 TreeView 那条一致。
+         Border 上的 Padding="1" 与内层 ScrollViewer 的 Focusable=False 是主题默认模板里的值，
+         照抄是为了让行选中框、滚动行为与改动前逐像素一致；
+         「分组且未开 IsVirtualizingWhenGrouping 时退回像素滚动」那条 MultiTrigger 也必须留着，
+         漏了它，冲突页左栏那种分组列表在滚动时会抛虚拟化异常。
+         刻意不搬默认模板的 IsEnabled=False → SystemColors 触发器：暗色主题下它是一条白底。 -->
     <Style TargetType="ListBox">
         <Setter Property="Background" Value="{DynamicResource B.Card}" />
         <Setter Property="BorderBrush" Value="{DynamicResource B.Border}" />
         <Setter Property="Foreground" Value="{DynamicResource B.Text}" />
         <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Disabled" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ListBox">
+                    <Border Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            Padding="1" CornerRadius="4" SnapsToDevicePixels="True">
+                        <ScrollViewer Padding="{TemplateBinding Padding}" Focusable="False">
+                            <ItemsPresenter SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" />
+                        </ScrollViewer>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <MultiTrigger>
+                            <MultiTrigger.Conditions>
+                                <Condition Property="ItemsControl.IsGrouping" Value="True" />
+                                <Condition Property="VirtualizingPanel.IsVirtualizingWhenGrouping" Value="False" />
+                            </MultiTrigger.Conditions>
+                            <Setter Property="ScrollViewer.CanContentScroll" Value="False" />
+                        </MultiTrigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
     </Style>
 
     <Style TargetType="ListBoxItem">
@@ -888,8 +954,10 @@
         <Setter Property="Margin" Value="0,0,0,12" />
     </Style>
 
-    <!-- ── 设置页的三级字阶：页标题 → 段标题 → 字段标签 ──
-         页标题 18 是全页最大字号，所以「关于」里那颗应用名字号压到 16，不与之争。 -->
+    <!-- ── 字阶 H1（18）：段标题 → 字段标签 之上的那一档 ──
+         四个标签页现在都不用它：页名由标签头承担，页内再写一遍是复述。
+         留着是因为它仍是字阶的最高一档（见 Themes/Components.xaml 顶部），
+         独立窗口若要一个成规模的标题就用它，而不是回到 16 与正文争层级。 -->
     <Style x:Key="PageHeading" TargetType="TextBlock">
         <Setter Property="Foreground" Value="{DynamicResource B.Text}" />
         <Setter Property="FontSize" Value="18" />
@@ -898,20 +966,162 @@
     </Style>
 
     <!-- 段标题即 boutique GroupBox 的头：SemiBold、比正文大一号。
-         另开一个键而不是改 SectionHeader——分组生成页与输出冲突页也在用它，
-         改字号会连带挪动那两页的观感，而它们不属于这次重构。 -->
+         字号归到字阶的 H2（16）：原先这里写 14，而同一层级里 SaveSuccessWindow 的标题、
+         设置页「关于」里的应用名都是 16，两页并排看就是"段标题不一样大"。
+         字阶表见 Themes/Components.xaml 顶部。 -->
     <Style x:Key="SettingSectionHeader" TargetType="TextBlock" BasedOn="{StaticResource SectionHeader}">
-        <Setter Property="FontSize" Value="14" />
+        <Setter Property="FontSize" Value="16" />
         <Setter Property="FontWeight" Value="SemiBold" />
         <Setter Property="Margin" Value="0,0,0,10" />
     </Style>
 
-    <!-- 折叠条（使用说明 / 诊断信息）：本文件没有 Expander 的样式，沿用「箭头 + 标题」的 Button。
+    <!-- ── 折叠条（使用说明 / 诊断信息）──
+         本文件没有 Expander 的样式，折叠条沿用「箭头 + 标题」的一行。
+
+         ⚠️ 是 ToggleButton 而不是 Button：展开态本来就该是控件自身的状态。
+         原先用普通 Button、靠两个点击处理函数各自翻转 VM 布尔值，于是产生三个后果：
+         ① 展开/收起状态在控件层不存在，无障碍工具（屏幕阅读器、UI 自动化测试）
+            完全看不到它是可展开的，也不会报告当前是开还是关；
+         ② 箭头方向只能靠 DataTrigger 绑 VM 属性来画，箭头块在设置页里逐字复制了两遍；
+         ③ 键盘用户按空格能触发 Click，但控件不报告结果——和 ② 叠加就是
+            「按了有反应，但不知道现在是什么状态」。
+         换成 ToggleButton 后，IsChecked 天然就是 IsExpanded，模板里一个 Trigger 画箭头，
+         无需要求调用方再写一个 DataTrigger，也自动带上 Toggle 模式的自动化语义。
+
          Padding 收窄到 4,3 让箭头与卡片左边界齐平，而不是缩进一颗按钮的内边距。 -->
-    <Style x:Key="DisclosureToggle" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+    <Style x:Key="DisclosureToggle" TargetType="ToggleButton">
         <Setter Property="Padding" Value="4,3" />
         <Setter Property="HorizontalAlignment" Value="Left" />
         <Setter Property="HorizontalContentAlignment" Value="Left" />
+        <Setter Property="Foreground" Value="{DynamicResource B.Text}" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="SnapsToDevicePixels" Value="True" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ToggleButton">
+                    <!-- 折叠头部不该有按钮外框：它读起来是"一节的小标题"，
+                         所以底框默认透明、仅在悬停/聚焦时给一层极淡的底以示可点 -->
+                    <Border x:Name="bd" Background="{TemplateBinding Background}"
+                            CornerRadius="4" Padding="{TemplateBinding Padding}">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <!-- 箭头：收起时朝右（▸ = 还有内容可展开），展开时转 90° 朝下（▾）。
+                                 用一个 RotateTransform 而不是两套 Path 数据，形状定义只此一处。
+                                 触发器改的是 Path.RenderTransform（整体替换），不能 TargetName 到
+                                 RotateTransform 本身——它不是 FrameworkElement，MC4111 会拦下来。 -->
+                            <Path x:Name="arrow" Grid.Column="0"
+                                  Data="M 0 0 L 4 4 L 0 8"
+                                  Stroke="{DynamicResource B.TextDim}" StrokeThickness="1.6"
+                                  Margin="1,0,8,0" VerticalAlignment="Center"
+                                  RenderTransformOrigin="0.5,0.5">
+                                <Path.RenderTransform>
+                                    <RotateTransform Angle="0" />
+                                </Path.RenderTransform>
+                            </Path>
+                            <!-- 文字色显式挂到 TextElement.Foreground：Content 是纯字符串时
+                                 ContentPresenter 会现场造一个 TextBlock，只靠继承链拿不到
+                                 ToggleButton.Foreground（TabItem 那里有同款注释）。 -->
+                            <ContentPresenter Grid.Column="1" VerticalAlignment="Center"
+                                              TextElement.Foreground="{TemplateBinding Foreground}"
+                                              TextElement.FontWeight="SemiBold" />
+                        </Grid>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="bd" Property="Background" Value="{DynamicResource B.Panel}" />
+                        </Trigger>
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter TargetName="arrow" Property="RenderTransform">
+                                <Setter.Value>
+                                    <RotateTransform Angle="90" />
+                                </Setter.Value>
+                            </Setter>
+                        </Trigger>
+                        <!-- 键盘焦点要看得见：ToggleButton 默认模板带聚焦虚框，
+                             换模板后必须自己补一条，否则纯键盘用户不知道焦点在哪 -->
+                        <Trigger Property="IsKeyboardFocused" Value="True">
+                            <Setter TargetName="bd" Property="Background" Value="{DynamicResource B.Panel}" />
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Opacity" Value="0.5" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- ── 分组头折叠条（「输出冲突与选择」左栏的用户分组）──
+         与上面 DisclosureToggle 同源：同样用 ToggleButton + 旋转箭头，理由见那一段
+         （IsChecked 天然就是展开态，无障碍工具看得见、键盘用户按得出、状态报得回来）。
+
+         不同的只有外观：它读起来是"一段区间的标题"而不是一节的小标题，所以自带 B.Panel 底
+         与一条下边框，把这一组和它下面的冲突行分开。悬停底色取 B.Hover——与列表行同款
+         （见 ListBoxItem 的触发器），两处鼠标移上去的反馈因此一致。
+
+         Padding/Margin 是照着列表行凑的：行的内容左边缘 = ListBoxItem 的 Margin(2) + Padding(6)
+         + 行内 Grid 的 Margin(2) = 10px。这里让**箭头**落在 10px（Margin 2 + Padding 8），
+         组名再往右让出箭头与 7px 间距——分组名因此比它下面的文件名缩进 12px。
+         原先没有箭头时两者严格对齐，现在这点缩进是有意的：它正是"这一层比下面那层高一级"
+         的视觉提示。 -->
+    <Style x:Key="ConflictGroupHeaderToggle" TargetType="ToggleButton">
+        <Setter Property="Background" Value="{DynamicResource B.Panel}" />
+        <Setter Property="Foreground" Value="{DynamicResource B.Text}" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="SnapsToDevicePixels" Value="True" />
+        <!-- 内容要撑满：分组头自己是个 * | Auto 的两列 Grid（组名吃剩余宽度、计数按内容取宽），
+             默认的 Center 对齐会让那个 Grid 只取自身想要的宽度，"长组名截断"就永不触发 -->
+        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ToggleButton">
+                    <Border x:Name="bd" Background="{TemplateBinding Background}"
+                            BorderBrush="{DynamicResource B.Border}" BorderThickness="0,0,0,1"
+                            CornerRadius="4,4,0,0" Padding="8,4" Margin="2,6,2,0">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <!-- 箭头：收起时朝右（▸ = 还有内容可展开），展开时转 90° 朝下（▾）。
+                                 与 DisclosureToggle 同一套做法：触发器改的是 Path.RenderTransform
+                                 （整体替换），不能 TargetName 到 RotateTransform 本身——
+                                 它不是 FrameworkElement，MC4111 会拦下来。 -->
+                            <Path x:Name="arrow" Grid.Column="0"
+                                  Data="M 0 0 L 4 4 L 0 8"
+                                  Stroke="{DynamicResource B.TextDim}" StrokeThickness="1.6"
+                                  Margin="0,0,7,0" VerticalAlignment="Center"
+                                  RenderTransformOrigin="0.5,0.5">
+                                <Path.RenderTransform>
+                                    <RotateTransform Angle="0" />
+                                </Path.RenderTransform>
+                            </Path>
+                            <ContentPresenter Grid.Column="1" VerticalAlignment="Center" />
+                        </Grid>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="bd" Property="Background" Value="{DynamicResource B.Hover}" />
+                        </Trigger>
+                        <Trigger Property="IsChecked" Value="True">
+                            <Setter TargetName="arrow" Property="RenderTransform">
+                                <Setter.Value>
+                                    <RotateTransform Angle="90" />
+                                </Setter.Value>
+                            </Setter>
+                        </Trigger>
+                        <!-- 同 DisclosureToggle：换模板后默认的聚焦虚框没了，焦点得自己画出来 -->
+                        <Trigger Property="IsKeyboardFocused" Value="True">
+                            <Setter TargetName="bd" Property="Background" Value="{DynamicResource B.Hover}" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
     </Style>
 
     <!-- ── 标签页（主窗口顶部标签条）──
@@ -952,10 +1162,12 @@
                 <ControlTemplate TargetType="TabItem">
                     <!-- 文字色必须显式挂到 TextElement.Foreground：Header 是纯字符串时 ContentPresenter
                          会现场造一个 TextBlock，只靠继承链拿不到 TabItem.Foreground 的触发器结果。 -->
+                    <!-- 圆角只收上面两角：选中态那 2px 下沿是这一页的"我在哪"标记，
+                         四角全圆会让它在两端翘起来，读起来就不是一条边了。 -->
                     <Border x:Name="bd" Background="{TemplateBinding Background}"
                             TextElement.Foreground="{TemplateBinding Foreground}"
                             BorderBrush="Transparent" BorderThickness="0,0,0,2"
-                            Margin="0,0,2,0" Padding="{TemplateBinding Padding}">
+                            CornerRadius="4,4,0,0" Margin="0,0,2,0" Padding="{TemplateBinding Padding}">
                         <ContentPresenter ContentSource="Header" RecognizesAccessKey="True"
                                           HorizontalAlignment="Center" VerticalAlignment="Center" />
                     </Border>

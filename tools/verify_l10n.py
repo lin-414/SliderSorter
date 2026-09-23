@@ -366,10 +366,11 @@ def main():
         "L.Tree_InGroupPrefix": r"L\.Tree_InGroupPrefix",
         "ConflictNames": r"\bConflictNames\b",
         # 2026-09-15 UI 改版：右侧面板按钮墙拆成中间搬运栏 + 上下文菜单，撤销改挂菜单
-        "L.Main_AddToGroup": r"L\.Main_AddToGroup",
-        "L.Main_RemoveFromGroup": r"L\.Main_RemoveFromGroup",
-        "L.Main_Undo": r"L\.Main_Undo",
-        "L.Main_ImportGroups": r"L\.Main_ImportGroups",
+        "L.Main_AddToGroup": r"L\.Main_AddToGroup\b",
+        "L.Main_RemoveFromGroup": r"L\.Main_RemoveFromGroup\b",
+        # L.Main_Undo 曾在这里（撤销改挂右键菜单后按钮上的文案没了）；2026-09-22 又把撤销
+        # 提回常驻按钮，键复活，于是从"已删除成员"里移除——留在表里会让门禁把正常引用报成残留。
+        "L.Main_ImportGroups": r"L\.Main_ImportGroups\b",
         # 2026-09-22 三页改版：主题/语言/帮助那几个顶层菜单项并进「设置」页后删掉。
         "L.Menu_Theme": r"L\.Menu_Theme\b",
         "L.Menu_Language": r"L\.Menu_Language\b",
@@ -398,6 +399,9 @@ def main():
         # 2026-09-22 冲突页重排：页标题改用 L.Tab_Conflicts（与标签头同键，设置页同理），
         # 那句"输出冲突：同一个服装文件由谁生成"随之退休。
         "L.Conflict_Title": r"L\.Conflict_Title\b",
+        # 2026-09-23 改名：这颗按钮要的是「实例目录」，不是「MO2 目录」。登记判据只有
+        # ModOrganizer.ini，MO2 的程序目录（只有 exe）从来不被接受，旧名会把人引到程序目录去。
+        "L.Main_AddMo2Dir": r"L\.Main_AddMo2Dir\b",
     }
     found = False
     for scan_root in scan_roots:

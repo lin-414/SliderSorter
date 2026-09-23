@@ -37,6 +37,10 @@ public class XamlCommandBindingTests
         ["Views/NotifyDialog.xaml"] = typeof(NotifyDialog),
         // 控件模板里的绑定作用于「被模板化的那个项」，节点树的模板项类型是 NodeVM（ToggleExpandCommand）
         ["Themes/Controls.xaml"] = typeof(NodeVM),
+        // Components.xaml 里的行模板（NodeRowText / NodeRowCheckBox）绑在 NodeVM 的
+        // IsConflict / IsSeparator / IsPlaceholder / IsMember / IsChecked 上，同样按模板项求值。
+        // 它是 app 级字典，漏登记的话这里的绑定路径没人对照——而「静默失效」正是本用例要防的。
+        ["Themes/Components.xaml"] = typeof(NodeVM),
     };
 
     /// <summary>整份路径都要对照的视图。其余视图（如 MainWindow）的绑定里混着 DataTemplate 内部的

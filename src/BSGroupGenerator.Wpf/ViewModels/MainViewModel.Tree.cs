@@ -216,7 +216,7 @@ public partial class MainViewModel
         var node = new ModNodeVM(header, owner, visibleOutfits, IsInAnyGroup, false);
         if (inGroup > 0)
         {
-            node.Text = L10n.TrF("L.Tree_InGroupBadge", header, inGroup, visibleOutfits.Count);
+            node.BadgeText = L10n.TrF("L.Tree_InGroupBadge", inGroup, visibleOutfits.Count);
             node.IsMember = inGroup == visibleOutfits.Count && visibleOutfits.Count > 0;
         }
 
@@ -252,12 +252,13 @@ public partial class MainViewModel
                 {
                     var inGroup = mod.Outfits.Count(o =>
                         group is not null && group.Members.Contains(o.Name, StringComparer.Ordinal));
-                    // BaseHeader 是不含 [组内 x/y] 徽标的原始头部，直接取用，无需从 Text 里剥离
-                    var targetText = inGroup > 0
-                        ? L10n.TrF("L.Tree_InGroupBadge", mod.BaseHeader, inGroup, mod.Outfits.Count)
-                        : mod.BaseHeader;
-                    if (node.Text != targetText)
-                        node.Text = targetText;
+                    // Text 恒为 BaseHeader：计数走后缀徽标（BadgeText），不再拼进名字里。
+                    // 于是换语言只需重算徽标那一小段，模组名本身不用重拼。
+                    if (node.Text != mod.BaseHeader)
+                        node.Text = mod.BaseHeader;
+                    node.BadgeText = inGroup > 0
+                        ? L10n.TrF("L.Tree_InGroupBadge", inGroup, mod.Outfits.Count)
+                        : "";
                     node.IsMember = mod.Outfits.Count > 0 && inGroup == mod.Outfits.Count;
                     break;
                 }
@@ -270,19 +271,24 @@ public partial class MainViewModel
     private void ApplyCheckedToCurrentGroup(string parameter)
     {
         var add = parameter != "remove";
+        // 这两种情况改走内联提示条而不是模态框：它们都是"你少做了一步"，用户看完要做的
+        // 下一件事就是回到左边的树/右边的组列表继续操作，而模态框正好挡在那两块上面。
         if (Store.Current is null)
         {
-            NotifyUser(L10n.Tr("L.Title_Tip"), L10n.Tr("L.Msg_SelectGroupFirstSide"));
+            ShowBanner(BannerKind.Info, L10n.Tr("L.Msg_SelectGroupFirstSide"));
             return;
         }
 
         var names = CollectCheckedOutfitNames();
         if (names.Count == 0)
         {
-            NotifyUser(L10n.Tr("L.Title_Tip"), L10n.Tr("L.Msg_NothingChecked"));
+            ShowBanner(BannerKind.Info, L10n.Tr("L.Msg_NothingChecked"));
             return;
         }
 
+        // 操作真正生效了 → 收掉上一条提示（否则"先勾选服装"会一直挂在那里，
+        // 而用户早就勾好并成功搬运过了）
+        Banner = null;
         Store.ApplyToCurrent(names, add);
         Log(L10n.TrF("L.Log_Applied", names.Count, L10n.Tr(add ? "L.Word_Add" : "L.Word_Remove"), Store.Current!.Name, Store.Current!.Members.Count));
         RefreshTree();
@@ -345,6 +351,7 @@ public partial class MainViewModel
     public void RefreshTransferState()
     {
         CheckedOutfitCount = CollectCheckedOutfitNames().Count;
+        CanUndo = Store.CanUndo;
         OnPropertyChanged(nameof(TransferAddLabel));
         OnPropertyChanged(nameof(TransferRemoveLabel));
         OnPropertyChanged(nameof(CanTransferAdd));
@@ -359,9 +366,12 @@ public partial class MainViewModel
         var (ok, error) = Store.Undo();
         if (!ok)
         {
-            NotifyUser(L10n.Tr("L.Title_Tip"), error ?? L10n.Tr("L.Msg_NothingToUndo"));
+            // "没有可撤销的操作"是非破坏性的（什么都没发生），走内联提示，
+            // 不打断用户；按钮本身此时也是禁用态，两处说法一致。
+            ShowBanner(BannerKind.Info, error ?? L10n.Tr("L.Msg_NothingToUndo"));
             return;
         }
+        Banner = null;
         Log(L10n.Tr("L.Log_Undone"));
         RefreshGroupsList();
         RefreshTree();
@@ -392,12 +402,22 @@ public partial class MainViewModel
     public void RefreshGroupsList()
     {
         var selectedName = Store.Current?.Name;
-        Groups = new ObservableCollection<GroupItem>(
-            Store.Groups.Select(g => new GroupItem(g.Name, g.Members.Count)));
+        // 就地重建，**不能**换成新集合：ListBox 绑的 GroupsView 是构造期建立的一次性投影，
+        // 换集合会让它一直对着旧实例，列表永久空白（详见 Groups 属性注释）。
+        Groups.Clear();
+        foreach (var group in Store.Groups)
+            Groups.Add(new GroupItem(group.Name, group.Members.Count));
+
+        // 先落 -1 再落目标：Clear() 会让 ListBox 丢掉选中项，而"丢了选中项"是视图侧的事，
+        // VM 的 SelectedGroupIndex 不一定跟着变。若新旧值恰好相同（例如原地刷新同一个组），
+        // 直接赋目标值不会触发通知，列表就会停在"没有任何一行高亮"而 GroupInfo 却说着某一组。
+        // 两次赋值把这个中间态抹平——第二赋只要目标不是 -1 就必定发出通知。
+        SelectedGroupIndex = -1;
         var index = Store.Groups.ToList().FindIndex(g => g.Name == selectedName);
         SelectedGroupIndex = index >= 0 ? index : (Store.Count > 0 ? 0 : -1);
         UpdateGroupInfo();
         OnPropertyChanged(nameof(IsGroupsEmpty));
+        CanUndo = Store.CanUndo;
         RefreshTransferState();
     }
 
@@ -409,6 +429,10 @@ public partial class MainViewModel
         RefreshTransferState(); // 目标组变了，搬运按钮的可用性与提示随之变
         if (value < 0 || value >= Store.Count)
             return;
+        // 选中了组 → "先选一个组"这条提示的前提已经不成立，主动收掉。
+        // 提示条不该靠用户点 × 才消失：条件一满足就走，才是"就近反馈"而不是"又一个要清理的窗口"。
+        if (Banner is { Kind: BannerKind.Info })
+            Banner = null;
         Store.SelectGroup(Store.Groups[value].Name);
         UpdateGroupInfo();
         UpdateMembershipMarks();

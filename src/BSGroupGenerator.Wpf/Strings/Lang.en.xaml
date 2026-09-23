@@ -17,11 +17,23 @@
     <sys:String x:Key="L.Tab_Settings">Settings</sys:String>
     <sys:String x:Key="L.Settings_Workspace">Workspace</sys:String>
     <sys:String x:Key="L.Settings_Output">Output settings</sys:String>
+    <sys:String x:Key="L.Settings_Maintenance">Maintenance</sys:String>
+    <sys:String x:Key="L.Settings_Unconfigured" xml:space="preserve">Not set up yet: pick an MO2 instance and a BodySlide folder. Both are prerequisites for scanning; once set, the groups and the conflict list are ready.</sys:String>
+    <sys:String x:Key="L.Scan_StatusNever" xml:space="preserve">No successful scan yet this session.</sys:String>
+    <sys:String x:Key="L.Scan_StatusAt" xml:space="preserve">Last scan: {0}　·　{1}</sys:String>
+    <sys:String x:Key="L.Scan_CountsShort" xml:space="preserve">{0} mods · {1} outfits</sys:String>
+    <sys:String x:Key="L.Scan_StatusStaleTip" xml:space="preserve">This result has been sitting for a while. If you installed mods since, click Rescan before going further.</sys:String>
+    <sys:String x:Key="L.Age_JustNow" xml:space="preserve">{0} seconds ago</sys:String>
+    <sys:String x:Key="L.Age_Minutes" xml:space="preserve">{0} minutes ago</sys:String>
+    <sys:String x:Key="L.Age_Hours" xml:space="preserve">{0} hours ago</sys:String>
+    <sys:String x:Key="L.Rescan_Tip" xml:space="preserve">Rescan mods and outfits (also rebuilds the output-conflict list)</sys:String>
     <sys:String x:Key="L.Settings_CleanupStale" xml:space="preserve">Clean stale outfits…</sys:String>
-    <sys:String x:Key="L.Conflict_Rescan" xml:space="preserve">Rescan</sys:String>    <sys:String x:Key="L.Conflict_NoRequest" xml:space="preserve">Nothing to show yet. Run a scan on the Grouping page first — or this scan found no output conflicts at all.</sys:String>
+    <sys:String x:Key="L.Settings_CleanupStaleNote" xml:space="preserve">Removes outfits that are no longer in the current scan from every group (the mod may have been uninstalled or renamed). This edits group contents; you will be asked to confirm, and it can be undone with Ctrl+Z.</sys:String>
+    <sys:String x:Key="L.Conflict_Rescan" xml:space="preserve">Rescan</sys:String>    <sys:String x:Key="L.Conflict_NoRequest" xml:space="preserve">Nothing to show yet. A single scan produces both the groups and the conflict list, so no grouping is needed first — or this scan genuinely found no output conflicts.</sys:String>
     <sys:String x:Key="L.Settings_Appearance">Appearance</sys:String>
     <sys:String x:Key="L.Settings_Theme">Theme</sys:String>
     <sys:String x:Key="L.Settings_Language">Language</sys:String>
+    <sys:String x:Key="L.Settings_LanguageSystem">Follow system</sys:String>
     <sys:String x:Key="L.Settings_Help">Help and About</sys:String>
     <sys:String x:Key="L.Settings_CheckUpdate">Check for updates</sys:String>
     <sys:String x:Key="L.Settings_UpdateChecking">Checking for updates…</sys:String>
@@ -33,13 +45,17 @@
     <sys:String x:Key="L.Main_BodySlide">BodySlide</sys:String>
     <sys:String x:Key="L.Main_Output">Output location</sys:String>
     <sys:String x:Key="L.Main_Refresh">Refresh</sys:String>
-    <sys:String x:Key="L.Main_AddMo2Dir">Add MO2 folder…</sys:String>
+    <sys:String x:Key="L.Main_SelectInstanceDir">Select instance folder…</sys:String>
     <sys:String x:Key="L.Main_Detect">Auto-detect</sys:String>
     <sys:String x:Key="L.Main_Browse">Browse…</sys:String>
     <sys:String x:Key="L.Main_FilterOutfits">Filter outfits…</sys:String>
     <sys:String x:Key="L.Main_FilterMods">Filter mods…</sys:String>
     <sys:String x:Key="L.Main_UnassignedOnly">Unassigned only</sys:String>
     <sys:String x:Key="L.Main_GroupsHeader">Groups</sys:String>
+    <sys:String x:Key="L.Main_FilterGroups">Filter group name…</sys:String>
+    <sys:String x:Key="L.Empty_GroupsFiltered">No group matches this filter.</sys:String>
+    <sys:String x:Key="L.Main_Undo">Undo</sys:String>
+    <sys:String x:Key="L.Main_UndoTip">Revert the most recent grouping action (Ctrl+Z)</sys:String>
     <sys:String x:Key="L.Main_GroupManage">Group actions (new / rename / view / rule grouping / delete)</sys:String>
     <sys:String x:Key="L.Transfer_Add">Add to group →</sys:String>
     <sys:String x:Key="L.Transfer_AddCount">Add {0} to group →</sys:String>
@@ -72,6 +88,7 @@
     <sys:String x:Key="L.Btn_Ok">OK</sys:String>
     <sys:String x:Key="L.Btn_Cancel">Cancel</sys:String>
     <sys:String x:Key="L.Btn_Close">Close</sys:String>
+    <sys:String x:Key="L.Banner_Dismiss">Dismiss this message</sys:String>
     <sys:String x:Key="L.Btn_Apply">Apply</sys:String>
     <sys:String x:Key="L.Btn_CopyAll">Copy all</sys:String>
     <sys:String x:Key="L.Word_Add">added to</sys:String>
@@ -103,7 +120,7 @@
     <sys:String x:Key="L.Vm_OutputIs">Output: {0}</sys:String>
 
     <!-- Pickers -->
-    <sys:String x:Key="L.Pick_Mo2Dir">Select the MO2 instance folder (containing ModOrganizer.ini) or a portable folder (containing ModOrganizer.exe)</sys:String>
+    <sys:String x:Key="L.Pick_Mo2Dir">Select the MO2 instance folder (containing ModOrganizer.ini)</sys:String>
     <sys:String x:Key="L.Pick_BodySlideDir">Select the BodySlide folder (containing Config.xml)</sys:String>
     <sys:String x:Key="L.Pick_CustomOutput">Select a custom output folder</sys:String>
     <sys:String x:Key="L.Pick_ImportGroups">Import BodySlide group file</sys:String>
@@ -186,7 +203,7 @@
     <sys:String x:Key="L.Msg_SelectGroupFirst">Select a group first.</sys:String>
     <sys:String x:Key="L.Msg_SelectOutfitsFirst">Tick the outfits to remove first (tick a mod or a separator to select them in bulk).</sys:String>
     <sys:String x:Key="L.Msg_ConfirmRemove">Remove {0} outfit(s) from group "{1}"?</sys:String>
-    <sys:String x:Key="L.Msg_NeedGroupFirst">No groups yet: create one first, then use rule grouping.</sys:String>
+    <sys:String x:Key="L.Msg_NeedGroupFirst">No groups yet. Rule grouping needs a target group — create one first.</sys:String>
     <sys:String x:Key="L.Msg_NoOutfits">No outfits have been scanned yet.</sys:String>
     <sys:String x:Key="L.Msg_ScanIncomplete">Scanning is not finished or the write location is unknown.</sys:String>
     <sys:String x:Key="L.Msg_NoGroupsYet">There are no groups yet. Create a group and tick outfits first.</sys:String>
@@ -198,7 +215,8 @@
     <sys:String x:Key="L.Msg_CleanupConfirm" xml:space="preserve">{0} outfit(s) no longer appear in the current scan (their mods may have been uninstalled or renamed), e.g.: {1}…
 
 Remove them from all groups? (Ctrl+Z to undo)</sys:String>
-    <sys:String x:Key="L.Msg_NotMo2Dir">No ModOrganizer.ini in that folder, and it does not look like a portable install (missing ModOrganizer.exe).</sys:String>
+    <sys:String x:Key="L.Msg_NotMo2Dir">No ModOrganizer.ini in that folder; it is not an MO2 instance folder. Pick the instance folder containing ModOrganizer.ini (for a portable install, the folder holding ModOrganizer.exe).</sys:String>
+    <sys:String x:Key="L.Msg_Mo2InstallDirNotInstance">This is the MO2 program folder, not an instance folder. An instance folder contains ModOrganizer.ini; global instances usually live in a subfolder of %LOCALAPPDATA%\ModOrganizer and are normally detected automatically, so no manual adding is needed.</sys:String>
     <sys:String x:Key="L.Msg_NotBodySlideDir">No Config.xml in that folder; it is not a BodySlide folder.</sys:String>
     <sys:String x:Key="L.Msg_UpToDate">You are up to date (v{0}).</sys:String>
     <sys:String x:Key="L.Msg_UpdateAvailable" xml:space="preserve">New version {0} found (current v{1}).
@@ -243,6 +261,14 @@ Open the release page to download?</sys:String>
     <sys:String x:Key="L.Conflict_UnresolvedSuffix" xml:space="preserve">· {0} unset</sys:String>
     <sys:String x:Key="L.Conflict_GroupsHeader" xml:space="preserve">Conflicts</sys:String>
     <sys:String x:Key="L.Conflict_GroupCount" xml:space="preserve">{0} groups</sys:String>
+    <sys:String x:Key="L.Conflict_GroupsHeaderTip" xml:space="preserve">The list is grouped by your own groups: under each one are the conflicts that involve a member of it, and those between members of the same group are marked. Conflicts that involve no group are collected under "Not in a group".</sys:String>
+    <sys:String x:Key="L.Conflict_GroupBucketCount" xml:space="preserve">{0} conflicts</sys:String>
+    <sys:String x:Key="L.Conflict_IntraGroup" xml:space="preserve">intra-group</sys:String>
+    <sys:String x:Key="L.Conflict_IntraGroupCount" xml:space="preserve">{0} of them intra-group</sys:String>
+    <sys:String x:Key="L.Conflict_IntraGroupTip" xml:space="preserve">Two or more members of the same group write the same output file: only one of them can win, the rest will not be built.</sys:String>
+    <sys:String x:Key="L.Conflict_Ungrouped" xml:space="preserve">Not in a group</sys:String>
+    <sys:String x:Key="L.Conflict_GroupFilterAll" xml:space="preserve">All groups</sys:String>
+    <sys:String x:Key="L.Conflict_GroupFilterTip" xml:space="preserve">Show only the conflicts that involve a member of this group. Only groups that actually have conflicts are listed.</sys:String>
     <sys:String x:Key="L.Conflict_CandidatesHeader" xml:space="preserve">Build with</sys:String>
     <sys:String x:Key="L.Conflict_PreviewHeader" xml:space="preserve">Preview</sys:String>
     <sys:String x:Key="L.Conflict_BatchScope" xml:space="preserve">For the {0} groups listed:</sys:String>
@@ -320,11 +346,12 @@ The existing file is backed up as BuildSelection.xml.bak. BodySlide stops asking
     <!-- Rule presets -->
     <sys:String x:Key="L.RulePresets_Title">Rule presets</sys:String>
     <sys:String x:Key="L.RulePresets_Head">A preset = one reusable auto-grouping rule.</sys:String>
-    <sys:String x:Key="L.RulePresets_Steps" xml:space="preserve">① Click "New preset…": choose the target group, fill in keywords, confirm the preview, then "Save as preset".&#x0a;② When newly installed mods are found, click "Apply presets" in the popup to run all presets automatically.&#x0a;③ Select one and click "Edit selected…" (or double-click the row) to change it; the name is pre-filled, so confirming overwrites it.</sys:String>
+    <sys:String x:Key="L.RulePresets_Steps" xml:space="preserve">A preset is a reusable set of grouping conditions. You can create, edit or delete them at any time; presets are independent of one another.&#x0a;· Create or change: click "New preset…", or select one and click "Edit selected…" (double-clicking the row works too). Choose a target group, fill in keywords, confirm the preview. The name is pre-filled, so confirming overwrites the original.&#x0a;· When they run: when a later scan finds newly installed mods, click "Apply presets" in the popup to run them all in order; you can also run one any time from the Grouping tab via "⋯ → Rule grouping".</sys:String>
     <sys:String x:Key="L.RulePresets_New">New preset…</sys:String>
     <sys:String x:Key="L.RulePresets_Edit">Edit selected…</sys:String>
     <sys:String x:Key="L.RulePresets_Delete">Delete selected</sys:String>
     <sys:String x:Key="L.RulePresets_Empty">No presets yet. Click "New preset…" below to create your first auto-grouping rule.</sys:String>
+    <sys:String x:Key="L.RulePresets_NoSelection">Select a preset on the left to see its details.</sys:String>
     <sys:String x:Key="L.RulePresets_RowTitle">{0} → {1} group "{2}"</sys:String>
     <sys:String x:Key="L.RulePresets_RowDetail">Mod keywords: {0} · Outfit keywords: {1} · Excluded: {2}</sys:String>
     <sys:String x:Key="L.RulePresets_UnassignedSuffix" xml:space="preserve"> · unassigned only</sys:String>
@@ -377,7 +404,7 @@ One file per group, named after the group: {1}{2} ({3}).
     <sys:String x:Key="L.Help_05">4. Save — click "Save group files" at the bottom, or use File → Save group files (Ctrl+S). Each group becomes one file named after the group (e.g. UBE.xml). Afterwards restart BodySlide (if you launch it through MO2, restart MO2 too).</sys:String>
     <sys:String x:Key="L.Help_H2">2. Quick start (4 steps)</sys:String>
     <sys:String x:Key="L.Help_S2_Top">[Top settings area]</sys:String>
-    <sys:String x:Key="L.Help_06">MO2 instance: global instances and portable installs under %LOCALAPPDATA%\ModOrganizer are found automatically; "Add MO2 folder…" points to an instance folder manually; "Refresh" rescans instances.</sys:String>
+    <sys:String x:Key="L.Help_06">MO2 instance: global instances and portable installs under %LOCALAPPDATA%\ModOrganizer are found automatically; "Select instance folder…" points to an instance folder (containing ModOrganizer.ini) manually; "Refresh" rescans instances.</sys:String>
     <sys:String x:Key="L.Help_07">Profile: lists every Profile available to that instance. The enabled-mod list comes from that Profile's modlist.txt, in the same order as MO2's left pane.</sys:String>
     <sys:String x:Key="L.Help_08">BodySlide: searches enabled mods for folders containing BodySlide*.exe and Config.xml; if none is found, use "Browse…" to point at one.</sys:String>
     <sys:String x:Key="L.Help_09">Output location: decides where the group files are written (see section 6). The right side of the status bar shows the current output folder — hover it for the full path.</sys:String>
@@ -385,7 +412,7 @@ One file per group, named after the group: {1}{2} ({3}).
     <sys:String x:Key="L.Help_10">Hierarchy: separator (grey) → mod (bold, collapsible) → outfits; same order as MO2's left pane, showing only enabled mods that contain BodySlide outfits.</sys:String>
     <sys:String x:Key="L.Help_11">The two filter boxes at the top do different jobs: "Filter outfit names…" matches outfit names only, "Filter mod names…" matches mod names only (contiguous substring, case-insensitive; a mod-name hit shows all of that mod's outfits). "Unassigned only" hides outfits that are already in a group.</sys:String>
     <sys:String x:Key="L.Help_12">A tick only marks what you want to act on — nothing is written until you click "Add to group" / "Remove from group" in the middle. Ticking a mod or a separator ticks all of its outfits.</sys:String>
-    <sys:String x:Key="L.Help_13">The mark before an outfit name means it is already in the currently selected group; [in group x/total] after a mod title shows how many of its outfits are in that group.</sys:String>
+    <sys:String x:Key="L.Help_13">The mark before an outfit name means it is already in the currently selected group; the "in group x/total" badge to the right of a mod title shows how many of its outfits are in that group.</sys:String>
     <sys:String x:Key="L.Help_S2_Groups">[Right group panel]</sys:String>
     <sys:String x:Key="L.Help_14">Group list: click to select (the ticks and marks on the left follow along without losing your scroll position), double-click to preview its members. New / rename / view / rule grouping / delete all live under "⋯" in the header, and are also on the list's right-click menu.</sys:String>
     <sys:String x:Key="L.Help_15">"⋯" → "Rule grouping": batch work by keyword — see section 5.</sys:String>
@@ -422,6 +449,18 @@ One file per group, named after the group: {1}{2} ({3}).
     <sys:String x:Key="L.Help_41">· What is BSGroupGenerator.files.txt in the output folder? The tool's manifest, used to clean up old files automatically; BodySlide ignores it.</sys:String>
     <sys:String x:Key="L.Help_42">· Something crashed? Exceptions are written to %APPDATA%\BSGroupGenerator\crash.log — feel free to send that file to the developer.</sys:String>
     <sys:String x:Key="L.Help_H7">7. Troubleshooting</sys:String>
+
+    <!-- 8. Two independent results — the deliverables of one scan.
+         A single scan yields two things that do not depend on each other: the groups
+         (SliderGroups\*.xml) and the output-conflict choices (BuildSelection.xml).
+         This chapter exists because the help previously covered only the grouping line,
+         leaving "Output conflicts" with no entry in the table of contents. -->
+    <sys:String x:Key="L.Help_H8">8. Two independent results</sys:String>
+    <sys:String x:Key="L.Help_Conflict_Intro">One scan produces two results that do not depend on each other, one per tab. You can do either one on its own — neither has to come first.</sys:String>
+    <sys:String x:Key="L.Help_Conflict_A">· Groups ("Grouping" tab) — assign outfits to groups, then "Save group files" writes SliderGroups\*.xml for BodySlide to read.</sys:String>
+    <sys:String x:Key="L.Help_Conflict_B">· Output-conflict choices ("Output conflicts" tab) — when several outfits write the same body mesh file, choose which mod generates it, then "Write to BodySlide…" saves BuildSelection.xml. Choices live inside this tool until written; the original file is backed up as .bak first.</sys:String>
+    <sys:String x:Key="L.Help_Conflict_C">Each writes its own file and never overwrites the other: after a single scan both are available, in any order, and you can come back to either one later.</sys:String>
+    <sys:String x:Key="L.Help_Conflict_D">"Shared output within one mod" (hundreds of recolours of the same outfit) is normal and is not counted as something to resolve; tick "Cross-mod conflicts only" to filter them out.</sys:String>
     <sys:String x:Key="L.Help_Toc">Contents</sys:String>
     <sys:String x:Key="L.Help_TocHint">Click a heading to jump to that section.</sys:String>
     <sys:String x:Key="L.Help_Task1">Put one mod's outfits into a group — tick that mod on the left (ticking the mod name selects all its outfits) → select the target group on the right → click "Add to group" in the middle → click "Save group files".</sys:String>
@@ -437,11 +476,13 @@ One file per group, named after the group: {1}{2} ({3}).
     <!-- Tree node text (composed in code, not bound in XAML) -->
     <sys:String x:Key="L.Tree_ConflictSuffix" xml:space="preserve"> (name conflict)</sys:String>
     <sys:String x:Key="L.Tree_OutputConfSuffix" xml:space="preserve"> (output conflict)</sys:String>
-    <sys:String x:Key="L.Tree_InGroupBadge">{0} [in group {1}/{2}]</sys:String>
+    <sys:String x:Key="L.Tree_InGroupBadge">in group {0}/{1}</sys:String>
     <sys:String x:Key="L.Tree_MatchHeader">{0} (matched {1}/{2})</sys:String>
     <sys:String x:Key="L.Tree_NoMatchingMods">(no mods match the filters)</sys:String>
 
-    <!-- Tree context menu (main window's left list only, see NodeTreeItemStyle in Themes/Controls.xaml) -->
+    <!-- Expand/collapse-all context menu (main window's left mod tree: NodeTreeItemStyle in
+         Themes/Controls.xaml; group headers on the output-conflict page: ConflictGroupMenu in
+         Views/Pages/OutputConflictPage.xaml) -->
     <sys:String x:Key="L.Tree_ExpandAll">Expand all</sys:String>
     <sys:String x:Key="L.Tree_CollapseAll">Collapse all</sys:String>
     <sys:String x:Key="L.Tree_CollapseOthers">Collapse others</sys:String>

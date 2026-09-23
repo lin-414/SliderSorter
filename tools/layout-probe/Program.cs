@@ -7,16 +7,19 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Documents;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
 using System.Windows.Media.Media3D;
 
 namespace LayoutProbe;
 
 /// <summary>
-/// 译文/主题布局溢出探针。
+/// 译文/主题布局溢出探针 + 离屏截图器。
 ///
 /// 用法（仓库根目录下执行）：
-///   dotnet run --project tools/layout-probe -c Release
-///   dotnet run --project tools/layout-probe -c Release -- &lt;仓库根目录&gt;
+///   dotnet run --project tools/layout-probe -c Release                  → 只跑溢出检查
+///   dotnet run --project tools/layout-probe -c Release -- <仓库根目录>   → 显式指定根目录
+///   dotnet run --project tools/layout-probe -c Release -- --shot <输出目录>
+///                                                                       → 顺便渲染 PNG
 /// 退出码 0 = 无溢出/裁切，1 = 有命中（可作为门禁）。
 ///
 /// 做法：加载**真实**资源字典与**真实**窗口/页面 XAML，离屏 Measure/Arrange 后读 ActualWidth，
@@ -46,15 +49,25 @@ internal static class Program
     private const int SM_CXSIZEFRAME = 32;
     private const int SM_CXPADDEDBORDER = 92;
 
-    /// <summary>代码后台不在，这些事件属性的值（处理函数名）解析不到，必须剥掉。</summary>
+    /// <summary>代码后台不在，这些事件属性的值（处理函数名）解析不到，必须剥掉。
+    ///
+    /// ⚠️ 必须**同时**列出冒泡与隧道路由的成对事件：正则 <c>\s{ev}="..."</c> 是精确前缀匹配，
+    /// <c>MouseLeftButtonDown</c> 匹配不到 <c>PreviewMouseLeftButtonDown</c>（Preview 在前面）。
+    /// 漏一个，该视图在探针里就会整体抛 XamlParseException——而那种失败长得像"页面写错了"，
+    /// 实际是剥漏了属性（2026-09-22 给折叠条加 PreviewMouseLeftButtonDown 时踩到）。
+    /// 新增事件处理器时，两边都要补。</summary>
     private static readonly string[] EventAttrs =
     [
         "Click", "MouseDoubleClick", "MouseLeftButtonUp", "MouseLeftButtonDown", "MouseRightButtonUp",
         "MouseRightButtonDown", "MouseRightClick",
+        "PreviewMouseLeftButtonUp", "PreviewMouseLeftButtonDown",
+        "PreviewMouseRightButtonUp", "PreviewMouseRightButtonDown",
+        "PreviewMouseDoubleClick", "PreviewMouseWheel", "PreviewMouseMove",
         "MouseWheel", "MouseDown", "MouseUp", "MouseMove", "DragDelta", "DragStarted", "DragCompleted",
         "DragOver", "DragEnter", "DragLeave", "Drop", "Checked", "Unchecked", "Indeterminate",
-        "SelectionChanged", "TextChanged", "KeyDown", "KeyUp", "PreviewKeyDown", "GotFocus",
-        "LostFocus", "Loaded", "Unloaded", "Closing", "Closed", "SizeChanged", "IsVisibleChanged",
+        "SelectionChanged", "TextChanged", "KeyDown", "KeyUp", "PreviewKeyDown", "PreviewKeyUp",
+        "GotFocus", "GotKeyboardFocus", "PreviewGotKeyboardFocus", "LostFocus", "LostKeyboardFocus",
+        "Loaded", "Unloaded", "Closing", "Closed", "SizeChanged", "IsVisibleChanged",
         "ValueChanged", "Expanded", "Collapsed", "ScrollChanged",
     ];
 
@@ -66,7 +79,22 @@ internal static class Program
         try { Console.OutputEncoding = Encoding.UTF8; }
         catch (Exception) { /* 重定向环境下不允许改编码 */ }
 
-        var repo = args.Length > 0 ? Path.GetFullPath(args[0]) : FindRepoRoot();
+        // --shot <dir>：顺便渲染 PNG。定位在参数里找，其余参数照旧当仓库根目录。
+        string? shotDir = null;
+        var rest = new List<string>();
+        for (var i = 0; i < args.Length; i++)
+        {
+            if (args[i] == "--shot" && i + 1 < args.Length)
+            {
+                shotDir = Path.GetFullPath(args[++i]);
+            }
+            else
+            {
+                rest.Add(args[i]);
+            }
+        }
+
+        var repo = rest.Count > 0 ? Path.GetFullPath(rest[0]) : FindRepoRoot();
         if (repo is null)
         {
             Console.WriteLine("找不到仓库根目录（预期存在 src/BSGroupGenerator.Wpf/Views）。");
@@ -80,6 +108,9 @@ internal static class Program
             Console.WriteLine($"找不到窗口目录：{viewsDir}");
             return 2;
         }
+
+        if (shotDir is not null)
+            Directory.CreateDirectory(shotDir);
 
         var app = new Application();
         var findings = new List<string>();
@@ -104,7 +135,8 @@ internal static class Program
                         var label = $"{lang}/{theme}/{name} {w}x{hs}";
                         try
                         {
-                            foreach (var hit in ProbeOne(winStyle, text, w, h))
+                            var shotPath = shotDir is null ? null : Path.Combine(shotDir, $"{name}.{lang}.{theme}.png");
+                            foreach (var hit in ProbeOne(winStyle, text, w, h, shotPath))
                                 findings.Add($"{label}: {hit}");
                         }
                         catch (Exception ex)
@@ -148,6 +180,12 @@ internal static class Program
         dicts.Clear();
         dicts.Add(Load($"Themes/Palette.{theme}.xaml"));
         dicts.Add(Load("Themes/Controls.xaml"));
+        // ⚠️ 必须与 App.xaml 的合并列表保持**同步、同序**：探针是离屏加载页面，
+        // 页面里的 {StaticResource ...} 只在这一套字典里找。少加载一份，页面引用到
+        // 该字典里的样式时就会抛 XamlParseException——而那种失败长得像"页面写错了"，
+        // 实际是探针自己没把环境搭全（2026-09-22 加 Components.xaml 时就踩了一次）。
+        // 顺序也不能反：Components.xaml 的样式 BasedOn 到 Controls.xaml 上。
+        dicts.Add(Load("Themes/Components.xaml"));
         dicts.Add(Load($"Strings/Lang.{lang}.xaml"));
     }
 
@@ -204,7 +242,7 @@ internal static class Program
         return s;
     }
 
-    private static List<string> ProbeOne(Style? winStyle, string xaml, double winW, double winH)
+    private static List<string> ProbeOne(Style? winStyle, string xaml, double winW, double winH, string? shotPath)
     {
         var parsed = System.Windows.Markup.XamlReader.Parse(StripForParse(xaml));
         Window? host = null;
@@ -260,10 +298,38 @@ internal static class Program
         }
         root.UpdateLayout();
 
+        if (shotPath is not null)
+            Render(root, (int)Math.Ceiling(clientW), (int)Math.Ceiling(root.ActualHeight), shotPath);
+
         var hits = new List<string>();
         Walk(root, root, hits);
         GC.KeepAlive(host); // 页面靠它提供继承上下文，量完之前不能被回收
         return hits;
+    }
+
+    /// <summary>把已排版好的可视树渲染成 PNG。必须在 Arrange 之后调用，否则 ActualWidth 还是 0。
+    /// 用 RenderTargetBitmap 而不是 PresentationSource：探针全程无窗口句柄，走不了截屏那条路。
+    ///
+    /// 按 2x 缩放渲染：浅色主题 1px 的 #E4E7EB 描边在 96 DPI 下只有半个像素不到的对比，
+    /// 存成 PNG 肉眼基本看不见，会被误判成"边框没画出来"。放大一倍后 1px 描边占满 2 像素，
+    /// 字形抗锯齿边缘也看得清了。DIP 尺寸不变，只是像素密度翻倍。</summary>
+    private const double ShotScale = 2.0;
+
+    private static void Render(FrameworkElement root, int width, int height, string path)
+    {
+        if (width <= 0 || height <= 0)
+            return;
+
+        var bmp = new RenderTargetBitmap(
+            (int)Math.Ceiling(width * ShotScale) + 1,
+            (int)Math.Ceiling(height * ShotScale) + 1,
+            96 * ShotScale, 96 * ShotScale, PixelFormats.Pbgra32);
+        bmp.Render(root);
+
+        var encoder = new PngBitmapEncoder();
+        encoder.Frames.Add(BitmapFrame.Create(bmp));
+        using var fs = File.Create(path);
+        encoder.Save(fs);
     }
 
     /// <summary>整窗尺寸 → 客户区尺寸。窗口边框宽度与标题栏高度按当前机器的系统度量算，
