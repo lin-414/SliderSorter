@@ -834,7 +834,10 @@
         </Style.Triggers>
     </Style>
 
-    <!-- ── 右键菜单：弹层必须自绘，否则暗色主题下会弹出一个系统白框 ── -->
+    <!-- ── 右键菜单：弹层必须自绘，否则暗色主题下会弹出一个系统白框 ──
+         项宿主外面要套一层 ScrollViewer：光一个 StackPanel 时菜单有多长就画多长，
+         超出屏幕的那一截不是"要滚动"而是根本到不了（37 个模组的「按模组指定」实测如此），
+         于是 MaxHeight 给了也没用。滚动条按需出现，短菜单（三行的那几颗）行为不变。 -->
     <Style TargetType="ContextMenu">
         <Setter Property="Background" Value="{DynamicResource B.Card}" />
         <Setter Property="Foreground" Value="{DynamicResource B.Text}" />
@@ -845,11 +848,14 @@
                 <ControlTemplate TargetType="ContextMenu">
                     <Border Background="{TemplateBinding Background}"
                             BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="1"
-                            CornerRadius="6" Padding="4" MinWidth="180">
+                            CornerRadius="6" Padding="4" MinWidth="180"
+                            MaxHeight="{TemplateBinding MaxHeight}">
                         <Border.Effect>
                             <DropShadowEffect BlurRadius="12" ShadowDepth="2" Opacity="0.35" />
                         </Border.Effect>
-                        <StackPanel IsItemsHost="True" KeyboardNavigation.DirectionalNavigation="Cycle" />
+                        <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                            <StackPanel IsItemsHost="True" KeyboardNavigation.DirectionalNavigation="Cycle" />
+                        </ScrollViewer>
                     </Border>
                 </ControlTemplate>
             </Setter.Value>

@@ -1331,12 +1331,21 @@ public partial class OutputConflictPage : UserControl
 
     private MenuItem OwnerItem(string owner, int count)
     {
+        var text = L10n.TrF("L.Conflict_PickOwnerItem", owner, count);
         var item = new MenuItem
         {
             // 模组名是数据，不是资源键：挂 L.Menu_* 前缀会被门禁要求每条都有 (_X) 访问键，
             // 而几十个动态项没有稳定的访问键可给。Tag 留给单测定位——测试宿主不加载语言，
             // TrF 只剩键名，标题里根本不含模组名。
-            Header = L10n.TrF("L.Conflict_PickOwnerItem", owner, count),
+            //
+            // 标题自己带省略号：菜单限了宽（模组名七八十字是常态），纯字符串标题在窄下来的菜单里
+            // 会被无声裁掉，而"被截掉的那半截名字"恰恰是认错模组的来源——整条文案进 ToolTip。
+            Header = new TextBlock
+            {
+                Text = text,
+                TextTrimming = TextTrimming.CharacterEllipsis,
+                ToolTip = text,
+            },
             Tag = owner,
         };
         item.Click += (_, _) => ApplyOwner(owner);

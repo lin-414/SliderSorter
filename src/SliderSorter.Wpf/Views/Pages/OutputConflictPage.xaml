@@ -57,8 +57,11 @@
              两颗都由代码手动弹（模板上不挂 ContextMenu 属性）：挂上去之后 WPF 那套自动弹在
              ContextMenuOpening 里把项建好了却从来没开起来（Opened 一次没触发），而右键的抬起事件也被它吞掉。
              "设 PlacementTarget → IsOpen"这一份写法与「分组生成」页的组列表菜单（GroupMenu_Click）一致。 -->
-        <ContextMenu x:Key="PickOwnerMenu" />
-        <ContextMenu x:Key="CandidateMenu" />
+        <!-- 限高 + 限宽：一个实例里可能几十个模组都卷入冲突（实机 37 条），不限的话菜单比屏幕还高，
+             尾部那几条既看不到也滚不到；模组名还常常拖到七八十字，横向上也撑穿屏幕。
+             超出部分交给模板里的 ScrollViewer 滚，名字截断后整条文案在项的 ToolTip 里。 -->
+        <ContextMenu x:Key="PickOwnerMenu" MaxHeight="420" MaxWidth="560" />
+        <ContextMenu x:Key="CandidateMenu" MaxWidth="560" />
 
         <!-- ── 分组头的内容 ──
              外框（B.Panel 底、下边框、箭头、悬停）在 Controls.xaml 的 ConflictGroupHeaderToggle 里，

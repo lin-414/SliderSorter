@@ -206,6 +206,15 @@ public class OutputConflictPageTests
     /// 所以 raise 它等价于真点一下（与既有用例对 RadioButton 用 ButtonBase.ClickEvent 同一手法）。</summary>
     private static void Click(MenuItem item) => item.RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent));
 
+    /// <summary>菜单项的标题文本：批量那一项的标题是带省略号的 TextBlock（模组名长到必须截），
+    /// 其余是纯字符串。</summary>
+    private static string? HeaderOf(MenuItem item) => item.Header switch
+    {
+        string s => s,
+        TextBlock tb => tb.Text,
+        _ => null,
+    };
+
     [Fact]
     public void RightClickingARowSelectsItWithoutAssigning()
     {
@@ -248,7 +257,7 @@ public class OutputConflictPageTests
             {
                 // 第一项 = 设为这一组的赢家（不带 Tag），第二项 = 批量交出 ModB。
                 // 单测宿主不装载语言，取词回落成键名，所以标题认键名、模组靠 Tag 认
-                Headers = items.Select(i => i.Header as string).ToList(),
+                Headers = items.Select(HeaderOf).ToList(),
                 Tags = items.Select(i => i.Tag as string).ToList(),
             };
             // 老手势的全部效果保留在菜单第一项里：指针位置不变，只是多点半下
