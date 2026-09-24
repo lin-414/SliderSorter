@@ -290,13 +290,13 @@ Die Release-Seite zum Herunterladen öffnen?</sys:String>
     <sys:String x:Key="L.Conflict_InGroup" xml:space="preserve">in einer Gruppe</sys:String>
     <sys:String x:Key="L.Conflict_Strongest" xml:space="preserve">höchste Priorität</sys:String>
     <sys:String x:Key="L.Conflict_AskMeAgain" xml:space="preserve">Offen lassen (BodySlide nachfragen lassen)</sys:String>
-    <sys:String x:Key="L.Preview_Reset" xml:space="preserve">Ansicht zurücksetzen</sys:String>
+    <sys:String x:Key="L.Preview_Reset" xml:space="preserve">Zurücksetzen</sys:String>
     <sys:String x:Key="L.Preview_Loading">Mesh und Texturen werden gelesen…</sys:String>
     <sys:String x:Key="L.Preview_NoSource" xml:space="preserve">Dieses Set hat keine auffindbare Quell-Mesh (BodySlides .nif liegt nicht in ShapeData)</sys:String>
     <sys:String x:Key="L.Preview_Stats" xml:space="preserve">{0} Dreiecke · {1} Shapes · {2} mit Textur</sys:String>
     <sys:String x:Key="L.Preview_Truncated" xml:space="preserve">{0} weitere Shapes lagen über dem Budget und werden nicht gezeichnet</sys:String>
     <sys:String x:Key="L.Preview_Body" xml:space="preserve">Körper</sys:String>
-    <sys:String x:Key="L.Preview_BodyAuto" xml:space="preserve">Automatisch</sys:String>
+    <sys:String x:Key="L.Preview_BodyAuto" xml:space="preserve">Auto</sys:String>
     <sys:String x:Key="L.Preview_BodyFemale" xml:space="preserve">Weiblich</sys:String>
     <sys:String x:Key="L.Preview_BodyMale" xml:space="preserve">Männlich</sys:String>
     <sys:String x:Key="L.Preview_BodyNone" xml:space="preserve">Keiner</sys:String>
