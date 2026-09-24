@@ -1,8 +1,11 @@
+using System.Numerics;
+using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Media.Media3D;
 using SliderSorter.Core;
 using SliderSorter.Wpf.ViewModels;
 using SliderSorter.Wpf.Views.Pages;
@@ -70,7 +73,7 @@ public class OutputConflictPageTests
         },
         SourceNifOf = _ => null,
         Save = save ?? (_ => { }),
-        BuildSelectionPath = "",
+        BuildSelectionPath = () => "",
         Export = () => (false, (string?)null),
         // 这些用例只验列表渲染与勾选回写，源网格一律解析不出来，也就用不上数据视图
         Assets = null,
@@ -367,6 +370,137 @@ public class OutputConflictPageTests
 
         Assert.False(outcome.capturedWhileHidden);
         Assert.True(outcome.visible);
+    }
+
+    // ── 3D 预览的取景锁（2026-09-24）──
+    //
+    // 这一页的用途是"同一个 nif 被几个模组争着写，各自建出来长什么样"，所以中栏换行时相机一动
+    // 不许动：每换一行按新网格重算一次包围盒，画面就轻微平移加缩放，两件衣服的差别正好被这点
+    // 跳动盖掉，右键拖出来的平移还会被顺手清零。
+    // 用例把合成网格直接喂给页内那个真的算取景的 Render（测试宿主里没有可解析的 .nif，
+    // 复刻一份取景判断则是永远通过的假测试），而"当前是哪条冲突"仍取自页面自己的 GroupList 选中项——
+    // 只有输入是合成的，身份与相机都是生产那套。
+
+    /// <summary>一块从 lo 高到 hi 的板子。取景只看包围盒，所以这就够把相机推到不同位置了。</summary>
+    private static NifPreviewModel Slab(float lo, float hi)
+    {
+        var shape = new NifShape
+        {
+            Name = "slab",
+            Positions = [new Vector3(0, 0, lo), new Vector3(10, 0, lo), new Vector3(10, 10, hi)],
+            Normals = [Vector3.UnitZ, Vector3.UnitZ, Vector3.UnitZ],
+            Uvs = Array.Empty<Vector2>(),
+            Indices = [0, 1, 2],
+            TexturePath = null,
+            BoundsMin = new Vector3(0, 0, lo),
+            BoundsMax = new Vector3(10, 10, hi),
+        };
+        return new NifPreviewModel
+        {
+            Shapes = [shape],
+            BoundsMin = shape.BoundsMin,
+            BoundsMax = shape.BoundsMax,
+        };
+    }
+
+    /// <summary>走页内的 <c>Render</c>（生产路径上 ShowPreview 解析完就调它）跑一次，把相机摆位读回来。
+    /// 位置与视线方向一起读：它们分别管"从多远、朝哪儿看"，重新取景动的正是这两样。</summary>
+    private static (Point3D Position, Vector3D Look) RenderAndReadCamera(OutputConflictPage page,
+        NifPreviewModel model, NifPreviewModel? body = null)
+    {
+        // 按签名取，不按名字：页外的基类（Visual 那一串）里也有叫 Render 的成员
+        var render = typeof(OutputConflictPage).GetMethod("Render",
+            BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly, null,
+            [typeof(NifPreviewModel), typeof(string), typeof(IReadOnlyList<ImageSource?>),
+                typeof(NifPreviewModel), typeof(IReadOnlyList<ImageSource?>)], null)!;
+        render.Invoke(page, [model, null, null, body, null]);
+        var camera = (PerspectiveCamera)page.FindName("Camera")!;
+        return (camera.Position, camera.LookDirection);
+    }
+
+    /// <summary>把用户右键拖出来的视野偏移写进页面，等于"他刚拖过"。</summary>
+    private static void SetPan(OutputConflictPage page, Vector3D pan) =>
+        typeof(OutputConflictPage).GetField("_pan", BindingFlags.NonPublic | BindingFlags.Instance)!
+            .SetValue(page, pan);
+
+    /// <summary>等于他动了「身体」下拉：页内那个选择是私有嵌套枚举，只能按名字取值再喂回去。</summary>
+    private static void SetBodyOption(OutputConflictPage page, string option)
+    {
+        var field = typeof(OutputConflictPage).GetField("_body", BindingFlags.NonPublic | BindingFlags.Instance)!;
+        field.SetValue(page, Enum.Parse(field.FieldType, option));
+    }
+
+    [Fact]
+    public void SwitchingModsForOneNifKeepsTheCameraStill()
+    {
+        var bikini = Group(OutPath, ("Bikini Red", "ModA", 0), ("Bikini Blue", "ModB", 1));
+        var armor = Group(OutPath + "2", ("Armor Steel", "ModC", 0), ("Armor Iron", "ModD", 1));
+
+        var outcome = WithPage(new[] { bikini, armor }, page =>
+        {
+            // 一进来左栏就选中的第一条冲突（RebuildGroups 干的），换候选行 = 再调一次渲染
+            var first = RenderAndReadCamera(page, Slab(0, 103));
+            // 同一组里另一件：包围盒差得远（脚底下的一片布料），重新取景必然把相机挪位
+            var second = RenderAndReadCamera(page, Slab(-40, 20));
+
+            SetPan(page, new Vector3D(0, 30, 0));
+            var panned = RenderAndReadCamera(page, Slab(0, 103));
+            var afterSwitch = RenderAndReadCamera(page, Slab(-40, 20));
+
+            // 换到另一条冲突：那是另一件衣服了，得重新框，否则 2 米高的护甲会顶破小盒子；
+            // 上一件拖出来的平移也要在这里清零，不能把新衣服推出画面。
+            var groups = Box(page, "GroupList").Items.Cast<object>().ToList();
+            Box(page, "GroupList").SelectedItem = groups[1];
+            var otherGroup = RenderAndReadCamera(page, Slab(0, 103));
+            return (first, second, panned, afterSwitch, otherGroup);
+        });
+
+        Assert.NotEqual(outcome.first.Position, outcome.panned.Position); // 拖过之后画面确实动了（否则下面几条是空转）
+        Assert.Equal(outcome.first, outcome.second);                      // 换模组：一动不动
+        Assert.Equal(outcome.panned, outcome.afterSwitch);                // 换模组：拖出来的视野也留着
+        Assert.Equal(outcome.first, outcome.otherGroup);                  // 换冲突：回到这件的默认取景
+    }
+
+    [Fact]
+    public void OneModCarryingItsOwnBodyStillDoesNotMoveTheCamera()
+    {
+        // 本机实测会撞到的那种：同一条冲突里 A 模组把身体一起导出了（Auto → 不垫），
+        // B 模组没带（Auto → 补一具女体）。"实际垫了哪具"跟着行走，但用户看的是同一件衣服——
+        // 拿它当取景的身份就会在换行时重新取景，把他右键拖出来的平移抹掉。
+        var bikini = Group(OutPath, ("Bikini Red", "ModA", 0), ("Bikini Blue", "ModB", 1));
+
+        var outcome = WithPage(new[] { bikini }, page =>
+        {
+            var outfitOnly = RenderAndReadCamera(page, Slab(40, 60)); // 这一件自带身体：不垫
+            SetPan(page, new Vector3D(0, 30, 0));
+            var panned = RenderAndReadCamera(page, Slab(40, 60));
+            var padded = RenderAndReadCamera(page, Slab(40, 60), Slab(0, 103)); // 下一件要垫一具女体
+            return (outfitOnly, panned, padded);
+        });
+
+        Assert.NotEqual(outcome.outfitOnly.Position, outcome.panned.Position); // 拖过，画面确实动了
+        Assert.Equal(outcome.panned, outcome.padded);                            // 换到垫身体的那一件：仍一动不动
+    }
+
+    [Fact]
+    public void ChoosingAnotherBodyInTheDropdownFramesAgain()
+    {
+        // 上面那条锁不能把"用户自己换身体"也锁掉：披风本来只框它自己，切到「女体」就得连身体一起框，
+        // 否则整具身体顶出画面。区别在于下拉是他点明的动作，而换候选行不是。
+        var bikini = Group(OutPath, ("Bikini Red", "ModA", 0), ("Bikini Blue", "ModB", 1));
+
+        var outcome = WithPage(new[] { bikini }, page =>
+        {
+            var body = Slab(0, 103);
+            var outfitOnly = RenderAndReadCamera(page, Slab(40, 60));        // 框衣服自己
+            var paddedRow = RenderAndReadCamera(page, Slab(40, 60), body);   // 换行：仍框衣服自己
+            SetBodyOption(page, "Female");                                    // 等于他动了「身体」下拉
+            var framedByChoice = RenderAndReadCamera(page, Slab(40, 60), body);
+            return (outfitOnly, paddedRow, framedByChoice);
+        });
+
+        Assert.Equal(outcome.outfitOnly, outcome.paddedRow);                  // 换行不动
+        Assert.NotEqual(outcome.paddedRow, outcome.framedByChoice);            // 换下拉取值：连身体一起重新框
     }
 
     // ── 按用户分组分类（左栏两级列表 + 「只看某组」）──

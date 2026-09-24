@@ -20,7 +20,7 @@ using SliderSorter.Wpf.Views.Pages;
 namespace PreviewProbe;
 
 /// <summary>
-/// 3D 预览渲染探针。三种模式（在仓库根目录执行）：
+/// 3D 预览渲染探针。几种模式（在仓库根目录执行）：
 ///
 ///   dotnet run --project tools/preview-probe -c Release -- --calib out/
 ///       合成网格走生产渲染路径（OutputConflictPage.AddShape）：轴向映射、UV 的 V 轴、背面剔除，
@@ -31,6 +31,9 @@ namespace PreviewProbe;
 ///
 ///   dotnet run --project tools/preview-probe -c Release -- --shots out/ 6
 ///       真实服装走生产 OutputConflictPage 出多视角 PNG + 每帧读数（覆盖率/轮廓宽高/色数/暗面/锯齿比）。
+///
+///   dotnet run --project tools/preview-probe -c Release -- --pose out/ 4
+///       同一条冲突换模组来源时，把相机摆位逐行打出来（该逐行相同）+ 逐行 PNG，叠着看就知道动没动。
 ///
 /// 只读：不改仓库任何源文件，PNG 与报告写到 out/。会读 %APPDATA%\SliderSorter\settings.json
 /// 并由 MainViewModel 按既有行为回写它（跑之前自己备份一份）。
@@ -96,8 +99,9 @@ internal static class Program
                 case "dump": Dump(arg1); break;
                 case "calib": Calib(arg1); break;
                 case "stats": Stats("probe-out", arg2); break;
+                case "pose": Pose(arg1, arg2); break;
                 case "shots": Shots(arg1, arg2, args.Skip(3).ToArray()); break;
-                default: Console.WriteLine($"未知模式 {mode}（可用：calib / stats / shots）"); return 1;
+                default: Console.WriteLine($"未知模式 {mode}（可用：calib / stats / pose / shots）"); return 1;
             }
             return 0;
         }
@@ -889,10 +893,170 @@ internal static class Program
             SetGroupsCollapsed = _ => { },
             SourceNifOf = name => byName.TryGetValue(name, out var p) ? p : null,
             Save = _ => { },
-            BuildSelectionPath = "",
+            BuildSelectionPath = () => "",
             Export = () => (false, null),
             Assets = roots.Count > 0 ? new GameDataResolver(roots) : null,
         };
+    }
+
+    /// <summary>挑一条"同一个输出文件被两个以上模组争"的真实冲突，把视角摆成非默认姿态，
+    /// 然后逐行换候选，把相机摆位与渲染参数原样打出来。
+    /// <para>
+    /// 这一页的用途是对比同一个 nif 换个模组长什么样，所以行与行之间相机必须一动不动：
+    /// 每换一行重新取景会让中心与距离跟着新包围盒变，数字会跳、图会跟着缩放，两件的差别正好被
+    /// 这点跳动盖掉。摆位逐行相同 = 锁住了；相同件之间该有的重新取景（换身体、换冲突）由 shots 模式验。
+    /// </para></summary>
+    private static void Pose(string outDir, int limit)
+    {
+        Directory.CreateDirectory(outDir);
+        var vm = NewScannedVm();
+        var request = vm.CurrentConflict ?? throw new InvalidOperationException("没扫出冲突清单");
+        static bool RealSource(ConflictRequest r, ConflictCandidate c) =>
+            r.SourceNifOf(c.Name) is { } p && File.Exists(p);
+        // 「自动」垫身体时，一件自带身体的会不垫、另一件没带的会补一具——"实际垫了哪具"跟着行走。
+        // 这种组才是这道锁真正要过的关：拿它当取景身份的话，换行就会重新取景、右键平移被抹掉。
+        static bool CarriesOwnBody(ConflictRequest r, ConflictCandidate c) =>
+            r.SourceNifOf(c.Name) is { } p && NifPreviewLoader.TryLoad(p, out var m, out _) && m?.CarriesOwnBody == true;
+        // 必须是跨模组组：左栏默认勾着「只看跨模组」，同模组内部的组根本不在列表里。
+        // 只在头 40 条里挑（判"自带身体"要真解一次 nif，扫全部会白等几分钟）
+        var multi = request.Groups.Where(g => g.CrossMod && g.Candidates.Count(c => RealSource(request, c)) > 1)
+            .Take(40).ToList();
+        static int RealCount(ConflictRequest r, OutputConflictGroup g) => g.Candidates.Count(c => RealSource(r, c));
+        static int OwnCount(ConflictRequest r, OutputConflictGroup g) => g.Candidates.Count(c => CarriesOwnBody(r, c));
+        var group = multi.FirstOrDefault(g => OwnCount(request, g) > 0 && OwnCount(request, g) < RealCount(request, g))
+            ?? multi.FirstOrDefault()
+            ?? throw new InvalidOperationException("当前 Profile 里没有一条候选不止一个真实来源的冲突");
+        Console.WriteLine($"比这一条：{group.OutputFilePath}（{group.Candidates.Count} 个来源，" +
+                          $"其中源网格在盘的 {RealCount(request, group)} 个、" +
+                          $"自带身体的 {OwnCount(request, group)} 个）");
+
+        var page = new OutputConflictPage();
+        var window = new Window
+        {
+            Content = page,
+            Width = 1400,
+            Height = 900,
+            WindowStartupLocation = WindowStartupLocation.Manual,
+            Left = -32000,
+            Top = -32000,
+            ShowActivated = false,
+            Opacity = 0,
+        };
+        window.Show();
+        PumpUntil(() => page.IsArrangeValid, 5000);
+        page.ShowRequest(request);
+        PumpRender();
+        page.UpdateLayout();
+
+        var groupList = Named<ListBox>(page, "GroupList");
+        var candidateList = Named<ListBox>(page, "CandidateList");
+        var viewport = Named<Viewport3D>(page, "Preview");
+        var meshVisual = Named<ModelVisual3D>(page, "MeshVisual");
+        var camera = Named<PerspectiveCamera>(page, "Camera");
+        var status = Named<TextBlock>(page, "PreviewStatus");
+
+        // 按输出路径找回左栏那一行（GroupRow 是页内的私有类型，只能按属性认）
+        var row = groupList.Items.Cast<object>().FirstOrDefault(o =>
+            o.GetType().GetProperty("Group")?.GetValue(o) is { } g &&
+            (string?)g.GetType().GetProperty("OutputFilePath")?.GetValue(g) == group.OutputFilePath)
+            ?? throw new InvalidOperationException("左栏里找不到那条冲突（过滤器把它藏了？）");
+        groupList.SelectedItem = row;
+        PumpRender();
+        page.UpdateLayout();
+        var candidates = candidateList.Items.Cast<object>().ToList();
+
+        // 一个非默认姿态：转过来、拉近一点、再拖开一段——重新取景会把这三样里的距离与平移抹掉
+        void StrikeAPose()
+        {
+            PageSet(page, "_yaw", Math.PI / 2);
+            PageSet(page, "_pitch", -0.3);
+            PageSet(page, "_zoom", 0.7);
+            PageSet(page, "_pan", new Vector3D(6, -4, 0));
+            PageCall(page, "UpdateCamera");
+        }
+
+        string Readout() =>
+            $"机位({camera.Position.X:0.##},{camera.Position.Y:0.##},{camera.Position.Z:0.##}) " +
+            $"朝向({camera.LookDirection.X:0.##},{camera.LookDirection.Y:0.##},{camera.LookDirection.Z:0.##}) " +
+            $"距离 {PageGet(page, "_distance"):0.##} 中心({PageGet(page, "_center")}) " +
+            $"半盒({PageGet(page, "_half")}) 平移({PageGet(page, "_pan")})";
+
+        var poses = new List<(string Label, string Pose)>();
+
+        // 按给定的行序逐个换候选并读数；tag 只进 PNG 文件名，两遍不互相覆盖
+        void Walk(IReadOnlyList<object> order, string tag)
+        {
+            foreach (var candidate in order)
+            {
+                if (poses.Count >= limit * 2)
+                    return;
+                var label = candidate.GetType().GetProperty("Label")?.GetValue(candidate) as string ?? "?";
+                if (ReferenceEquals(candidateList.SelectedItem, candidate))
+                {
+                    // 反着走第二遍时会撞回当前这一行：选中项没变就没有 SelectionChanged，也就没有新渲染，
+                    // 干等 120 秒只会等到一句假超时
+                    Console.WriteLine($"   [{tag}] {label}：本来就是当前那一行，跳过");
+                    continue;
+                }
+                if (candidate.GetType().GetProperty("SourceNif")?.GetValue(candidate) is not string nif
+                    || !File.Exists(nif))
+                    continue;
+                var before = meshVisual.Content; // Render 每次都新建一个 Model3DGroup，换实例=这一行画完了
+                candidateList.SelectedItem = candidate;
+                // 必须等"有网格"而不是只等实例变：换行时页内会先清空渲染面（Content 变 null），
+                // 只比引用就会在读数前一瞬放行，量到的是空的
+                if (!PumpUntil(() => meshVisual.Content is { } now && !ReferenceEquals(now, before), 120_000))
+                {
+                    Console.WriteLine($"   {label}：120 秒内没出网格（{status.Text}）");
+                    continue;
+                }
+                if (poses.Count == 0)
+                {
+                    // 姿态只摆一次，而且要在第一行落图之后：首次渲染本来就得取景，摆早了会被那次取景抹掉；
+                    // 往后再摆就等于把"这一行的渲染有没有把姿态保住"遮掉。
+                    StrikeAPose();
+                    PumpRender();
+                }
+                viewport.UpdateLayout();
+                PumpRender();
+                var pose = Readout();
+                Console.WriteLine($"   [{tag}{poses.Count}] {label}");
+                Console.WriteLine($"          {pose}");
+                // 网格的世界范围与取景盒放在一起看：0% 覆盖是"东西不在框里"还是"还没画完"，靠这个分
+                if (meshVisual.Content is Model3DGroup parts)
+                    Console.WriteLine($"          网格 {parts.Children.Count} 个部件，范围 " +
+                                      $"X[{parts.Bounds.X:0}..{parts.Bounds.X + parts.Bounds.SizeX:0}] " +
+                                      $"Y(高)[{parts.Bounds.Y:0}..{parts.Bounds.Y + parts.Bounds.SizeY:0}] " +
+                                      $"Z[{parts.Bounds.Z:0}..{parts.Bounds.Z + parts.Bounds.SizeZ:0}]");
+                var png = Path.Combine(outDir,
+                    $"pose{tag}{poses.Count:00}_{string.Join("_", label.Split(Path.GetInvalidFileNameChars()))}.png");
+                var frame = Render(viewport, RenderWidth, RenderHeight);
+                SavePng(frame, png);
+                Console.WriteLine($"          {Path.GetFileName(png)}  {Report(frame)}");
+                poses.Add((label, pose));
+            }
+        }
+
+        // 走两遍，第二遍反着来：摆位读数在两遍里都该一模一样。
+        // 而"某一行空帧"若跟着行走，是那件网格本身的性质（单面剔背面那一类）；跟着次序走则是探针没等到画完。
+        Walk(candidates, "a");
+        Walk(candidates.AsEnumerable().Reverse().ToList(), "b");
+
+        if (poses.Count > 0)
+        {
+            typeof(OutputConflictPage)
+                .GetMethod("Reset_Click", BindingFlags.NonPublic | BindingFlags.Instance)!
+                .Invoke(page, [null, new RoutedEventArgs()]);
+            PumpRender();
+            Console.WriteLine($"   按「复位视角」：{Readout()}");
+        }
+
+        window.Close();
+        // 一句话结论，免得靠人眼比对几串数字
+        var distinct = poses.Select(p => p.Pose).Distinct().ToList();
+        Console.WriteLine(poses.Count > 1 && distinct.Count == 1
+            ? $"结论：{poses.Count} 次换来源（正走 + 反走），相机摆位逐次相同 → 视角没动。"
+            : $"结论：{poses.Count} 次换来源里有 {distinct.Count} 种摆位 → 换来源时相机动了，逐次读数见上。");
     }
 
     private static void Shots(string outDir, int limit, string[] picks)

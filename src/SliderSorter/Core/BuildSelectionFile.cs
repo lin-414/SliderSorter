@@ -9,9 +9,17 @@ namespace SliderSorter.Core;
 /// （BodySlideApp.cpp:1196），而 AppDir 就是 BodySlide.exe 自己所在的目录，<c>Config.xml</c> 改不了它
 /// （<c>SetDefaultValue</c> 标为 isDefault，<c>SaveConfig</c> 不写 isDefault 条目）。
 /// <para>
-/// 这一点和分组文件不是一回事：分组读的是 <c>ProjectUtil::GetProjectPath() + "/SliderGroups"</c>
-/// （同文件 :3338），MO2 启动时那条路径是虚拟 Data 的汇聚点，所以分组能经模组供上去；
-/// 这个文件走的是 exe 目录，跟着「输出位置」写到模组里 BodySlide 就再也读不到了。
+/// MO2 启动时那个"exe 所在目录"是<b>虚拟</b>的：usvfs 把 <c>GetModuleFileNameW</c> 的返回值按反向映射改写成
+/// 虚拟路径（<c>usvfs/src/usvfs_dll/hooks/kernel32.cpp</c> 的 <c>hook_GetModuleFileNameW</c>），于是 AppDir 是
+/// <c>&lt;游戏&gt;\Data\CalienteTools\BodySlide</c>，读写这个文件都经虚拟 Data 落到某个模组上
+/// （用户机上的 usvfs 日志：<c>mapping file in vfs: …\Data\CalienteTools\BodySlide\BuildSelection.xml →
+/// …\mods\&lt;模组&gt;\CalienteTools\BodySlide\BuildSelection.xml</c>）。
+/// </para>
+/// <para>
+/// 所以落点与分组文件是同一个模组里的兄弟（界面层的 <c>OutputTarget</c> 把这条关系算给上层）：分组读
+/// <c>ProjectUtil::GetProjectPath() + "/SliderGroups"</c>（同文件 :3338），
+/// 这个文件读 <c>&lt;AppDir&gt;\BuildSelection.xml</c>。写在别处——包括所选 BodySlide 安装的真实目录——
+/// 会被优先级更高的模组挡住，BodySlide 读到的仍是旧的那一份。
 /// </para>
 /// 记录"同一个输出文件由哪个 slider set 来建"，BodySlide 读到就不再弹窗询问。
 /// 本工具只维护自己认得的那些 <c>&lt;OutputChoice&gt;</c>，其余节点（含 <c>&lt;ZapChoice&gt;</c>）原样保留。
@@ -23,8 +31,9 @@ public static class BuildSelectionFile
     /// <summary>覆盖已有文件前，原件的备份后缀。</summary>
     public const string BackupSuffix = ".bak";
 
-    /// <summary>唯一有效的落点：BodySlide 程序目录（<c>Config.xml</c> 同级）。见类型注释。</summary>
-    public static string PathFor(string bodySlideAppDir) => Path.Combine(bodySlideAppDir, FileName);
+    /// <summary>拼出落点：传 BodySlide 眼里的程序目录（虚拟 Data 下的 <c>CalienteTools\BodySlide</c>，
+    /// 在 MO2 里由本工具自己的输出模组供给）。见类型注释。</summary>
+    public static string PathFor(string bodySlideFolder) => Path.Combine(bodySlideFolder, FileName);
 
     /// <summary>读出现有的输出选择（path → choice）。文件不存在算成功且结果为空——首次导出就是这种情况。</summary>
     public static bool TryRead(string path, out Dictionary<string, string> outputChoices, out string? error)

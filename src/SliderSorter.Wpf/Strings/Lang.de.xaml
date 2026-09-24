@@ -279,8 +279,8 @@ Die Release-Seite zum Herunterladen öffnen?</sys:String>
     <sys:String x:Key="L.Conflict_ClearAll" xml:space="preserve">Alles zurücksetzen</sys:String>
     <sys:String x:Key="L.Conflict_ClearAllTip" xml:space="preserve">Die Wahl für jede gelistete Gruppe leeren und BodySlide erneut fragen lassen</sys:String>
     <sys:String x:Key="L.Conflict_Export" xml:space="preserve">In BodySlide schreiben…</sys:String>
-    <sys:String x:Key="L.Conflict_ExportTip" xml:space="preserve">Schreibt die Wahl in die BuildSelection.xml im BodySlide-Programmordner (neben Config.xml) — Gruppendateien kann eine Mod mitbringen, diese Datei nicht; der Bestätigungsdialog zeigt zuerst den vollständigen Pfad, die bisherige Datei bleibt als .bak erhalten</sys:String>
-    <sys:String x:Key="L.Conflict_ExportHint" xml:space="preserve">Schreibt BuildSelection.xml; die bisherige Datei bleibt als .bak erhalten</sys:String>
+    <sys:String x:Key="L.Conflict_ExportTip" xml:space="preserve">Schreibt die Wahl in die BuildSelection.xml im aktuellen Ausgabeziel — derselbe BodySlide-Ordner wie die Gruppendateien (im Modus "Eigener Ordner" dieser Ordner selbst; unter MO2 die Datei, die BodySlide tatsächlich liest); der Bestätigungsdialog zeigt zuerst den vollständigen Pfad, die bisherige Datei bleibt als .bak erhalten</sys:String>
+    <sys:String x:Key="L.Conflict_ExportHint" xml:space="preserve">Schreibt BuildSelection.xml ins Ausgabeziel; bisherige Datei bleibt als .bak</sys:String>
     <sys:String x:Key="L.Conflict_StatusChosen" xml:space="preserve">Gewählt: {0}</sys:String>
     <sys:String x:Key="L.Conflict_StatusUnresolved" xml:space="preserve">offen</sys:String>
     <sys:String x:Key="L.Conflict_CandidateCount" xml:space="preserve">{0} Kandidaten</sys:String>
@@ -306,7 +306,7 @@ Die Release-Seite zum Herunterladen öffnen?</sys:String>
 {1}
 Die vorhandene Datei wird als BuildSelection.xml.bak gesichert. BodySlide fragt nach diesen Gruppen erst nach dem nächsten Start nicht mehr. Fortfahren?</sys:String>
     <sys:String x:Key="L.Msg_NoConflicts" xml:space="preserve">Keine Ausgabedatei-Konflikte in diesem Scan: Jede Outfit-Datei hat genau eine Quelle.</sys:String>
-    <sys:String x:Key="L.Msg_NoBodySlideDir" xml:space="preserve">Es ist keine BodySlide-Installation gewählt, die BuildSelection.xml hat daher kein Ziel.</sys:String>
+    <sys:String x:Key="L.Msg_NoExportTarget" xml:space="preserve">Es gibt noch kein Ziel zum Schreiben: erst eine BodySlide-Installation wählen und einmal scannen.</sys:String>
     <sys:String x:Key="L.Msg_ConflictNothingToExport" xml:space="preserve">Für keine Konfliktgruppe ist bisher ein Gewinner gewählt, es gibt also nichts zu schreiben.</sys:String>
     <sys:String x:Key="L.Msg_ExportFail" xml:space="preserve">BuildSelection.xml konnte nicht geschrieben werden.</sys:String>
     <sys:String x:Key="L.Msg_BuildSelWritten" xml:space="preserve">{0} Einträge geschrieben, {1} entfernt → {2}. Starten Sie BodySlide neu, damit es sie übernimmt.</sys:String>
@@ -392,6 +392,7 @@ Insgesamt {4} Mitglied(er).</sys:String>
     <sys:String x:Key="L.Diag_NotScanned">(nicht gescannt)</sys:String>
     <sys:String x:Key="L.Diag_OutfitCount">Outfits: {0} (Namenskonflikte: {1})</sys:String>
     <sys:String x:Key="L.Diag_OutputDir">Ausgabeordner: {0}</sys:String>
+    <sys:String x:Key="L.Diag_BuildSelPath">BuildSelection.xml: {0}</sys:String>
     <sys:String x:Key="L.Diag_OutputUndetermined">(offen)</sys:String>
 
     <!-- About -->
@@ -411,7 +412,7 @@ Insgesamt {4} Mitglied(er).</sys:String>
     <sys:String x:Key="L.Help_06">MO2-Instanz: globale Instanzen und tragbare Installationen unter %LOCALAPPDATA%\ModOrganizer werden automatisch gefunden; "Instanzordner wählen…" zeigt einer Instanz manuell (enthält ModOrganizer.ini); "Aktualisieren" liest die Instanzen erneut ein.</sys:String>
     <sys:String x:Key="L.Help_07">Profil: listet alle Profile dieser Instanz. Die Liste der aktivierten Mods kommt aus dessen modlist.txt, in derselben Reihenfolge wie das linke Feld in MO2.</sys:String>
     <sys:String x:Key="L.Help_08">BodySlide: durchsucht aktivierte Mods nach Ordnern mit BodySlide*.exe und Config.xml; wird nichts gefunden, zeigen Sie mit "Durchsuchen…" manuell auf einen.</sys:String>
-    <sys:String x:Key="L.Help_09">Ausgabeziel: bestimmt, wohin die Gruppendateien geschrieben werden (siehe Abschnitt 6). Rechts in der Statusleiste steht der aktuelle Ausgabeordner — die volle Adresse erscheint beim Darüberfahren.</sys:String>
+    <sys:String x:Key="L.Help_09">Ausgabeziel: bestimmt, wohin die Gruppendateien geschrieben werden — und wohin die BuildSelection.xml der Ausgabekonflikte geht (siehe Abschnitte 6 und 8). Rechts in der Statusleiste steht der aktuelle Ausgabeordner — die volle Adresse erscheint beim Darüberfahren.</sys:String>
     <sys:String x:Key="L.Help_S2_Tree">[Mod-Baum links]</sys:String>
     <sys:String x:Key="L.Help_10">Reihenfolge: Trenner (grau) → Mod (fett, einklappbar) → Outfits; dieselbe Reihenfolge wie das linke Feld in MO2, aber nur aktivierte Mods, die BodySlide-Outfits enthalten.</sys:String>
     <sys:String x:Key="L.Help_11">Die beiden Filterfelder oben tun Verschiedenes: "Outfit-Namen filtern…" sucht nur in Outfit-Namen, "Mod-Namen filtern…" nur in Mod-Namen (zusammenhängende Teilzeichenkette, Groß-/Kleinschreibung egal; ein Mod-Treffer zeigt alle Outfits dieser Mod). "Nur ohne Gruppe" versteckt Outfits, die schon in einer Gruppe stecken.</sys:String>
@@ -463,7 +464,7 @@ Insgesamt {4} Mitglied(er).</sys:String>
     <sys:String x:Key="L.Help_H8">8. Zwei voneinander unabhängige Ergebnisse</sys:String>
     <sys:String x:Key="L.Help_Conflict_Intro">Ein Scan liefert zwei voneinander unabhängige Ergebnisse, je eines pro Registerkarte. Sie können mit beiden allein arbeiten — keines muss zuerst kommen.</sys:String>
     <sys:String x:Key="L.Help_Conflict_A">· Gruppen (Registerkarte "Gruppierung") — Outfits Gruppen zuordnen, dann schreibt "Gruppendateien speichern" die SliderGroups\*.xml, die BodySlide liest.</sys:String>
-    <sys:String x:Key="L.Help_Conflict_B">· Ausgabekonflikte (Registerkarte "Ausgabekonflikte") — schreiben mehrere Outfits dieselbe Mesh-Datei, wählen Sie, welche Mod sie baut; "In BodySlide schreiben…" sichert die BuildSelection.xml. Die Wahl bleibt, bis Sie schreiben; die bisherige Datei wird vorher als .bak gesichert. Sie landet immer im BodySlide-Programmordner (neben Config.xml) — nur von dort liest BodySlide sie, sie folgt also nicht dem Ausgabeziel in den Einstellungen.</sys:String>
+    <sys:String x:Key="L.Help_Conflict_B">· Ausgabekonflikte (Registerkarte "Ausgabekonflikte") — schreiben mehrere Outfits dieselbe Mesh-Datei, wählen Sie, welche Mod sie baut; "In BodySlide schreiben…" sichert die BuildSelection.xml. Die Wahl bleibt, bis Sie schreiben; die bisherige Datei wird vorher als .bak gesichert. Die Datei folgt dem Ausgabeziel: Sie landet dort im Ordner CalienteTools\BodySlide (im Modus "Eigener Ordner" in diesem Ordner selbst), in derselben Mod wie die Gruppendateien. BodySlide liest sie nur aus seinem Programmordner, und unter MO2 ist das der virtuelle Ordner Data\CalienteTools\BodySlide — das Ausgabeziel ist also genau die Stelle, die gelesen wird.</sys:String>
     <sys:String x:Key="L.Help_Conflict_C">Jeder Teil schreibt seine eigene Datei und überschreibt dabei nie den anderen: Nach einem Scan stehen beide bereit, in beliebiger Reihenfolge, und Sie können später an einem der beiden weitermachen.</sys:String>
     <sys:String x:Key="L.Help_Conflict_D">"Geteilte Ausgabe innerhalb einer Mod" (hunderte Farbvarianten desselben Outfits) ist normal und gilt nicht als zu lösen; kreuzen Sie "Nur Konflikte zwischen Mods" an, um sie herauszufiltern.</sys:String>
     <sys:String x:Key="L.Help_Toc">Inhalt</sys:String>

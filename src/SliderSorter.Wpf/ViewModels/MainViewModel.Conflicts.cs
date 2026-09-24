@@ -38,9 +38,12 @@ public sealed class ConflictRequest
     /// <summary>全量保存工作副本到本工具的设置（不碰 BodySlide）。</summary>
     public required Action<IReadOnlyDictionary<string, string>> Save { get; init; }
 
-    /// <summary>选择要写去的位置（BodySlide 的 BuildSelection.xml 全路径）；还没选中 BodySlide 安装时为空串。
+    /// <summary>选择要写去的位置（BuildSelection.xml 全路径，落在当前输出位置里）；还没有写入目标时为空串。
+    /// 与 <see cref="IsGrouped"/> 一样是**活**的取值器而不是快照：输出位置（模式 / 自定义目录 / 所选实例）
+    /// 在设置页随时会改，而本页只在 <see cref="MainViewModel.CurrentConflict"/> 变化时重建——
+    /// 快照会让确认框念出一个导出时并不使用的路径。
     /// 确认框由窗口来弹——它的宿主才是这个对话框。</summary>
-    public required string BuildSelectionPath { get; init; }
+    public required Func<string> BuildSelectionPath { get; init; }
 
     /// <summary>把已保存的选择写进 BodySlide 的 BuildSelection.xml（调用方须先取得用户同意）。
     /// Message = 该告诉用户的话（成功文案或错误原因）。</summary>
@@ -149,7 +152,7 @@ public partial class MainViewModel
             SetGroupsCollapsed = SetConflictGroupsCollapsed,
             SourceNifOf = name => sourceNif.TryGetValue(name, out var path) ? path : null,
             Save = SaveConflictChoices,
-            BuildSelectionPath = ResolveBuildSelectionPath() ?? "",
+            BuildSelectionPath = () => ResolveBuildSelectionPath() ?? "",
             Export = ExportConflictChoices,
             Assets = BuildAssetResolver(),
         };
@@ -193,11 +196,11 @@ public partial class MainViewModel
         return roots.Count == 0 ? null : new GameDataResolver(roots);
     }
 
-    /// <summary>BuildSelection.xml 的落点：只有 BodySlide 程序目录这一个选择，**不跟随设置里的输出位置**。
-    /// 分组文件按项目路径（MO2 下是虚拟 Data 的汇聚点）读，能经模组供上去；这个文件只从 exe 目录读
-    /// （<see cref="BuildSelectionFile"/> 的注释里有源码出处），跟着输出位置写进模组就等于 BodySlide 读不到。
-    /// 还没选中 BodySlide 安装时为 null。</summary>
-    private string? ResolveBuildSelectionPath() => _bsAppDir is null ? null : BuildSelectionFile.PathFor(_bsAppDir!);
+    /// <summary>BuildSelection.xml 的落点：当前输出位置里的 <c>CalienteTools\BodySlide</c> 目录
+    /// （自定义模式就是所选目录）——与分组文件同处一个模组，见 <see cref="OutputTarget"/> 里那段
+    /// 「MO2 下 AppDir 是虚拟路径」的说明。还没有写入目标（未选 BodySlide 安装 / 未完成扫描）时为 null。</summary>
+    private string? ResolveBuildSelectionPath() =>
+        ResolveWriteTarget() is { } target ? BuildSelectionFile.PathFor(target.BuildSelectionDir) : null;
 
     /// <summary>只动本次扫描认得的冲突路径：其它 BodySlide 安装留下的、或对应模组已消失的条目都不碰。
     /// <para>
@@ -244,11 +247,12 @@ public partial class MainViewModel
     }
 
     /// <summary>导出：展开成"每种拼写一条"由 Core 算（<see cref="OutputConflicts.ExportEntries"/>），
-    /// 这里只负责落点与反馈。</summary>
+    /// 这里只负责落点与反馈。落点跟随输出位置（<see cref="ResolveBuildSelectionPath"/>），不再是
+    /// 所选 BodySlide 安装的真实目录。</summary>
     private (bool Ok, string? Message) ExportConflictChoices()
     {
         if (ResolveBuildSelectionPath() is not { } path)
-            return (false, L10n.Tr("L.Msg_NoBodySlideDir"));
+            return (false, L10n.Tr("L.Msg_NoExportTarget"));
         var managed = OutputConflicts.ManagedPaths(ConflictGroups);
         var desired = OutputConflicts.ExportEntries(ConflictGroups);
         if (desired.Count == 0)

@@ -189,6 +189,8 @@ public partial class OutputConflictPage : UserControl
         _textures = request.Assets is { } assets ? new PreviewTextureCache(assets) : null;
         // 新清单：上一轮的"只看某组"未必还在（组名改了、那个组没冲突了），交给 SyncGroupFilter 重新定
         _groupFilter = null;
+        // 取景的锁也一起放开：重新扫描后同一组可能已经是另一套几何了，沿用旧框会把新网格切掉
+        _framedFor = null;
 
         ApplyTexts(request);
         // 一组跨模组的都没有时别把列表筛成空的：这时默认显示全部
@@ -707,9 +709,23 @@ public partial class OutputConflictPage : UserControl
     private MouseButton? _dragButton;
     private Point _dragLast;
 
-    /// <summary>用户右键拖出来的视野偏移（世界坐标）。换一件衣服必须清零，
-    /// 否则上一件拖到边角的内容会把新衣服推出画面。</summary>
+    /// <summary>用户右键拖出来的视野偏移（世界坐标）。只有换一条冲突（那是另一件衣服了，
+    /// 上一件拖到边角的内容会把新衣服推出画面）与「复位视角」才清它——同一条冲突里换模组来源、
+    /// 换垫的身体都留着，那是他点名要看的那一块。</summary>
     private Vector3D _pan;
+
+    /// <summary>上一次取景是为谁做的：哪一条冲突（按输出路径认）+ 「身体」下拉当时选的哪具。
+    /// <para>
+    /// 同一条冲突里换候选行就是"同一个 nif 换个模组长什么样"，此时**不许**重新取景：按新网格重框
+    /// 一次会让画面轻微平移加缩放，两行的差异反倒看不出来。键里放的是**界面上选的那具身体**而不是
+    /// "这一件实际垫没垫"——一个 set 自带身体、另一个要补一具是常态（本机抽样 32% 自带），
+    /// 拿后者当身份就等于每换一行重新框一次，右键拖出来的平移会被抹掉。
+    /// </para></summary>
+    private (string Group, BodyOption Body)? _framedFor;
+
+    /// <summary>最近一次真画进视口的那对模型。「复位视角」要按它重新取景——同一条冲突内取景是锁住的，
+    /// 没有这一步，一组里第一件把框撑得很大（披风）时后面每件小东西都会被它压着，且再也解不开。</summary>
+    private (NifPreviewModel Model, NifPreviewModel? Body)? _rendered;
 
     /// <summary>UpdateCamera 算出来的相机基向量与距离，平移要按"屏幕上 1 像素等于多少世界单位"
     /// 换算，就得同时用到这三个，而它们每次取景都会变。</summary>
@@ -903,7 +919,24 @@ public partial class OutputConflictPage : UserControl
         SetPreviewStatus("");
         MeshVisual.Content = BuildModel(model, brushes, body, bodyBrushes);
         SetMeshStats(MeshStatsFor(model, body));
-        Fit(model, body);
+        _rendered = (model, body);
+        // 取景只在"换了要看的那条冲突 / 换了「身体」下拉"时重算（见 _framedFor）。
+        // _selectedPath 与 _body 此刻仍等于这次渲染所属那次 ShowPreview 的取值：它们一变就会另起一份
+        // 预览，而 ShowPreview 里那道 _previewCts 比对已经把旧渲染挡掉了。
+        if (_selectedPath is not { } group)
+        {
+            Fit(model, body);
+            _framedFor = null; // 认不出这一行属于哪条冲突，就别锁住取景——宁可每次都框准
+        }
+        else if (_framedFor is not { } framed || framed.Group != group || framed.Body != _body)
+        {
+            // 换到另一条冲突才算"换了件衣服"：把他拖出来的视野偏移清掉。换身体下拉不清——
+            // 那是同一件衣服换具身体打底，他多半还盯着刚才那块细节。
+            if (_framedFor is not { Group: var framedGroup } || framedGroup != group)
+                _pan = new Vector3D();
+            Fit(model, body);
+            _framedFor = (group, _body);
+        }
         UpdateCamera();
     }
 
@@ -1009,13 +1042,13 @@ public partial class OutputConflictPage : UserControl
 
     /// <summary>取景要连垫进去的身体一起算：身体通常比一片披风大得多，只按衣服的包围盒摆相机
     /// 会把身体切得只剩一截；而离身体一大截的散落碎片（蒙皮件被留在绑定空间那一类）不参与取景，
-    /// 见 <see cref="NifPreviewModel.FramingBounds"/>。</summary>
+    /// 见 <see cref="NifPreviewModel.FramingBounds"/>。
+    /// <para>只算取景盒，不碰 <see cref="_pan"/>：视野偏移是用户自己拖出来的，归调用方管。</para></summary>
     void Fit(NifPreviewModel model, NifPreviewModel? body)
     {
         var (min, max) = NifPreviewModel.FramingBounds(model, body);
 
         _center = ToWpf((min + max) * 0.5f);
-        _pan = new Vector3D();
         var lo = ToWpf(min);
         var hi = ToWpf(max);
         _half = new Vector3D((hi.X - lo.X) / 2, (hi.Y - lo.Y) / 2, (hi.Z - lo.Z) / 2);
@@ -1178,6 +1211,11 @@ public partial class OutputConflictPage : UserControl
         _pitch = 0;
         _zoom = 1;
         _pan = new Vector3D();
+        // 取景在同一条冲突内是锁住的（见 _framedFor），复位就是"退出锁定"的唯一出口：
+        // 按当前画着的这件重新框一次。锁本身不用动——_framedFor 与 _rendered 是同一次渲染留下的，
+        // 认不出所属冲突时它本来就是 null，下一次渲染会照常重新取景。
+        if (_rendered is { } current)
+            Fit(current.Model, current.Body);
         UpdateCamera();
     }
 
@@ -1214,7 +1252,7 @@ public partial class OutputConflictPage : UserControl
             return;
         }
         if (!Notify.Confirm(Shell, L10n.Tr("L.Conflict_Export"),
-                L10n.TrF("L.Confirm_ExportBuildSel", chosen, request.BuildSelectionPath)))
+                L10n.TrF("L.Confirm_ExportBuildSel", chosen, request.BuildSelectionPath())))
             return;
 
         var (ok, message) = request.Export();

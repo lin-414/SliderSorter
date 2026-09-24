@@ -69,6 +69,10 @@ public partial class MainViewModel
                 Scan.Outfits.Count(o => o.HasConflict)));
             sb.AppendLine(L10n.TrF("L.Diag_OutputDir",
                 ResolveWriteTarget()?.Dir ?? L10n.Tr("L.Diag_OutputUndetermined")));
+            // BuildSelection.xml 的落点紧跟在输出目录后面：这两条现在应当同处一个模组，
+            // 报告里并排写着，"BodySlide 没按我的选择建"这类问题一眼就能核对。
+            sb.AppendLine(L10n.TrF("L.Diag_BuildSelPath",
+                ResolveBuildSelectionPath() ?? L10n.Tr("L.Diag_OutputUndetermined")));
         }
 
         sb.AppendLine();

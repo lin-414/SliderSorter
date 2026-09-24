@@ -50,7 +50,6 @@ public sealed record GroupItem(string Name, int Count)
 public partial class MainViewModel : ObservableObject
 {
     public static string AppTitle => L10n.Tr("L.App_Title");
-    public const string DedicatedModName = "SliderSorter Output";
 
     // 共享实例：App 启动时加载并登记（AppSettings.Use）。没有 App 上下文（单测）时 Shared 惰性加载，
     // 效果与原来的各自 Load 一致，但不会出现"两处各加载一份、互相覆盖"的问题。
@@ -817,7 +816,7 @@ public partial class MainViewModel : ObservableObject
 
         var resolution = BodySlideLocator.ResolveProjectPath(config, bsDir, mods, instance?.GamePath);
         var scan = SliderSetScanner.Scan(resolution, mods, progress);
-        var target = ResolveWriteTargetCore(resolution, bsDir, instance, writeMode, customDir);
+        var target = OutputTarget.Resolve(resolution, bsDir, instance, writeMode, customDir);
         var existing = new List<SliderGroup>();
         if (target?.Dir is { } targetDir)
         {

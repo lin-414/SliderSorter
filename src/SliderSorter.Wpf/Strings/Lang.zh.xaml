@@ -277,8 +277,8 @@
     <sys:String x:Key="L.Conflict_ClearAll" xml:space="preserve">全部清除</sys:String>
     <sys:String x:Key="L.Conflict_ClearAllTip" xml:space="preserve">清除当前列出的每一组的选择，交回 BodySlide 询问</sys:String>
     <sys:String x:Key="L.Conflict_Export" xml:space="preserve">写入 BodySlide…</sys:String>
-    <sys:String x:Key="L.Conflict_ExportTip" xml:space="preserve">把选定结果写进 BodySlide 程序目录（Config.xml 同级）的 BuildSelection.xml——分组文件可以经模组供上去，这个文件不行；写之前的确认框会列出全路径，原文件先备份成 .bak</sys:String>
-    <sys:String x:Key="L.Conflict_ExportHint" xml:space="preserve">写入 BuildSelection.xml，原文件先备份成 .bak</sys:String>
+    <sys:String x:Key="L.Conflict_ExportTip" xml:space="preserve">把选定结果写进 BuildSelection.xml，落点在当前输出位置里——与分组文件同一个 BodySlide 目录（「自定义」模式下就是所选目录本身；MO2 下正是 BodySlide 实际读取它的那一份）；写之前的确认框会列出全路径，原文件先备份成 .bak</sys:String>
+    <sys:String x:Key="L.Conflict_ExportHint" xml:space="preserve">写入输出位置的 BuildSelection.xml，原文件先备份成 .bak</sys:String>
     <sys:String x:Key="L.Conflict_StatusChosen" xml:space="preserve">已选：{0}</sys:String>
     <sys:String x:Key="L.Conflict_StatusUnresolved" xml:space="preserve">未指定</sys:String>
     <sys:String x:Key="L.Conflict_CandidateCount" xml:space="preserve">{0} 个候选</sys:String>
@@ -304,7 +304,7 @@
 {1}
 原有文件会先备份成 BuildSelection.xml.bak。BodySlide 下次启动后就不再询问这些组。继续？</sys:String>
     <sys:String x:Key="L.Msg_NoConflicts" xml:space="preserve">本次扫描没有输出文件冲突：每个服装文件都只有一个来源。</sys:String>
-    <sys:String x:Key="L.Msg_NoBodySlideDir" xml:space="preserve">还没选中 BodySlide 安装，无处可写 BuildSelection.xml。</sys:String>
+    <sys:String x:Key="L.Msg_NoExportTarget" xml:space="preserve">还没有可写入的位置：请先选中 BodySlide 安装并完成一次扫描。</sys:String>
     <sys:String x:Key="L.Msg_ConflictNothingToExport" xml:space="preserve">还没有为任何冲突组选定赢家，无需写入。</sys:String>
     <sys:String x:Key="L.Msg_ExportFail" xml:space="preserve">写入 BuildSelection.xml 失败。</sys:String>
     <sys:String x:Key="L.Msg_BuildSelWritten" xml:space="preserve">已写入 {0} 条、删除 {1} 条 → {2}。重启 BodySlide 后生效。</sys:String>
@@ -390,6 +390,7 @@
     <sys:String x:Key="L.Diag_NotScanned">（未扫描）</sys:String>
     <sys:String x:Key="L.Diag_OutfitCount">服装总数: {0}（同名冲突 {1}）</sys:String>
     <sys:String x:Key="L.Diag_OutputDir">输出目录: {0}</sys:String>
+    <sys:String x:Key="L.Diag_BuildSelPath">BuildSelection.xml: {0}</sys:String>
     <sys:String x:Key="L.Diag_OutputUndetermined">（未定）</sys:String>
 
     <!-- 关于 -->
@@ -409,7 +410,7 @@
     <sys:String x:Key="L.Help_06">MO2 实例：自动发现 %LOCALAPPDATA%\ModOrganizer 下的全局实例与便携安装；「选择实例目录…」可手动指定含 ModOrganizer.ini 的实例目录；「刷新」重新扫描实例。</sys:String>
     <sys:String x:Key="L.Help_07">配置 Profile：列出该实例所有可用的 Profile。启用模组列表读取自该 Profile 的 modlist.txt，顺序与 MO2 左侧栏一致。</sys:String>
     <sys:String x:Key="L.Help_08">BodySlide：自动在启用模组中查找含 BodySlide*.exe 与 Config.xml 的目录；找不到时用「浏览…」手动指定。</sys:String>
-    <sys:String x:Key="L.Help_09">输出位置：决定分组文件保存到哪里（详见第六章）。状态栏右侧会显示当前输出目录，悬停可看完整路径。</sys:String>
+    <sys:String x:Key="L.Help_09">输出位置：决定分组文件保存到哪里，也决定「输出归属」那份 BuildSelection.xml 写到哪里（详见第六、八章）。状态栏右侧会显示当前输出目录，悬停可看完整路径。</sys:String>
     <sys:String x:Key="L.Help_S2_Tree">【左侧模组树】</sys:String>
     <sys:String x:Key="L.Help_10">层级为 分隔符（灰色）→ 模组（加粗，可折叠）→ 服装；顺序与 MO2 左侧栏一致，只显示含 BodySlide 服装的启用模组。</sys:String>
     <sys:String x:Key="L.Help_11">顶部两个过滤框各管一类：「过滤服装名…」只匹配服装名，「过滤模组名…」只匹配模组名（连续子串、不区分大小写；模组名命中会显示该模组全部服装）；「仅看未分配」只显示还没进任何组的服装。</sys:String>
@@ -463,7 +464,7 @@
     <sys:String x:Key="L.Help_H8">八、两份独立成果</sys:String>
     <sys:String x:Key="L.Help_Conflict_Intro">扫描一次会产生两份互不依赖的成果，分别落在两个标签页里。可以直接做其中任意一件，不必先完成另一件。</sys:String>
     <sys:String x:Key="L.Help_Conflict_A">① 分组（「分组生成」页）——把服装划进组，点「保存分组文件」写出 SliderGroups\*.xml，供 BodySlide 读取滑块组。</sys:String>
-    <sys:String x:Key="L.Help_Conflict_B">② 输出归属（「输出归属」页）——多件服装写出同一个身体网格文件时，选定由哪个模组生成，点「写入 BodySlide…」写进 BuildSelection.xml。选择结果只存在本工具里，写入前原文件会备份为 .bak。它永远写到 BodySlide 程序目录（Config.xml 旁边）——BodySlide 只从那里读这个文件，所以它不跟随设置里的输出位置。</sys:String>
+    <sys:String x:Key="L.Help_Conflict_B">② 输出归属（「输出归属」页）——多件服装写出同一个身体网格文件时，选定由哪个模组生成，点「写入 BodySlide…」写进 BuildSelection.xml。选择结果只存在本工具里，写入前原文件会备份为 .bak。落点跟随「输出位置」：写在输出位置下的 CalienteTools\BodySlide 目录里（「自定义」模式就是所选目录本身），与分组文件同一个模组。BodySlide 只从它的程序目录读这个文件，而 MO2 下那个目录就是虚拟 Data 里的 CalienteTools\BodySlide——写进输出位置才是它读得到的那一份。</sys:String>
     <sys:String x:Key="L.Help_Conflict_C">两者各写各的文件，互不覆盖：只要扫描过一次，两份成果就都可用，顺序随意，之后也都能重新进入单独修改。</sys:String>
     <sys:String x:Key="L.Help_Conflict_D">「同一模组内部共用输出文件」（一件衣服的几百个配色）是常态，默认不算需要处理的冲突；勾「只看跨模组冲突」可把它们滤掉。</sys:String>
     <sys:String x:Key="L.Help_Toc">目录</sys:String>

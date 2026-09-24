@@ -31,50 +31,19 @@ public partial class MainViewModel
     // 曾有一个 UpdateAvailable 事件，视图订阅了却从未被触发——更新提示实际走
     // CheckForUpdatesAsync 里的 ConfirmHandler。已删除该事件与视图侧的订阅。
 
-    private (string Dir, string Description)? _lastTarget;
+    private OutputTarget? _lastTarget;
 
     /// <summary>状态栏输出目录点击：打开当前输出目录。</summary>
     public string? ResolveOutputDirectory() => ResolveWriteTarget()?.Dir;
 
     public string? ResolveTargetDescription() => ResolveWriteTarget()?.Description;
 
-    private (string Dir, string Description)? ResolveWriteTarget()
+    /// <summary>当前写入目标（分组文件与 BuildSelection.xml 的落点，见 <see cref="OutputTarget"/>）。</summary>
+    private OutputTarget? ResolveWriteTarget()
     {
         if (Resolution is null || _bsAppDir is null)
             return null;
-        return ResolveWriteTargetCore(Resolution, _bsAppDir, SelectedInstance, Settings.WriteMode, Settings.CustomTargetDir);
-    }
-
-    private static (string Dir, string Description)? ResolveWriteTargetCore(
-        ProjectPathResolution resolution, string bsAppDir, Mo2Instance? instance, WriteMode mode, string? customDir)
-    {
-        var virtualKind = resolution.Kind is ProjectPathKind.GameDataCalienteTools or ProjectPathKind.GameDataTools;
-
-        (string, string)? Mo2Mod() =>
-            instance is null || !Directory.Exists(instance.ModsDirectory)
-                ? null
-                : (Path.Combine(instance.ModsDirectory, DedicatedModName, "CalienteTools", "BodySlide", "SliderGroups"),
-                   L10n.TrF("L.Target_Mo2Mod", DedicatedModName));
-
-        (string, string)? RealData() =>
-            string.IsNullOrWhiteSpace(resolution.GameDataPath)
-                ? null
-                : (Path.Combine(resolution.GameDataPath, "CalienteTools", "BodySlide", "SliderGroups"),
-                   L10n.Tr("L.Wm_GameData"));
-
-        return mode switch
-        {
-            WriteMode.BodySlideDir => (Path.Combine(bsAppDir, "SliderGroups"), L10n.Tr("L.Wm_BsDir")),
-            WriteMode.Mo2Mod => Mo2Mod() ?? RealData(),
-            WriteMode.RealGameData => RealData() ?? Mo2Mod(),
-            WriteMode.Custom => string.IsNullOrWhiteSpace(customDir)
-                ? null
-                : (customDir, L10n.Tr("L.Target_CustomDir")),
-            _ => // 自动
-                !virtualKind
-                    ? (Path.Combine(bsAppDir, "SliderGroups"), L10n.Tr("L.Wm_BsDir"))
-                    : Mo2Mod() ?? RealData(),
-        };
+        return OutputTarget.Resolve(Resolution, _bsAppDir, SelectedInstance, Settings.WriteMode, Settings.CustomTargetDir);
     }
 
     private void LogWriteTarget()
