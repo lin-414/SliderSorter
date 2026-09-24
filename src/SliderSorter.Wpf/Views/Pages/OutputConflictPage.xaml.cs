@@ -1347,15 +1347,43 @@ public partial class OutputConflictPage : UserControl
 
     private void OwnerMenu_Click(object sender, RoutedEventArgs e)
     {
-        if (_ownerMenu is not { } menu)
-            return;
         if (sender is not FrameworkElement source)
             return;
-        menu.PlacementTarget = source;
-        // 这颗在窗口最底下的操作行上：往下方开就会被屏幕边缘切掉，菜单得朝上长
-        menu.Placement = PlacementMode.Top;
-        BuildOwnerMenu(VisibleGroups());
+        OpenOwnerMenu(source, VisibleGroups());
+    }
+
+    /// <summary>开「按模组指定」的模组菜单，朝下还是朝上由<b>锚点下面还剩多少地方</b>决定。
+    /// <para>
+    /// 不这么做的话：这颗菜单最多 420 高，而它的入口一个贴在窗口最底边（操作行那颗），
+    /// 另一个可以落在左栏任意一个分组头上——靠下的分组头按鼠标点往下长，整份菜单就越过窗口
+    /// 底边盖到桌面上了（实机截图里 A-UBE 那一组就是这样）。
+    /// </para>
+    /// <para>
+    /// 先 <see cref="FrameworkElement.Measure"/> 再挑方向：菜单高度跟着项数走（几个到几十个模组），
+    /// 写死一个阈值要么太保守要么照样溢出。量完 DesiredSize 就准了——MaxHeight 已经透传到外框，
+    /// 所以这个高度就是它真正会占的高度。
+    /// </para></summary>
+    private void OpenOwnerMenu(FrameworkElement anchor, IReadOnlyList<OutputConflictGroup> scope,
+        string? groupLabel = null)
+    {
+        if (_ownerMenu is not { } menu)
+            return;
+        menu.PlacementTarget = anchor;
+        BuildOwnerMenu(scope, groupLabel);
+        menu.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+        menu.Placement = FitsBelow(anchor, menu.DesiredSize.Height) ? PlacementMode.Bottom : PlacementMode.Top;
         menu.IsOpen = true;
+    }
+
+    /// <summary>锚点下方到窗口底边之间放不放得下 <paramref name="height"/>（留 8 的余量）。
+    /// 拿不到宿主窗口时按"放不下"处理——宁可朝上开，也不要盖到窗口外。</summary>
+    private static bool FitsBelow(FrameworkElement anchor, double height)
+    {
+        var shell = Window.GetWindow(anchor);
+        if (shell is null)
+            return false;
+        var top = anchor.TransformToVisual(shell).Transform(new Point(0, 0)).Y;
+        return shell.ActualHeight - (top + anchor.ActualHeight) + 8 >= height;
     }
 
     /// <summary>「按模组指定」的项 = <paramref name="scope"/> 里出过候选的模组，按"能定几组"降序。
@@ -1450,7 +1478,8 @@ public partial class OutputConflictPage : UserControl
                 .Where(r => ReferenceEquals(r.GroupKey, key))
                 .Select(r => r.Group).Distinct().ToList();
 
-    /// <summary>分组头右键菜单里的「本组按模组指定…」：把该组卷入的冲突圈出来，弹同一颗模组菜单。
+    /// <summary>分组头右键菜单里的「本组按模组指定…」：把该组卷入的冲突圈出来，弹同一颗模组菜单
+    /// （开法与方向判断见 <see cref="OpenOwnerMenu"/>）。
     /// <para>
     /// 它是「只看某组」+ 底部那颗的合体，但不是同一件事：走那条路要先改掉左栏的过滤，
     /// 用完还得改回去；而"给这一组定个归属"本来就不该以换一屏内容为代价。
@@ -1472,13 +1501,8 @@ public partial class OutputConflictPage : UserControl
             return;
         var scope = GroupConflicts(anchor);
         var label = anchor.Name.Length == 0 ? L10n.Tr("L.Conflict_Ungrouped") : anchor.Name;
-        Dispatcher.BeginInvoke(() =>
-        {
-            menu.PlacementTarget = target;
-            menu.Placement = PlacementMode.MousePoint;
-            BuildOwnerMenu(scope, label);
-            menu.IsOpen = true;
-        }, System.Windows.Threading.DispatcherPriority.Input);
+        Dispatcher.BeginInvoke(() => OpenOwnerMenu(target, scope, label),
+            System.Windows.Threading.DispatcherPriority.Input);
     }
 
     /// <summary>存盘 + 刷新，但<b>不重建左栏</b>。

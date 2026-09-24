@@ -290,6 +290,38 @@ public class OutputConflictPageTests
         Assert.Equal(2, outcome.Items);
     }
 
+    /// <summary>同一份菜单在矮窗口与高窗口里该往哪边开。</summary>
+    private static PlacementMode OwnerMenuPlacementFrom(ConflictRequest request, string group, double height) =>
+        WpfHost.WithWindow(() => new OutputConflictPage(), host =>
+        {
+            var page = (OutputConflictPage)host;
+            page.ShowRequest(request);
+            WpfHost.Pump();
+            page.UpdateLayout();
+            var menu = (ContextMenu)page.Resources["PickOwnerMenu"];
+            InvokeGroupMenu(page, group, "本组按模组指定…");
+            var placement = menu.Placement;
+            menu.IsOpen = false;
+            return placement;
+        }, height: height);
+
+    [Fact]
+    public void TheGroupOwnerMenuFlipsUpWhenTheRowSitsAtTheWindowBottom()
+    {
+        var bikini = Group(OutPath, ("Bikini Red", "ModA", 0), ("Bikini Blue", "ModB", 1));
+        var armor = Group(OutPath + "2", ("Armor Steel", "ModB", 0), ("Armor Iron", "ModD", 1));
+        var robe = Group(OutPath + "3", ("Robe Silk", "ModA", 0), ("Robe Wool", "ModD", 1));
+        var request = Request([bikini, armor, robe],
+            userGroups: [UserGroup("泳装", "Bikini Red"), UserGroup("护甲", "Armor Steel"),
+                         UserGroup("长袍", "Robe Silk")]);
+
+        // 菜单最多 420 高：窗口只有 380 时，无论点哪个分组头，下面都放不下，必须朝上开。
+        // 实机翻车的那次是 A-UBE（左栏最下面那个头）按光标往下长，整份菜单越过窗口底边盖到桌面上。
+        Assert.Equal(PlacementMode.Top, OwnerMenuPlacementFrom(request, "长袍", 380));
+        // 窗口够高时第一个头下面有的是地方，就该按常规朝下开
+        Assert.Equal(PlacementMode.Bottom, OwnerMenuPlacementFrom(request, "泳装", 1200));
+    }
+
     [Fact]
     public void TheGroupHeaderMenuAssignsOnlyThatGroupsConflicts()
     {
@@ -312,6 +344,9 @@ public class OutputConflictPageTests
                 // 光断言 IsOpen 不够：PlacementTarget 为空时离屏宿主照样"开着"，真实窗口里
                 // 却什么都不画（这条就是这么在实机翻车的）。锚点必须是被右键的那个分组头。
                 Anchored = ReferenceEquals(menu.PlacementTarget, GroupHeader(page, "泳装")),
+                // 方向按"锚点下面还剩多少地方"挑，两个合法值之一；跟随光标(MousePoint)会让
+                // 靠下的分组头把菜单开到窗口外
+                PlacedAlongRow = menu.Placement is PlacementMode.Top or PlacementMode.Bottom,
                 // 第一行是"现在圈的是哪一组、共几组"：同一颗菜单在"全部"和"本组"之间长得一样，
                 // 不写清楚迟早指错。它只是说明，不该被点
                 Header = items[0].Header as string,
@@ -326,6 +361,7 @@ public class OutputConflictPageTests
 
         Assert.True(outcome.result.Open);
         Assert.True(outcome.result.Anchored);
+        Assert.True(outcome.result.PlacedAlongRow);
         Assert.Equal("L.Conflict_PickOwnerGroupHeader", outcome.result.Header);
         Assert.False(outcome.result.HeaderEnabled);
         // ModD 只出现在另一个组的冲突里：它连进菜单的资格都没有
@@ -473,6 +509,8 @@ public class OutputConflictPageTests
                 // ModA 在两组里都有候选、ModB/ModC 各一组，ModD 那组被「只看跨模组」藏起来了。
                 // 按"能定几组"降序排：一个实例里可能有几十个模组，最常用的要排在最前面
                 Tags = items.Select(i => i.Tag as string).ToList(),
+                // 这颗入口贴在窗口最底边，菜单最多 420 高：往下开就跑到窗口外面盖住桌面了
+                Placement = menu.Placement,
             };
             Click(items.First(i => (string?)i.Tag == "ModA"));
             WpfHost.Pump();
@@ -481,6 +519,7 @@ public class OutputConflictPageTests
         });
 
         Assert.Equal(["ModA", "ModB", "ModC"], outcome.result.Tags);
+        Assert.Equal(PlacementMode.Top, outcome.result.Placement);
         // 与 AutoButton 同一口径：只改列出的这些组，ModD 那组（藏起来的同模组内部冲突）一律不碰
         Assert.Equal(new[] { OutPath, OutPath + "2" }, outcome.Picked.Keys.OrderBy(k => k, StringComparer.Ordinal));
         Assert.Equal("Alpha", outcome.Picked[OutPath]);
