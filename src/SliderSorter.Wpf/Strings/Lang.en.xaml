@@ -266,7 +266,8 @@ Open the release page to download?</sys:String>
     <sys:String x:Key="L.Conflict_CandidatesHeader" xml:space="preserve">Build with</sys:String>
     <sys:String x:Key="L.Conflict_PreviewHeader" xml:space="preserve">Preview</sys:String>
     <sys:String x:Key="L.Conflict_BatchScope" xml:space="preserve">For the {0} groups listed:</sys:String>
-    <sys:String x:Key="L.Conflict_Filter" xml:space="preserve">Filter output path / outfit / mod…</sys:String>
+    <sys:String x:Key="L.Conflict_Filter" xml:space="preserve">Filter path / outfit / mod; several words…</sys:String>
+    <sys:String x:Key="L.Conflict_FilterTip" xml:space="preserve">Separate several words with ; or , — a group stays if any of them hits (case-insensitive). Filter down to a batch first, then assign it with the actions below.</sys:String>
     <sys:String x:Key="L.Conflict_OnlyCrossMod" xml:space="preserve">Only conflicts between mods</sys:String>
     <sys:String x:Key="L.Conflict_OnlyCrossModTip" xml:space="preserve">{0} conflicts between mods, {1} groups sharing a file inside one mod. Hundreds of colour presets of one outfit sharing a file is normal for a mod; tick this to leave them out.</sys:String>
     <sys:String x:Key="L.Conflict_RescanTip" xml:space="preserve">Rescan mods and outfits and rebuild this conflict list. Choices made on this page change this tool's own settings; they do not trigger a rescan.</sys:String>
@@ -276,6 +277,11 @@ Open the release page to download?</sys:String>
     <sys:String x:Key="L.Conflict_AutoAllTip" xml:space="preserve">For every group listed, pick the mod with the highest priority — the one the game loads anyway</sys:String>
     <sys:String x:Key="L.Conflict_ClearAll" xml:space="preserve">Clear all</sys:String>
     <sys:String x:Key="L.Conflict_ClearAllTip" xml:space="preserve">Clear the choice for every group listed and let BodySlide ask again</sys:String>
+    <sys:String x:Key="L.Conflict_PickOwnerAll" xml:space="preserve">Assign to a mod…</sys:String>
+    <sys:String x:Key="L.Conflict_PickOwnerAllTip" xml:space="preserve">Opens a menu of mods: every listed group the chosen mod has a candidate in goes to it; groups it is not part of stay as they are. Unlike 'Follow mod priority', which always hands the group to the strongest layer, here you name the mod.</sys:String>
+    <sys:String x:Key="L.Conflict_PickOwnerItem" xml:space="preserve">{0} · {1} groups</sys:String>
+    <sys:String x:Key="L.Conflict_PickOwnerEmpty" xml:space="preserve">No mod in the current list to assign</sys:String>
+    <sys:String x:Key="L.Conflict_SetWinner" xml:space="preserve">Make it the winner of this group</sys:String>
     <sys:String x:Key="L.Conflict_Export" xml:space="preserve">Write to BodySlide…</sys:String>
     <sys:String x:Key="L.Conflict_ExportTip" xml:space="preserve">Writes the choices into BuildSelection.xml inside the current output location — the same BodySlide folder as the group files (in Custom mode the chosen folder itself; under MO2 the copy BodySlide actually reads); the confirm box lists the full path first, and the previous file is kept as .bak</sys:String>
     <sys:String x:Key="L.Conflict_ExportHint" xml:space="preserve">Writes BuildSelection.xml into the output location; the previous file is kept as .bak</sys:String>
@@ -298,7 +304,7 @@ Open the release page to download?</sys:String>
     <sys:String x:Key="L.Preview_BodyFemale" xml:space="preserve">Female</sys:String>
     <sys:String x:Key="L.Preview_BodyMale" xml:space="preserve">Male</sys:String>
     <sys:String x:Key="L.Preview_BodyNone" xml:space="preserve">None</sys:String>
-    <sys:String x:Key="L.Conflict_PreviewTip" xml:space="preserve">Click a row to see its 3D model; right-click a row to make it the winner. Left-drag to orbit, right-drag to pan, scroll to zoom.</sys:String>
+    <sys:String x:Key="L.Conflict_PreviewTip" xml:space="preserve">Click a row to see its 3D model; right-click a row to select it and open a menu (the first item decides this group only, the second hands the mod every conflict it is in). Left-drag to orbit, right-drag to pan, scroll to zoom.</sys:String>
     <sys:String x:Key="L.Conflict_OpenTip" xml:space="preserve">Opens the winner picker. Choices stay in this tool until you press 'Write to BodySlide...'</sys:String>
     <sys:String x:Key="L.Confirm_ExportBuildSel" xml:space="preserve">Write {0} choices to:
 {1}

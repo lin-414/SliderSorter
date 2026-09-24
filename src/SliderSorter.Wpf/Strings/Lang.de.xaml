@@ -268,7 +268,8 @@ Die Release-Seite zum Herunterladen öffnen?</sys:String>
     <sys:String x:Key="L.Conflict_CandidatesHeader" xml:space="preserve">Erstellen mit</sys:String>
     <sys:String x:Key="L.Conflict_PreviewHeader" xml:space="preserve">Vorschau</sys:String>
     <sys:String x:Key="L.Conflict_BatchScope" xml:space="preserve">Für die {0} gelisteten Gruppen:</sys:String>
-    <sys:String x:Key="L.Conflict_Filter" xml:space="preserve">Ausgabepfad / Outfit / Mod filtern…</sys:String>
+    <sys:String x:Key="L.Conflict_Filter" xml:space="preserve">Pfad / Outfit / Mod filtern; mehrere Begriffe…</sys:String>
+    <sys:String x:Key="L.Conflict_FilterTip" xml:space="preserve">Mehrere Begriffe mit ; oder , trennen — eine Gruppe bleibt, wenn auch nur einer trifft (Groß-/Kleinschreibung egal). Erst die Menge herausfiltern, dann unten per Stapelaktion zuweisen.</sys:String>
     <sys:String x:Key="L.Conflict_OnlyCrossMod" xml:space="preserve">Nur Konflikte zwischen Mods</sys:String>
     <sys:String x:Key="L.Conflict_OnlyCrossModTip" xml:space="preserve">{0} Konflikte zwischen Mods, {1} Gruppen teilen sich eine Datei innerhalb derselben Mod. Hunderte Farbvarianten eines Outfits in einer Mod sind normal; kreuzen Sie dies an, um sie herauszufiltern.</sys:String>
     <sys:String x:Key="L.Conflict_RescanTip" xml:space="preserve">Mods und Outfits neu einlesen und diese Konfliktliste neu aufbauen. Entscheidungen auf dieser Seite ändern die eigenen Einstellungen dieses Werkzeugs; sie lösen keinen neuen Scan aus.</sys:String>
@@ -278,6 +279,11 @@ Die Release-Seite zum Herunterladen öffnen?</sys:String>
     <sys:String x:Key="L.Conflict_AutoAllTip" xml:space="preserve">Für jede gelistete Gruppe die Mod mit der höchsten Priorität wählen — die, die das Spiel ohnehin lädt</sys:String>
     <sys:String x:Key="L.Conflict_ClearAll" xml:space="preserve">Alles zurücksetzen</sys:String>
     <sys:String x:Key="L.Conflict_ClearAllTip" xml:space="preserve">Die Wahl für jede gelistete Gruppe leeren und BodySlide erneut fragen lassen</sys:String>
+    <sys:String x:Key="L.Conflict_PickOwnerAll" xml:space="preserve">Einem Mod zuweisen…</sys:String>
+    <sys:String x:Key="L.Conflict_PickOwnerAllTip" xml:space="preserve">Öffnet ein Menü der Mods: Jede gelistete Gruppe mit einem Kandidaten dieses Mods geht an ihn; Gruppen ohne diesen Mod bleiben unangetastet. Die automatische Wahl nach Mod-Priorität nimmt immer die stärkste Schicht — hier benennen Sie das Mod selbst.</sys:String>
+    <sys:String x:Key="L.Conflict_PickOwnerItem" xml:space="preserve">{0} · {1} Gruppen</sys:String>
+    <sys:String x:Key="L.Conflict_PickOwnerEmpty" xml:space="preserve">Kein Mod in der aktuellen Liste zum Zuweisen</sys:String>
+    <sys:String x:Key="L.Conflict_SetWinner" xml:space="preserve">Als Gewinner dieser Gruppe setzen</sys:String>
     <sys:String x:Key="L.Conflict_Export" xml:space="preserve">In BodySlide schreiben…</sys:String>
     <sys:String x:Key="L.Conflict_ExportTip" xml:space="preserve">Schreibt die Wahl in die BuildSelection.xml im aktuellen Ausgabeziel — derselbe BodySlide-Ordner wie die Gruppendateien (im Modus "Eigener Ordner" dieser Ordner selbst; unter MO2 die Datei, die BodySlide tatsächlich liest); der Bestätigungsdialog zeigt zuerst den vollständigen Pfad, die bisherige Datei bleibt als .bak erhalten</sys:String>
     <sys:String x:Key="L.Conflict_ExportHint" xml:space="preserve">Schreibt BuildSelection.xml ins Ausgabeziel; bisherige Datei bleibt als .bak</sys:String>
@@ -300,7 +306,7 @@ Die Release-Seite zum Herunterladen öffnen?</sys:String>
     <sys:String x:Key="L.Preview_BodyFemale" xml:space="preserve">Weiblich</sys:String>
     <sys:String x:Key="L.Preview_BodyMale" xml:space="preserve">Männlich</sys:String>
     <sys:String x:Key="L.Preview_BodyNone" xml:space="preserve">Keiner</sys:String>
-    <sys:String x:Key="L.Conflict_PreviewTip" xml:space="preserve">Klicken Sie eine Zeile an, um ihr 3D-Modell zu sehen; Rechtsklick setzt sie als Gewinner. Ziehen mit linker Maustaste dreht, mit rechter Maustaste verschiebt, das Mausrad zoomt.</sys:String>
+    <sys:String x:Key="L.Conflict_PreviewTip" xml:space="preserve">Klicken Sie eine Zeile an, um ihr 3D-Modell zu sehen; Rechtsklick wählt sie aus und öffnet ein Menü (erster Punkt setzt nur diese Gruppe, zweiter übergibt dem Mod alle seine Konflikte). Ziehen mit linker Maustaste dreht, mit rechter Maustaste verschiebt, das Mausrad zoomt.</sys:String>
     <sys:String x:Key="L.Conflict_OpenTip" xml:space="preserve">Öffnet die Gewinner-Auswahl. Die Wahl bleibt, bis Sie auf 'In BodySlide schreiben…' klicken.</sys:String>
     <sys:String x:Key="L.Confirm_ExportBuildSel" xml:space="preserve">{0} Entscheidungen schreiben in:
 {1}

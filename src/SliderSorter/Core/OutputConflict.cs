@@ -234,6 +234,54 @@ public static class OutputConflicts
         return result;
     }
 
+    /// <summary>把"由某个模组生成"应用到给定的若干组上：凡候选里有该模组的组，就指定它在该组里的
+    /// 那个候选；<b>没有该模组候选的组一律不碰</b>（既不清除也不改）。
+    /// <para>
+    /// 与 <see cref="AutoPick"/> 的分工：那颗是"每组都交给最强层"，这里允许点名一个不是最强层的模组——
+    /// 用户常说的"这件衣服我要用 X 模组的"就是它。
+    /// </para>
+    /// <para>
+    /// 同一模组在一条冲突里贡献多个候选（一个模组的多个预设文件/配色争同一个输出）时，取
+    /// <see cref="OutputConflictGroup.Candidates"/> 顺序里的第一个，也就是最强层／发现顺序——
+    /// 那正是 <see cref="Detect"/> 排好的序，不再自己发明第二次排序。
+    /// </para>
+    /// <para>模组名逐字节 <see cref="StringComparer.Ordinal"/> 比较：与 <see cref="OutputConflictGroup.CrossMod"/>
+    /// 的 <c>Distinct(Ordinal)</c> 同一口径，而传进来的名字本来就是从 <c>OwnerLabel</c> 原样取回的。</para></summary>
+    public static Dictionary<string, string> PickOwner(IEnumerable<OutputConflictGroup> groups,
+        string ownerLabel, IReadOnlyDictionary<string, string> existing)
+    {
+        var result = new Dictionary<string, string>(existing, StringComparer.Ordinal);
+        foreach (var group in groups)
+        {
+            var winner = group.Candidates.FirstOrDefault(
+                c => string.Equals(c.OwnerLabel, ownerLabel, StringComparison.Ordinal));
+            if (winner is not null)
+                result[group.OutputFilePath] = winner.Name;
+        }
+        return result;
+    }
+
+    /// <summary>这批冲突里出过候选的模组，以及"该模组能定几组"——供「按模组指定」的菜单列项。
+    /// <para>
+    /// 计数数的是<b>组</b>不是候选：一条冲突里同一模组有三个配色也只算 1 组，因为菜单说的是"能替它定几组"。
+    /// 同一条冲突可能被递两遍（左栏里一条冲突挂在多个用户分组下就是多行），按引用先去重。
+    /// </para>
+    /// <para>顺序按可指组数降序、再按模组名升序：一个实例里可能有几十上百个模组，按数量排才不必翻。</para></summary>
+    public static List<(string Owner, int GroupCount)> OwnerTally(IEnumerable<OutputConflictGroup> groups)
+    {
+        var counts = new Dictionary<string, int>(StringComparer.Ordinal);
+        foreach (var group in groups.DistinctBy(g => g, ReferenceEqualityComparer.Instance))
+            foreach (var owner in group.Candidates.Select(c => c.OwnerLabel)
+                         .Distinct(StringComparer.Ordinal))
+                counts[owner] = counts.GetValueOrDefault(owner) + 1;
+
+        return counts
+            .OrderByDescending(kv => kv.Value)
+            .ThenBy(kv => kv.Key, StringComparer.OrdinalIgnoreCase)
+            .Select(kv => (kv.Key, kv.Value))
+            .ToList();
+    }
+
     /// <summary>按用户分组给冲突分类，供界面"直观地看各个分组之中的冲突"。
     ///
     /// 归类判据是**卷入**：某个分组只要有成员出现在这条冲突的候选里，这条冲突就归到它名下。

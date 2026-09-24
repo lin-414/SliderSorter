@@ -50,6 +50,17 @@
             <MenuItem Header="{DynamicResource L.Tree_CollapseOthers}" Click="CollapseOtherGroups_Click" />
         </ContextMenu>
 
+        <!-- ── 「按模组指定」与候选行的右键菜单：都是空壳，项在弹出前由代码现建 ──
+             为什么不静态列项：模组名是数据（几十个、每次扫描都换一批），而"该模组能定几组"这个计数
+             跟着过滤词走——列表每次重建都换一批行对象，预建好的菜单必然过期。
+             为什么两颗都不绑命令：ContextMenu 是资源里的共享实例、不在逻辑树上，拿不到模板级的 DataContext。
+             两颗都由代码手动弹（模板上不挂 ContextMenu 属性）：挂上去之后 WPF 那套自动弹在
+             ContextMenuOpening 里把项建好了却从来没开起来（Opened 一次没触发），而右键的抬起事件也被它吞掉。
+             "按钮 → 设 PlacementTarget → IsOpen"这一份写法在本页工具条那颗和「分组生成」页的组列表菜单上都是好的。
+             不绑命令也一样：ContextMenu 是资源里的共享实例、不在逻辑树上，取不到模板级的 DataContext。 -->
+        <ContextMenu x:Key="PickOwnerMenu" />
+        <ContextMenu x:Key="CandidateMenu" />
+
         <!-- ── 分组头的内容 ──
              外框（B.Panel 底、下边框、箭头、悬停）在 Controls.xaml 的 ConflictGroupHeaderToggle 里，
              这里只放"头里写什么"。拆开是因为外框要在 IsChecked 上画箭头，而那属于折叠条这个控件；
@@ -117,12 +128,13 @@
             </StackPanel>
         </Grid>
 
-        <!-- ── 行 1：工具条。过滤、范围、重扫 ──
+        <!-- ── 行 1：工具条。过滤、范围、按模组批量指定、重扫 ──
              星分 + MaxWidth 而不是"过滤框定宽 320"：宽窗口下输入框跟着长（够长才看得见输入的内容），
              窄窗口下它先让，重扫按钮始终贴右边缘（右列也是星分，按钮自己右对齐）。 -->
         <Grid Grid.Row="1" Margin="0,0,0,8">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" MaxWidth="420" MinWidth="140" />
+                <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="Auto" />
@@ -146,11 +158,19 @@
             <ComboBox Grid.Column="2" x:Name="GroupFilterBox" Margin="10,0,0,0" MinWidth="120" MaxWidth="200"
                       Height="30" VerticalAlignment="Center" SelectionChanged="GroupFilter_Changed"
                       ToolTip="{DynamicResource L.Conflict_GroupFilterTip}" />
-            <TextBlock Grid.Column="3" x:Name="FilterCountLabel" Margin="10,0,0,0" VerticalAlignment="Center"
+            <!-- 批量指定的第二个入口：点名叫一个模组来生成（第一颗「全部按模组优先级」只能给最强层）。
+                 刻意是 Button + 弹菜单而不是一颗 ComboBox：本项目的下拉是自闭模板，收起态就得把
+                 几十个字长的模组名摆在工具条上（下面那颗「只看某组」为此专门配了 MaxWidth）；
+                 弹出去的菜单不在视觉树里，模组名再长也只挤压菜单自己。
+                 不给 MinWidth：让它按内容取宽，五语里最长那条（de）也就一百五十上下，
+                 MinWidth 140 只会把短标签（zh/en）撑肥、把这份挤压摊到过滤框头上。 -->
+            <Button Grid.Column="3" x:Name="OwnerMenuButton" Content="{DynamicResource L.Conflict_PickOwnerAll}"
+                    Click="OwnerMenu_Click" Margin="10,0,0,0" Padding="10,0" />
+            <TextBlock Grid.Column="4" x:Name="FilterCountLabel" Margin="10,0,0,0" VerticalAlignment="Center"
                        Style="{StaticResource DimLabel}" TextTrimming="CharacterEllipsis" />
             <!-- 冲突清单是扫描的产物：页面上的「自动选择」改的是本工具的设置，不会重扫。
                  以前模态窗口每次都是新开的、天然新鲜，改成常驻页就得自己留一个重扫入口。 -->
-            <Button Grid.Column="4" x:Name="RescanButton" Content="{DynamicResource L.Conflict_Rescan}"
+            <Button Grid.Column="5" x:Name="RescanButton" Content="{DynamicResource L.Conflict_Rescan}"
                     Command="{Binding DetectBodySlideCommand}" HorizontalAlignment="Right"
                     MinWidth="110" Margin="12,0,0,0" />
         </Grid>
@@ -312,10 +332,14 @@
                      SelectionChanged="CandidateList_SelectionChanged">
                 <ListBox.ItemTemplate>
                     <DataTemplate>
-                        <!-- 右键整行 = 设为赢家：指针本来就停在意的那一行上，不该逼用户去瞄准那个小圆圈。
-                             行根套一层 Border 而不是直接拿 Grid 当根，是为了给「不指定」那一行加一条上分隔线；
-                             处理器仍挂在里面那个 Grid 上——MouseRightButtonUp 是 Direct 路由事件，
-                             挂在 Border 上时"在某一行内部 raise"就传不上来（单测正是这么模拟右键的）。 -->
+                        <!-- 右键整行 = 选中它、按这一行现建菜单项并弹出菜单（第一项就是"设为这一组的赢家"，
+                             指针位置不变，只是多点半下；同一模组还有别的冲突在列表里时，
+                             第二项一次全交给它）。左键那个小圆圈仍是即时指定，不用菜单。
+                             行根套一层 Border 而不是直接拿 Grid 当根，是为了给「不指定」那一行加一条上分隔线。
+                             处理器用的是 **Preview**MouseRightButtonUp（隧道），不是 MouseRightButtonUp：
+                             后者是 Direct 路由事件，只在鼠标命中的那一个元素上触发——指针落在服装名或
+                             模组名那段文字上时，外层 Grid 的处理器根本收不到，表现是"右键这一行没反应"。
+                             实机量出来的：同一份代码，右键行的空白处能弹、右键行内的文字不弹。 -->
                         <Border Background="Transparent" Padding="2,4">
                             <Border.Style>
                                 <Style TargetType="Border">
@@ -329,7 +353,7 @@
                                     </Style.Triggers>
                                 </Style>
                             </Border.Style>
-                            <Grid MouseRightButtonUp="Row_RightClick">
+                            <Grid PreviewMouseRightButtonUp="Row_RightClick">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="Auto" />
                                     <ColumnDefinition Width="*" />

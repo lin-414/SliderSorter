@@ -261,7 +261,8 @@
     <sys:String x:Key="L.Conflict_CandidatesHeader" xml:space="preserve">Кто строит</sys:String>
     <sys:String x:Key="L.Conflict_PreviewHeader" xml:space="preserve">Просмотр</sys:String>
     <sys:String x:Key="L.Conflict_BatchScope" xml:space="preserve">Для {0} групп в списке:</sys:String>
-    <sys:String x:Key="L.Conflict_Filter" xml:space="preserve">Фильтр пути / одежды / мода…</sys:String>
+    <sys:String x:Key="L.Conflict_Filter" xml:space="preserve">Фильтр пути / одежды / мода; несколько слов…</sys:String>
+    <sys:String x:Key="L.Conflict_FilterTip" xml:space="preserve">Несколько слов через ; или , — группа остаётся, если совпало хотя бы одно (регистр не важен). Сначала отфильтруйте нужные, потом назначьте их пакетной операцией ниже.</sys:String>
     <sys:String x:Key="L.Conflict_OnlyCrossMod" xml:space="preserve">Только конфликты между модами</sys:String>
     <sys:String x:Key="L.Conflict_OnlyCrossModTip" xml:space="preserve">Конфликтов между модами: {0}, групп с общим файлом внутри одного мода: {1}. Сотни цветовых вариантов одной вещи с общим файлом — обычное дело для мода; поставьте галочку, чтобы их не видеть.</sys:String>
     <sys:String x:Key="L.Conflict_RescanTip" xml:space="preserve">Заново просканировать моды и одежду и пересобрать этот список конфликтов. Выбор на этой странице меняет только настройки инструмента и пересканирование не запускает.</sys:String>
@@ -271,6 +272,11 @@
     <sys:String x:Key="L.Conflict_AutoAllTip" xml:space="preserve">Для каждой показанной группы взять мод с наивысшим приоритетом — тот, который игра загружает и так</sys:String>
     <sys:String x:Key="L.Conflict_ClearAll" xml:space="preserve">Сбросить всё</sys:String>
     <sys:String x:Key="L.Conflict_ClearAllTip" xml:space="preserve">Снять выбор во всех показанных группах и позволить BodySlide спрашивать снова</sys:String>
+    <sys:String x:Key="L.Conflict_PickOwnerAll" xml:space="preserve">Назначить моду…</sys:String>
+    <sys:String x:Key="L.Conflict_PickOwnerAllTip" xml:space="preserve">Открывает список модов: каждая показанная группа, где у выбранного мода есть кандидат, достаётся ему; группы без него остаются как были. Автоматический выбор по приоритету модов всегда берёт самый сильный слой — здесь мод указываете вы.</sys:String>
+    <sys:String x:Key="L.Conflict_PickOwnerItem" xml:space="preserve">{0} · {1} гр.</sys:String>
+    <sys:String x:Key="L.Conflict_PickOwnerEmpty" xml:space="preserve">В текущем списке нет модов для назначения</sys:String>
+    <sys:String x:Key="L.Conflict_SetWinner" xml:space="preserve">Сделать её победителем этой группы</sys:String>
     <sys:String x:Key="L.Conflict_Export" xml:space="preserve">Записать в BodySlide…</sys:String>
     <sys:String x:Key="L.Conflict_ExportTip" xml:space="preserve">Сохраняет выбор в BuildSelection.xml внутри текущего места вывода — та же папка BodySlide, что и у файлов групп (в режиме «Своя папка» — сам выбранный каталог; под MO2 именно её читает BodySlide); перед записью показывается полный путь, прежний файл сохраняется как .bak</sys:String>
     <sys:String x:Key="L.Conflict_ExportHint" xml:space="preserve">Пишет BuildSelection.xml в место вывода; прежний файл — в .bak</sys:String>
@@ -293,7 +299,7 @@
     <sys:String x:Key="L.Preview_BodyFemale" xml:space="preserve">Женское</sys:String>
     <sys:String x:Key="L.Preview_BodyMale" xml:space="preserve">Мужское</sys:String>
     <sys:String x:Key="L.Preview_BodyNone" xml:space="preserve">Нет</sys:String>
-    <sys:String x:Key="L.Conflict_PreviewTip" xml:space="preserve">Клик по строке — показать 3D-модель; правый клик — сделать её победителем. Вращение — левая кнопка, панорама — правая, зум — колесо.</sys:String>
+    <sys:String x:Key="L.Conflict_PreviewTip" xml:space="preserve">Клик по строке — показать 3D-модель; правый клик — выделить её и открыть меню (первый пункт решает только эту группу, второй отдаёт моду все его конфликты). Вращение — левая кнопка, панорама — правая, зум — колесо.</sys:String>
     <sys:String x:Key="L.Conflict_OpenTip" xml:space="preserve">Открывает выбор победителя. Выбор хранится этой утилитой, пока вы не нажмёте «Записать в BodySlide…»</sys:String>
     <sys:String x:Key="L.Confirm_ExportBuildSel" xml:space="preserve">Записать {0} выборов в:
 {1}

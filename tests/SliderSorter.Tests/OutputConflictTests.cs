@@ -9,6 +9,7 @@ public class OutputConflictTests
 {
     private const string PathA = @"meshes\actors\character\character assets\clothes\bikini";
     private const string PathB = @"meshes\actors\character\character assets\clothes\armor";
+    private const string PathC = @"meshes\actors\character\character assets\clothes\robe";
 
     private static string Set(string name, string? outputPath = null, string? outputFile = null,
         string? genWeights = null, string? dataFolder = null, string? sourceFile = null)
@@ -620,5 +621,104 @@ public class OutputConflictTests
         // 桶内保持 Detect 给出的顺序（按输出路径），界面据此渲染——换个顺序只是随机抖动，
         // 但列表每次重建都换序会让人以为内容变了
         Assert.Equal(new[] { later, earlier }, Assert.Single(buckets).Rows.Select(r => r.Conflict));
+    }
+
+    // ── 「按模组指定」：点名要一个不是最强层的模组来生成（界面上的批量菜单与候选行右键菜单）──
+
+    private static OutputConflictGroup Owned(string path, params (string Name, string Owner)[] candidates) => new()
+    {
+        OutputFilePath = path,
+        KeySpellings = [path],
+        GenWeights = true,
+        Candidates = candidates
+            .Select((c, i) => new ConflictCandidate(c.Name, c.Owner, c.Name + ".xml", i, true))
+            .ToList(),
+    };
+
+    private static Dictionary<string, string> Choices(
+        params (string Path, string Set)[] entries) =>
+        entries.ToDictionary(e => e.Path, e => e.Set, StringComparer.Ordinal);
+
+    [Fact]
+    public void PickOwnerRoutesEveryGroupWithThatModToItsOwnCandidate()
+    {
+        // B 模组在第一组里是最强层、在第二组里是最弱层：指它就该分别指到各自那个候选上，
+        // 而不是按层序统一给谁
+        var groups = new[]
+        {
+            Owned(PathA, ("BStrong", "B"), ("AWeak", "A")),
+            Owned(PathB, ("AStrong", "A"), ("BWeak", "B")),
+        };
+
+        var picked = OutputConflicts.PickOwner(groups, "B", Choices());
+
+        Assert.Equal("BStrong", picked[PathA]);
+        Assert.Equal("BWeak", picked[PathB]);
+    }
+
+    [Fact]
+    public void PickOwnerLeavesGroupsWithoutThatModAlone()
+    {
+        var groups = new[] { Owned(PathA, ("B1", "B")), Owned(PathB, ("C1", "C")) };
+
+        // 另一组本来选着 A1：指 B 的时候不该被顺手改掉，也不该被清掉
+        var picked = OutputConflicts.PickOwner(groups, "B",
+            Choices((PathB, "A1"), (@"meshes\Unrelated", "keep")));
+
+        Assert.Equal("B1", picked[PathA]);
+        Assert.Equal("A1", picked[PathB]);
+        Assert.Equal("keep", picked[@"meshes\Unrelated"]);
+    }
+
+    [Fact]
+    public void PickOwnerTakesTheFirstCandidateWhenTheModContributesSeveral()
+    {
+        // 同一模组的多个配色争同一个输出（UBE 一件衣服几百个配色）：Candidates 已经是
+        // Detect 排好的强→弱/发现顺序，取第一个就是取"游戏本来会读到的那一个"
+        var group = Owned(PathA, ("B Red", "B"), ("B Blue", "B"), ("A Only", "A"));
+
+        var picked = OutputConflicts.PickOwner([group], "B", Choices());
+
+        Assert.Equal("B Red", picked[PathA]);
+    }
+
+    [Fact]
+    public void PickOwnerComparesModNamesByteForByte()
+    {
+        var group = Owned(PathA, ("Lower", "mod"), ("Upper", "MOD"));
+
+        Assert.Equal("Lower", OutputConflicts.PickOwner([group], "mod", Choices())[PathA]);
+        Assert.Equal("Upper", OutputConflicts.PickOwner([group], "MOD", Choices())[PathA]);
+        // 名字对不上就一组都不动：宁可什么都不做，也不要指到一个含糊的候选上
+        Assert.Empty(OutputConflicts.PickOwner([group], "Mod", Choices()));
+    }
+
+    [Fact]
+    public void OwnerTallyCountsGroupsNotRowsAndDedupsTheModPerGroup()
+    {
+        var shared = Owned(PathA, ("Same Mod Red", "B"), ("Same Mod Blue", "B"), ("A Only", "A"));
+        var other = Owned(PathB, ("A Two", "A"), ("B Two", "B"));
+
+        // 一条冲突挂在多个用户分组下时调用方会把它递两遍（左栏就是多行），按引用去重
+        var tally = OutputConflicts.OwnerTally([shared, shared, other]);
+
+        // 每个模组在两条冲突里都有候选：第一组里 B 有三个配色也只算 1 组。
+        // 同为 2 组时按名字升序排，界面才不会每次重建换个顺序
+        Assert.Equal(new[] { ("A", 2), ("B", 2) }, tally);
+    }
+
+    [Fact]
+    public void OwnerTallyPutsTheMostUsableModFirst()
+    {
+        var tally = OutputConflicts.OwnerTally(new[]
+        {
+            Owned(PathA, ("Rare", "Zebra"), ("Common", "Alpha")),
+            Owned(PathB, ("Common2", "Alpha")),
+            Owned(PathC, ("Small", "alpha")),
+        });
+
+        // 可指组数降序；同数量按名字忽略大小写升序。模组名逐字节去重（与 CrossMod 同一口径），
+        // 所以 Alpha 与 alpha 是两个条目、各数各的
+        Assert.Equal(new[] { ("Alpha", 2), ("alpha", 1), ("Zebra", 1) }, tally);
     }
 }

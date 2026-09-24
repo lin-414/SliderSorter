@@ -266,7 +266,8 @@
     <sys:String x:Key="L.Conflict_CandidatesHeader" xml:space="preserve">由谁生成</sys:String>
     <sys:String x:Key="L.Conflict_PreviewHeader" xml:space="preserve">预览</sys:String>
     <sys:String x:Key="L.Conflict_BatchScope" xml:space="preserve">对当前列出的 {0} 组：</sys:String>
-    <sys:String x:Key="L.Conflict_Filter" xml:space="preserve">过滤输出路径 / 服装名 / 模组名…</sys:String>
+    <sys:String x:Key="L.Conflict_Filter" xml:space="preserve">过滤输出路径 / 服装名 / 模组名；可多词…</sys:String>
+    <sys:String x:Key="L.Conflict_FilterTip" xml:space="preserve">分号或逗号可以分多个词，任一命中就留下（不分大小写）。先筛出一批，再用下面的批量动作一次指定。</sys:String>
     <sys:String x:Key="L.Conflict_OnlyCrossMod" xml:space="preserve">只看跨模组冲突</sys:String>
     <sys:String x:Key="L.Conflict_OnlyCrossModTip" xml:space="preserve">跨模组冲突 {0} 组，同一模组内部共用 {1} 组。同一件衣服的几百个配色共用一个输出文件是模组的常态，勾上就先不看它们。</sys:String>
     <sys:String x:Key="L.Conflict_RescanTip" xml:space="preserve">重新扫描模组与服装，重算这份冲突清单。页面上的选择改的是本工具的设置，不会自动重扫。</sys:String>
@@ -276,6 +277,11 @@
     <sys:String x:Key="L.Conflict_AutoAllTip" xml:space="preserve">对当前列出的每一组都选模组优先级最高的那一个——也就是游戏本来就会读到的那一个</sys:String>
     <sys:String x:Key="L.Conflict_ClearAll" xml:space="preserve">全部清除</sys:String>
     <sys:String x:Key="L.Conflict_ClearAllTip" xml:space="preserve">清除当前列出的每一组的选择，交回 BodySlide 询问</sys:String>
+    <sys:String x:Key="L.Conflict_PickOwnerAll" xml:space="preserve">按模组指定…</sys:String>
+    <sys:String x:Key="L.Conflict_PickOwnerAllTip" xml:space="preserve">弹菜单挑一个模组：当前列出的每一组里，只要它有候选就都交给它；它没候选的组不动。与「全部按模组优先级」的分别是那颗交给最强层，这颗由你点名。</sys:String>
+    <sys:String x:Key="L.Conflict_PickOwnerItem" xml:space="preserve">{0} · {1} 组</sys:String>
+    <sys:String x:Key="L.Conflict_PickOwnerEmpty" xml:space="preserve">当前列表里没有可指定的模组</sys:String>
+    <sys:String x:Key="L.Conflict_SetWinner" xml:space="preserve">设为这一组的赢家</sys:String>
     <sys:String x:Key="L.Conflict_Export" xml:space="preserve">写入 BodySlide…</sys:String>
     <sys:String x:Key="L.Conflict_ExportTip" xml:space="preserve">把选定结果写进 BuildSelection.xml，落点在当前输出位置里——与分组文件同一个 BodySlide 目录（「自定义」模式下就是所选目录本身；MO2 下正是 BodySlide 实际读取它的那一份）；写之前的确认框会列出全路径，原文件先备份成 .bak</sys:String>
     <sys:String x:Key="L.Conflict_ExportHint" xml:space="preserve">写入输出位置的 BuildSelection.xml，原文件先备份成 .bak</sys:String>
@@ -298,7 +304,7 @@
     <sys:String x:Key="L.Preview_BodyFemale" xml:space="preserve">女体</sys:String>
     <sys:String x:Key="L.Preview_BodyMale" xml:space="preserve">男体</sys:String>
     <sys:String x:Key="L.Preview_BodyNone" xml:space="preserve">不垫</sys:String>
-    <sys:String x:Key="L.Conflict_PreviewTip" xml:space="preserve">左键点一行 = 看它的 3D 模型；右键点一行 = 把它设为赢家。左键拖动转视角，右键拖动平移，滚轮缩放。</sys:String>
+    <sys:String x:Key="L.Conflict_PreviewTip" xml:space="preserve">左键点一行 = 看它的 3D 模型；右键点一行 = 选中它并打开菜单（第一项只定这一组，另一项把该模组卷入的冲突一次交给它）。左键拖动转视角，右键拖动平移，滚轮缩放。</sys:String>
     <sys:String x:Key="L.Conflict_OpenTip" xml:space="preserve">点开选定由哪个模组生成。选择先存在本工具里，按下「写入 BodySlide…」才会被 BodySlide 读到</sys:String>
     <sys:String x:Key="L.Confirm_ExportBuildSel" xml:space="preserve">将把 {0} 条选择写入：
 {1}

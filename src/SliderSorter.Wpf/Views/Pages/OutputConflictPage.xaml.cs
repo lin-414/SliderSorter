@@ -7,6 +7,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Input;
+using System.Windows.Controls.Primitives;
 using System.Windows.Media;
 using System.Windows.Media.Media3D;
 using SliderSorter.Core;
@@ -22,6 +23,11 @@ namespace SliderSorter.Wpf.Views.Pages;
 /// <para>
 /// 勾选即时存进本工具自己的设置；「写入 BodySlide…」把它们落成 BodySlide 认得的
 /// BuildSelection.xml。不写也能用——只是批建时 BodySlide 仍会逐次问一遍。
+/// </para>
+/// <para>
+/// 批量有三颗，都只作用于<b>当前列出的</b>那些组（先筛再做，不会改掉屏幕外的组）：
+/// 「全部按模组优先级」交最强层，「按模组指定」由你点名叫一个模组，「全部清除」退回 BodySlide 询问。
+/// 过滤框认 <c>;</c> / <c>,</c> 分的多个词，任一命中即留下——"把带某些字样的服装一次圈出来"就是它。
 /// </para>
 /// 左侧列表随过滤重建，所以"哪一组被选中"记在 <see cref="_selectedPath"/> 上而不是列表项对象上。
 /// <para>
@@ -104,9 +110,13 @@ public partial class OutputConflictPage : UserControl
     /// （与 <see cref="UserGroupConflicts.GroupName"/> 的哨兵一致）。</summary>
     private sealed record GroupFilterItem(string? Value, string Label);
 
+    /// <summary>中栏的一行候选。<see cref="OwnerLabel"/> 是**原样**的模组名：右键菜单要说"把这个模组
+    /// 卷入的冲突都交给它"，就得拿它去比 <c>ConflictCandidate.OwnerLabel</c>。
+    /// 不能从 <see cref="Info"/> 反解——那是 <c>L.Conflict_RowInfo</c> 拼出来的本地化串，
+    /// 换语言就变样，测试宿主里更是只剩键名。</summary>
     private sealed record CandidateRow(
         string? SetName, string Label, string Info, bool IsWinner, bool Grouped, bool Strongest, string? SourceNif,
-        bool IsOptOut = false)
+        bool IsOptOut = false, string? OwnerLabel = null)
     {
         public Visibility GroupedVisibility => Grouped ? Visibility.Visible : Visibility.Collapsed;
         public Visibility StrongestVisibility => Strongest ? Visibility.Visible : Visibility.Collapsed;
@@ -142,6 +152,11 @@ public partial class OutputConflictPage : UserControl
     /// </para></summary>
     private IReadOnlyList<ConflictGroupKey> _groupKeys = [];
 
+    /// <summary>资源里那两个空壳菜单（项每次弹出前现建，见 <see cref="BuildOwnerMenu"/>）。
+    /// 从 <c>Resources</c> 取而不是 <c>FindName</c>：x:Key 的资源不进名称空间。</summary>
+    private ContextMenu? _ownerMenu;
+    private ContextMenu? _candidateMenu;
+
     /// <summary>对话框的宿主：页面自己没有窗口身份，取所在的壳窗口。</summary>
     private Window? Shell => Window.GetWindow(this);
 
@@ -150,6 +165,8 @@ public partial class OutputConflictPage : UserControl
         InitializeComponent();
         AddLights();
         FilterBox.TextChanged += (_, _) => RebuildGroups();
+        _ownerMenu = (ContextMenu)Resources["PickOwnerMenu"];
+        _candidateMenu = (ContextMenu)Resources["CandidateMenu"];
         IsVisibleChanged += (_, _) => OnTabVisibilityChanged();
         DataContextChanged += (_, _) => AdoptViewModel();
         EnsureBodyOptions();
@@ -205,7 +222,7 @@ public partial class OutputConflictPage : UserControl
     }
 
     private void SetActionsEnabled(bool on) =>
-        AutoButton.IsEnabled = ClearButton.IsEnabled = ExportButton.IsEnabled = on;
+        AutoButton.IsEnabled = ClearButton.IsEnabled = OwnerMenuButton.IsEnabled = ExportButton.IsEnabled = on;
 
     /// <summary>本页那些只能由代码拼出的固定文案：说明段与各控件的悬停提示。
     /// <para>
@@ -221,9 +238,12 @@ public partial class OutputConflictPage : UserControl
             request.Groups.Count(g => g.CrossMod), request.Groups.Count);
         OnlyCrossCheck.ToolTip = L10n.TrF("L.Conflict_OnlyCrossModTip",
             request.Groups.Count(g => g.CrossMod), request.Groups.Count);
+        // 分隔符那套规则没处说：水印那颗框最小宽度下只有一百四十像素，塞不下"分号分多词、任一命中"
+        FilterBox.ToolTip = L10n.Tr("L.Conflict_FilterTip");
         RescanButton.ToolTip = L10n.Tr("L.Conflict_RescanTip");
         AutoButton.ToolTip = L10n.Tr("L.Conflict_AutoAllTip");
         ClearButton.ToolTip = L10n.Tr("L.Conflict_ClearAllTip");
+        OwnerMenuButton.ToolTip = L10n.Tr("L.Conflict_PickOwnerAllTip");
         ExportButton.ToolTip = L10n.Tr("L.Conflict_ExportTip");
         _textsLang = L10n.Current;
     }
@@ -272,9 +292,14 @@ public partial class OutputConflictPage : UserControl
             ? name
             : null;
 
-    private static bool MatchesFilter(OutputConflictGroup group, string filter) =>
-        TextFilter.Matches(group.OutputFilePath, filter) ||
-        group.Candidates.Any(c => TextFilter.Matches(c.Name, filter) || TextFilter.Matches(c.OwnerLabel, filter));
+    /// <summary>这一组要不要留下：输出路径、任一候选的服装名、任一候选的模组名，
+    /// 命中<b>任一</b>关键字即算留下（切词见 <see cref="GroupRules.SplitKeywords"/>）。
+    /// 走 <see cref="TextFilter.MatchesAny"/> 而不是 <see cref="TextFilter.Matches"/>：后者是别的
+    /// 页面依赖的单子串语义，这里要的恰好相反——用户圈一批衣服时脑子里是"这类或那类"。</summary>
+    private static bool MatchesFilter(OutputConflictGroup group, IReadOnlyList<string> keywords) =>
+        TextFilter.MatchesAny(group.OutputFilePath, keywords) ||
+        group.Candidates.Any(c =>
+            TextFilter.MatchesAny(c.Name, keywords) || TextFilter.MatchesAny(c.OwnerLabel, keywords));
 
     /// <summary>把 <see cref="OutputConflictGroup.TargetDisplay"/> 拆成目录与文件名。
     /// 它是"&lt;完整输出路径&gt;_0.nif（以及 _1.nif）"：末段分隔符之前是目录、之后是文件名，
@@ -324,7 +349,7 @@ public partial class OutputConflictPage : UserControl
         var grouping = buckets.Any(b => !b.IsUngrouped);
         SyncGroupFilter(buckets, grouping);
 
-        var filter = FilterBox.Text.Trim();
+        var keywords = GroupRules.SplitKeywords(FilterBox.Text);
         // "只看跨模组"定的是这一轮的范围，用集合查比逐行 Any 便宜，也让下面计数的分母现成
         var pool = OnlyCrossCheck.IsChecked == true
             ? request.Groups.Where(g => g.CrossMod).ToHashSet()
@@ -338,7 +363,7 @@ public partial class OutputConflictPage : UserControl
             {
                 if (pool is not null && !pool.Contains(row.Conflict))
                     continue;
-                if (filter.Length > 0 && !MatchesFilter(row.Conflict, filter))
+                if (keywords.Count > 0 && !MatchesFilter(row.Conflict, keywords))
                     continue;
                 if (_groupFilter is not null && bucket.GroupName != _groupFilter)
                     continue;
@@ -391,7 +416,7 @@ public partial class OutputConflictPage : UserControl
         var listed = rows.Select(r => r.Group).Distinct().Count();
         GroupsCountLabel.Text = L10n.TrF("L.Conflict_GroupCount", listed);
         BatchScopeLabel.Text = L10n.TrF("L.Conflict_BatchScope", listed);
-        var filtering = filter.Length > 0 || pool is not null || _groupFilter is not null;
+        var filtering = keywords.Count > 0 || pool is not null || _groupFilter is not null;
         FilterCountLabel.Text = filtering
             ? L10n.TrF("L.Conflict_FilterCount", listed, pool?.Count ?? request.Groups.Count)
             : "";
@@ -631,7 +656,8 @@ public partial class OutputConflictPage : UserControl
                 candidate.Name == chosen,
                 request.IsGrouped(candidate.Name),
                 Strongest: i == 0,
-                request.SourceNifOf(candidate.Name)));
+                request.SourceNifOf(candidate.Name),
+                OwnerLabel: candidate.OwnerLabel));
         }
         rows.Add(new CandidateRow(null, L10n.Tr("L.Conflict_AskMeAgain"), "", chosen is null, false, false, null,
             IsOptOut: true));
@@ -655,13 +681,35 @@ public partial class OutputConflictPage : UserControl
             SetWinner(row);
     }
 
-    /// <summary>右键整行 = 把这一行设为赢家。指针本来就停在意的那一行上，不该逼用户去瞄准那个小圆圈。</summary>
+    /// <summary>右键整行 = 选中它（预览跟走）、按这一行现建菜单项，然后<b>手动</b>弹出。
+    /// <para>
+    /// 同一手势原先是"直接把这一组定给它"，现在腾给了右键菜单：那里第二项是"把该模组卷入的冲突
+    /// 一次全交给它"，而这正是从指针底下这一行出发最省事的路径。设为赢家退成菜单第一项——
+    /// 指针位置不变，多点半下；左键那个小圆圈（<see cref="Winner_Click"/>）仍然是即时指定，一次点就够。
+    /// </para>
+    /// <para>
+    /// 挂在 <c>Preview</c>MouseRightButtonUp 上而不是 <c>MouseRightButtonUp</c>：后者是 Direct 路由事件，
+    /// 只在鼠标命中的那一个元素上触发，指针落在行内的服装名/模组名文字上时外层 Grid 根本收不到——
+    /// 实机量出来"右键行的空白处有反应、右键行内的文字没反应"，这条在改成菜单之前就是这样，
+    /// 只是单测把事件 raise 在 Grid 上，永远照不出这一半。
+    /// </para>
+    /// <para>
+    /// 菜单不挂在模板上、由这里手动弹，也是实机量出来的：挂上去之后 WPF 那套自动弹在
+    /// <c>ContextMenuOpening</c> 里把项建好了（探针记到 3 项）却从来没开起来（<c>Opened</c> 一次没触发），
+    /// 而右键的抬起事件也被它吞掉。同一份"设 PlacementTarget → IsOpen"的写法在本页工具条那颗和
+    /// 「分组生成」页的组列表菜单上都是好的，所以照它做。
+    /// </para></summary>
     private void Row_RightClick(object sender, MouseButtonEventArgs e)
     {
-        if (sender is not FrameworkElement { DataContext: CandidateRow row })
+        if (sender is not FrameworkElement source || source.DataContext is not CandidateRow row)
             return;
         CandidateList.SelectedItem = row;
-        SetWinner(row);
+        BuildCandidateMenu(row);
+        if (_candidateMenu is not { } menu)
+            return;
+        menu.PlacementTarget = source;
+        menu.Placement = PlacementMode.MousePoint;
+        menu.IsOpen = true;
         e.Handled = true;
     }
 
@@ -703,15 +751,16 @@ public partial class OutputConflictPage : UserControl
     /// 所以机位从 π 起——0 会一上来就给人看屁股，而且镜像换轴会把左右翻反，不能那么干。</summary>
     private const double FrontYaw = Math.PI;
 
+    /// <summary>机位的三个自由度（转、俯、缩）。换一条冲突与「复位视角」由 <see cref="ResetPose"/>
+    /// 一起回到默认；同一条冲突内换模组来源全留着——那是同一个 nif 换个模组，比的就是差别。</summary>
     private double _yaw = FrontYaw;
     private double _pitch;
     private double _zoom = 1;
     private MouseButton? _dragButton;
     private Point _dragLast;
 
-    /// <summary>用户右键拖出来的视野偏移（世界坐标）。只有换一条冲突（那是另一件衣服了，
-    /// 上一件拖到边角的内容会把新衣服推出画面）与「复位视角」才清它——同一条冲突里换模组来源、
-    /// 换垫的身体都留着，那是他点名要看的那一块。</summary>
+    /// <summary>用户右键拖出来的视野偏移（世界坐标）。跟着 <see cref="_yaw"/> 那一组走：
+    /// 换冲突与「复位视角」清，同一条冲突内换模组来源、换垫的身体都留着，那是他点名要看的那一块。</summary>
     private Vector3D _pan;
 
     /// <summary>上一次取景是为谁做的：哪一条冲突（按输出路径认）+ 「身体」下拉当时选的哪具。
@@ -925,15 +974,16 @@ public partial class OutputConflictPage : UserControl
         // 预览，而 ShowPreview 里那道 _previewCts 比对已经把旧渲染挡掉了。
         if (_selectedPath is not { } group)
         {
+            ResetPose();
             Fit(model, body);
             _framedFor = null; // 认不出这一行属于哪条冲突，就别锁住取景——宁可每次都框准
         }
         else if (_framedFor is not { } framed || framed.Group != group || framed.Body != _body)
         {
-            // 换到另一条冲突才算"换了件衣服"：把他拖出来的视野偏移清掉。换身体下拉不清——
-            // 那是同一件衣服换具身体打底，他多半还盯着刚才那块细节。
+            // 换到另一条冲突 = 换了一件衣服：机位整个回到默认（正面、不俯仰、不缩放、不平移）。
+            // 只换「身体」下拉时不回——那还是同一件，他多半还盯着刚才那块细节看换具身体打底长什么样。
             if (_framedFor is not { Group: var framedGroup } || framedGroup != group)
-                _pan = new Vector3D();
+                ResetPose();
             Fit(model, body);
             _framedFor = (group, _body);
         }
@@ -1038,6 +1088,17 @@ public partial class OutputConflictPage : UserControl
             hash *= 16777619;
         }
         return PlainPalette[hash % (uint)PlainPalette.Length];
+    }
+
+    /// <summary>回到默认机位：正面、不俯仰、不缩放、不平移。换一条冲突（那是另一件衣服）与点
+    /// 「复位视角」都走这里；同一条冲突内换模组来源**不走**——那是同一个 nif 换个模组，
+    /// 画面一动他要比的差别就被盖掉了。</summary>
+    void ResetPose()
+    {
+        _yaw = FrontYaw;
+        _pitch = 0;
+        _zoom = 1;
+        _pan = new Vector3D();
     }
 
     /// <summary>取景要连垫进去的身体一起算：身体通常比一片披风大得多，只按衣服的包围盒摆相机
@@ -1207,10 +1268,7 @@ public partial class OutputConflictPage : UserControl
 
     void Reset_Click(object sender, RoutedEventArgs e)
     {
-        _yaw = FrontYaw;
-        _pitch = 0;
-        _zoom = 1;
-        _pan = new Vector3D();
+        ResetPose();
         // 取景在同一条冲突内是锁住的（见 _framedFor），复位就是"退出锁定"的唯一出口：
         // 按当前画着的这件重新框一次。锁本身不用动——_framedFor 与 _rendered 是同一次渲染留下的，
         // 认不出所属冲突时它本来就是 null，下一次渲染会照常重新取景。
@@ -1232,6 +1290,83 @@ public partial class OutputConflictPage : UserControl
         if (_request is null)
             return;
         _working = OutputConflicts.Clear(VisibleGroups(), _working);
+        SaveAndRefresh();
+    }
+
+    // ── 批量：点名要哪个模组来生成（2026-09-24）──
+    //
+    // 「全部按模组优先级」只会交给最强层，而用户常说的"这件衣服我要用 X 模组的"往往不是最强层——
+    // 于是这一处允许点名。两个入口（工具条那颗、候选行右键菜单的第二项）走的是同一个动作，
+    // 作用范围也都是 <see cref="VisibleGroups"/>：先筛出一批再点，不会顺手改掉屏幕外的组。
+
+    private void OwnerMenu_Click(object sender, RoutedEventArgs e)
+    {
+        if (_ownerMenu is not { } menu)
+            return;
+        if (sender is not FrameworkElement source)
+            return;
+        menu.PlacementTarget = source;
+        menu.Placement = PlacementMode.Bottom;
+        BuildOwnerMenu();
+        menu.IsOpen = true;
+    }
+
+    /// <summary>「按模组指定」的项 = 当前列出的那些冲突里出过候选的模组，按"能定几组"降序。
+    /// 每次弹出前整份重建：模组是数据，过滤词一改范围就跟着变，预建好的菜单必然过期。</summary>
+    private void BuildOwnerMenu()
+    {
+        if (_ownerMenu is not { } menu)
+            return;
+        menu.Items.Clear();
+        var tally = OutputConflicts.OwnerTally(VisibleGroups());
+        if (tally.Count == 0)
+        {
+            menu.Items.Add(new MenuItem { Header = L10n.Tr("L.Conflict_PickOwnerEmpty"), IsEnabled = false });
+            return;
+        }
+        foreach (var (owner, count) in tally)
+            menu.Items.Add(OwnerItem(owner, count));
+    }
+
+    private MenuItem OwnerItem(string owner, int count)
+    {
+        var item = new MenuItem
+        {
+            // 模组名是数据，不是资源键：挂 L.Menu_* 前缀会被门禁要求每条都有 (_X) 访问键，
+            // 而几十个动态项没有稳定的访问键可给。Tag 留给单测定位——测试宿主不加载语言，
+            // TrF 只剩键名，标题里根本不含模组名。
+            Header = L10n.TrF("L.Conflict_PickOwnerItem", owner, count),
+            Tag = owner,
+        };
+        item.Click += (_, _) => ApplyOwner(owner);
+        return item;
+    }
+
+    /// <summary>候选行的右键菜单：<paramref name="row"/> 由右键那条手势直接递进来（见
+    /// <see cref="Row_RightClick"/>）——行对象每次都随列表重建而换，只有手势现场的那一份是真的。</summary>
+    private void BuildCandidateMenu(CandidateRow row)
+    {
+        if (_candidateMenu is not { } menu)
+            return;
+        menu.Items.Clear();
+
+        var winner = new MenuItem { Header = L10n.Tr("L.Conflict_SetWinner") };
+        winner.Click += (_, _) => SetWinner(row);
+        menu.Items.Add(winner);
+
+        // 「不指定」那一行没有模组可言：它本身就只对应"取消这一组的选择"
+        if (row.OwnerLabel is not { } owner)
+            return;
+        menu.Items.Add(new Separator());
+        var count = VisibleGroups().Count(g => g.Candidates.Any(c => c.OwnerLabel == owner));
+        menu.Items.Add(OwnerItem(owner, count));
+    }
+
+    private void ApplyOwner(string owner)
+    {
+        if (_request is null)
+            return;
+        _working = OutputConflicts.PickOwner(VisibleGroups(), owner, _working);
         SaveAndRefresh();
     }
 

@@ -188,40 +188,126 @@ public class OutputConflictPageTests
         Assert.Equal(new[] { false, true, false }, outcome.Checked);
     }
 
+    /// <summary>模拟"右键某一行"：在挂了处理器的那个 Grid 上 raise 一条<b>隧道</b>事件
+    /// （<c>PreviewMouseRightButtonUp</c>）。
+    /// <para>
+    /// 为什么不是 <c>MouseRightButtonUp</c>：那是 Direct 路由事件，只在鼠标命中的那一个元素上触发，
+    /// 所以指针落在行内的服装名/模组名文字上时，外层 Grid 的处理器根本收不到——实机量的就是这个，
+    /// 右键行的空白处有反应、右键行内的文字没反应。改成隧道事件后真实命中由实机截图验收，
+    /// 这里只钉住"处理器挂的是隧道事件、且按行建项"。
+    /// </para></summary>
+    private static void RightClickRow(UIElement rowGrid) =>
+        rowGrid.RaiseEvent(new MouseButtonEventArgs(Mouse.PrimaryDevice, 0, MouseButton.Right)
+        {
+            RoutedEvent = FrameworkElement.PreviewMouseRightButtonUpEvent,
+        });
+
+    /// <summary>点菜单项。WPF 的 MenuItem.Click 就是那条路由事件背后的 CLR 事件，
+    /// 所以 raise 它等价于真点一下（与既有用例对 RadioButton 用 ButtonBase.ClickEvent 同一手法）。</summary>
+    private static void Click(MenuItem item) => item.RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent));
+
     [Fact]
-    public void RightClickingARowMakesItTheWinnerAndPreviewsIt()
+    public void RightClickingARowSelectsItWithoutAssigning()
     {
         var saved = new List<IReadOnlyDictionary<string, string>>();
         var groups = new[] { Group(OutPath, ("Alpha Suit", "ModA", 0), ("Beta Suit", "ModB", 1)) };
-        var request = Request(groups, dict => saved.Add(dict));
 
-        var outcome = WithPage(request, page =>
+        var outcome = WithPage(Request(groups, dict => saved.Add(dict)), page =>
         {
             var radios = Descendants<RadioButton>(Box(page, "CandidateList"));
-            Assert.Equal(3, radios.Count);
-            // 右键一行 = 把这一行设为赢家。事件从行内元素冒泡到挂了处理器的行容器；
-            // 直接在 ListBoxItem 上.raise 是到不了的（处理器在它的子元素上）。
-            var rowGrid = AncestorOf(radios[1], typeof(Grid))!;
-            rowGrid.RaiseEvent(new MouseButtonEventArgs(Mouse.PrimaryDevice, 0, MouseButton.Right)
-            {
-                RoutedEvent = FrameworkElement.MouseRightButtonUpEvent,
-            });
+            RightClickRow(AncestorOf(radios[1], typeof(Grid))!);
             WpfHost.Pump();
-            page.UpdateLayout();
-            var title = Named<TextBlock>(page, "PreviewTitle");
-            var status = Named<TextBlock>(page, "PreviewStatus");
             return new
             {
-                Chosen = saved.Count == 0 ? null : saved[^1].Values.SingleOrDefault(),
-                Title = title.Text,
-                Status = status.Text,
+                // 右键不再顺手写一次选择：指定与否交给菜单里那一项，用户没点就等于没决定
+                Clicks = saved.Count,
+                Title = Named<TextBlock>(page, "PreviewTitle").Text,
+                // 项按"刚被右键的那一行"现建，所以这里数得到两条（设为赢家 + 交出该模组）
+                Items = ((ContextMenu)page.Resources["CandidateMenu"]).Items.OfType<MenuItem>().Count(),
             };
         });
 
+        Assert.Equal(0, outcome.Clicks);
+        Assert.Equal("Beta Suit", outcome.Title); // 预览跟着选中的行走，这一半手势没有变
+        Assert.Equal(2, outcome.Items);
+    }
+
+    [Fact]
+    public void TheCandidateRowMenuMakesThatRowTheWinner()
+    {
+        var saved = new List<IReadOnlyDictionary<string, string>>();
+        var groups = new[] { Group(OutPath, ("Alpha Suit", "ModA", 0), ("Beta Suit", "ModB", 1)) };
+
+        var outcome = WithPage(Request(groups, dict => saved.Add(dict)), page =>
+        {
+            var radios = Descendants<RadioButton>(Box(page, "CandidateList"));
+            var menu = (ContextMenu)page.Resources["CandidateMenu"];
+            RightClickRow(AncestorOf(radios[1], typeof(Grid))!); // 选中 + 现建菜单项
+            var items = menu.Items.OfType<MenuItem>().ToList();
+            var result = new
+            {
+                // 第一项 = 设为这一组的赢家（不带 Tag），第二项 = 批量交出 ModB。
+                // 单测宿主不装载语言，取词回落成键名，所以标题认键名、模组靠 Tag 认
+                Headers = items.Select(i => i.Header as string).ToList(),
+                Tags = items.Select(i => i.Tag as string).ToList(),
+            };
+            // 老手势的全部效果保留在菜单第一项里：指针位置不变，只是多点半下
+            Click(items[0]);
+            WpfHost.Pump();
+            return (result, Chosen: saved.Count == 0 ? null : saved[^1].Values.SingleOrDefault());
+        });
+
+        Assert.Equal(["L.Conflict_SetWinner", "L.Conflict_PickOwnerItem"], outcome.result.Headers);
+        Assert.Equal(new string?[] { null, "ModB" }, outcome.result.Tags);
         Assert.Equal("Beta Suit", outcome.Chosen);
-        Assert.Equal("Beta Suit", outcome.Title); // 预览跟着选中的行走
-        // 这个 set 没有可解析的源网格（Request 里 SourceNifOf 返回 null），预览要能说清原因，不能空着
-        Assert.NotEqual("", outcome.Status);
+    }
+
+    [Fact]
+    public void TheCandidateRowMenuHandsEveryConflictOfThatModToIt()
+    {
+        // ModB 在两组里都有候选，且在强的一组里是弱层、在另一组里是最强层：
+        // 一次右键要按"各自组里属于它的那个候选"分别指定，而不是统一给谁
+        var first = Group(OutPath, ("Alpha", "ModA", 0), ("Beta", "ModB", 1));
+        var second = Group(OutPath + "2", ("Gamma", "ModB", 0), ("Delta", "ModC", 1));
+        var saved = new List<IReadOnlyDictionary<string, string>>();
+
+        var picked = WithPage(Request(new[] { first, second }, dict => saved.Add(dict)), page =>
+        {
+            var radios = Descendants<RadioButton>(Box(page, "CandidateList"));
+            var menu = (ContextMenu)page.Resources["CandidateMenu"];
+            RightClickRow(AncestorOf(radios[1], typeof(Grid))!); // Beta / ModB 那一行
+            Click(menu.Items.OfType<MenuItem>().Single(i => (string?)i.Tag == "ModB"));
+            WpfHost.Pump();
+            return saved[^1].ToDictionary(p => p.Key, p => p.Value, StringComparer.Ordinal);
+        });
+
+        Assert.Equal("Beta", picked[OutPath]);
+        Assert.Equal("Gamma", picked[OutPath + "2"]);
+    }
+
+    [Fact]
+    public void TheOptOutRowMenuOffersOnlyThatOneGroup()
+    {
+        // 「不指定」那一行没有模组可言：给它第二项就会挂上一个模组名都点对不到的批量动作
+        var saved = new List<IReadOnlyDictionary<string, string>>();
+        var groups = new[] { Group(OutPath, ("Alpha", "ModA", 0), ("Beta", "ModB", 1)) };
+
+        var outcome = WithPage(Request(groups, dict => saved.Add(dict)), page =>
+        {
+            var radios = Descendants<RadioButton>(Box(page, "CandidateList"));
+            var menu = (ContextMenu)page.Resources["CandidateMenu"];
+            RightClickRow(AncestorOf(radios[2], typeof(Grid))!);
+            var items = menu.Items.OfType<MenuItem>().ToList();
+            var result = (Count: items.Count, Tag: items.LastOrDefault()?.Tag as string);
+            Click(items[0]);
+            WpfHost.Pump();
+            return (result, Cleared: saved.Count == 0 ? null : (int?)saved[^1].Count);
+        });
+
+        Assert.Equal(1, outcome.result.Count);
+        Assert.Null(outcome.result.Tag);
+        // 点它 = 取消这一组的选择（未指定时保存的是空表），不是批量清除
+        Assert.Equal(0, outcome.Cleared);
     }
 
     [Fact]
@@ -266,6 +352,71 @@ public class OutputConflictPageTests
     }
 
     [Fact]
+    public void OwnerMenuListsTheModsOfTheVisibleGroupsWithTheirCounts()
+    {
+        var cross = Group(OutPath, ("Alpha", "ModA", 0), ("Beta", "ModB", 1));
+        var alsoCross = Group(OutPath + "2", ("Gamma", "ModC", 0), ("Delta", "ModA", 1));
+        var sameMod = Group(OutPath + "3", ("V1", "ModD", 0), ("V2", "ModD", 0));
+        var saved = new List<IReadOnlyDictionary<string, string>>();
+
+        var outcome = WithPage(Request(new[] { cross, alsoCross, sameMod }, dict => saved.Add(dict)), page =>
+        {
+            var menu = (ContextMenu)page.Resources["PickOwnerMenu"];
+            Named<Button>(page, "OwnerMenuButton").RaiseEvent(new RoutedEventArgs(ButtonBase.ClickEvent));
+            WpfHost.Pump();
+            var items = menu.Items.OfType<MenuItem>().ToList();
+            var result = new
+            {
+                // ModA 在两组里都有候选、ModB/ModC 各一组，ModD 那组被「只看跨模组」藏起来了。
+                // 按"能定几组"降序排：一个实例里可能有几十个模组，最常用的要排在最前面
+                Tags = items.Select(i => i.Tag as string).ToList(),
+            };
+            Click(items.First(i => (string?)i.Tag == "ModA"));
+            WpfHost.Pump();
+            menu.IsOpen = false;
+            return (result, Picked: saved[^1].ToDictionary(p => p.Key, p => p.Value, StringComparer.Ordinal));
+        });
+
+        Assert.Equal(["ModA", "ModB", "ModC"], outcome.result.Tags);
+        // 与 AutoButton 同一口径：只改列出的这些组，ModD 那组（藏起来的同模组内部冲突）一律不碰
+        Assert.Equal(new[] { OutPath, OutPath + "2" }, outcome.Picked.Keys.OrderBy(k => k, StringComparer.Ordinal));
+        Assert.Equal("Alpha", outcome.Picked[OutPath]);
+        Assert.Equal("Delta", outcome.Picked[OutPath + "2"]);
+    }
+
+    [Fact]
+    public void FilterAcceptsSeveralKeywordsAndKeepsGroupsMatchingAnyOfThem()
+    {
+        var mail = Group(OutPath, ("Chain Mail Top", "ModA", 0), ("Chain Mail Bra", "ModB", 1));
+        var robe = Group(OutPath + "2", ("Silk Robe", "ModA", 0), ("Robe Alt", "ModB", 1));
+        var vest = Group(OutPath + "3", ("Leather Vest", "ModA", 0), ("Vest Alt", "ModB", 1));
+
+        var counts = WithPage(new[] { mail, robe, vest }, page =>
+        {
+            var box = Named<TextBox>(page, "FilterBox");
+            var list = Box(page, "GroupList");
+            var all = list.Items.Count;
+            box.Text = "mail;robe";
+            var two = list.Items.Count;
+            // 单个词时必须是原来那个语义：连续子串、忽略大小写
+            box.Text = "AIL";
+            var bySubstring = list.Items.Count;
+            box.Text = "vest；";   // 全角分隔符：尾巴是空的 → 等同于只筛 vest
+            var one = list.Items.Count;
+            box.Text = ";";
+            var afterSeparatorOnly = list.Items.Count;
+            return (all, two, bySubstring, one, afterSeparatorOnly);
+        });
+
+        Assert.Equal(3, counts.all);
+        Assert.Equal(2, counts.two);
+        Assert.Equal(1, counts.bySubstring);
+        Assert.Equal(1, counts.one);
+        // 只打了个分隔符 = 没筛：留一条空白关键字当过滤词的话，带空格的名字全会被判命中
+        Assert.Equal(3, counts.afterSeparatorOnly);
+    }
+
+    [Fact]
     public void GroupRowsShowTheOutputFileNameInsteadOfTheWholePath()
     {
         // 取词器换成"真会拼出一条路径"的版本：测试宿主里没装载语言，CoreStrings 会回落成键名，
@@ -304,6 +455,7 @@ public class OutputConflictPageTests
             var before = (
                 Empty: Named<TextBlock>(page, "EmptyStateLabel").Visibility,
                 Auto: Named<Button>(page, "AutoButton").IsEnabled,
+                Owner: Named<Button>(page, "OwnerMenuButton").IsEnabled,
                 Export: Named<Button>(page, "ExportButton").IsEnabled);
 
             page.ShowRequest(Request(new[] { Group(OutPath, ("Alpha", "ModA", 0), ("Beta", "ModB", 1)) }));
@@ -312,6 +464,7 @@ public class OutputConflictPageTests
             var filled = (
                 Empty: Named<TextBlock>(page, "EmptyStateLabel").Visibility,
                 Auto: Named<Button>(page, "AutoButton").IsEnabled,
+                Owner: Named<Button>(page, "OwnerMenuButton").IsEnabled,
                 Export: Named<Button>(page, "ExportButton").IsEnabled);
 
             // 扫完发现一组冲突都没有：清单是空的、不是没送来，空状态与按钮置灰同样要成立
@@ -326,9 +479,11 @@ public class OutputConflictPageTests
         // 没有 DataContext（= 还没被喂过清单）：说清为什么三栏是空的，批量与导出也按不动
         Assert.Equal(Visibility.Visible, outcome.before.Empty);
         Assert.False(outcome.before.Auto);
+        Assert.False(outcome.before.Owner);
         Assert.False(outcome.before.Export);
         Assert.Equal(Visibility.Collapsed, outcome.filled.Empty);
         Assert.True(outcome.filled.Auto);
+        Assert.True(outcome.filled.Owner);
         Assert.True(outcome.filled.Export);
         Assert.Equal(Visibility.Visible, outcome.EmptyNoGroups);
         Assert.False(outcome.ExportNoGroups);
@@ -418,10 +573,29 @@ public class OutputConflictPageTests
         return (camera.Position, camera.LookDirection);
     }
 
+    /// <summary>写页内的私有字段（取景状态没有公开出口）。</summary>
+    private static void SetField(OutputConflictPage page, string name, object value) =>
+        typeof(OutputConflictPage).GetField(name, BindingFlags.NonPublic | BindingFlags.Instance)!
+            .SetValue(page, value);
+
+    private static T GetField<T>(OutputConflictPage page, string name) =>
+        (T)typeof(OutputConflictPage).GetField(name, BindingFlags.NonPublic | BindingFlags.Instance)!
+            .GetValue(page)!;
+
+    /// <summary>等于他左键拖了转视角、滚轮缩了放、右键拖了平移。</summary>
+    private static void TurnTheCamera(OutputConflictPage page, double yaw, double pitch, double zoom, Vector3D pan)
+    {
+        SetField(page, "_yaw", yaw);
+        SetField(page, "_pitch", pitch);
+        SetField(page, "_zoom", zoom);
+        SetField(page, "_pan", pan);
+    }
+
+    private static (double Yaw, double Pitch, double Zoom) AnglesOf(OutputConflictPage page) =>
+        (GetField<double>(page, "_yaw"), GetField<double>(page, "_pitch"), GetField<double>(page, "_zoom"));
+
     /// <summary>把用户右键拖出来的视野偏移写进页面，等于"他刚拖过"。</summary>
-    private static void SetPan(OutputConflictPage page, Vector3D pan) =>
-        typeof(OutputConflictPage).GetField("_pan", BindingFlags.NonPublic | BindingFlags.Instance)!
-            .SetValue(page, pan);
+    private static void SetPan(OutputConflictPage page, Vector3D pan) => SetField(page, "_pan", pan);
 
     /// <summary>等于他动了「身体」下拉：页内那个选择是私有嵌套枚举，只能按名字取值再喂回去。</summary>
     private static void SetBodyOption(OutputConflictPage page, string option)
@@ -448,7 +622,7 @@ public class OutputConflictPageTests
             var afterSwitch = RenderAndReadCamera(page, Slab(-40, 20));
 
             // 换到另一条冲突：那是另一件衣服了，得重新框，否则 2 米高的护甲会顶破小盒子；
-            // 上一件拖出来的平移也要在这里清零，不能把新衣服推出画面。
+            // 拖出来的平移也要在这里清零，不能把新衣服推出画面（角度与缩放的复位见下一条用例）。
             var groups = Box(page, "GroupList").Items.Cast<object>().ToList();
             Box(page, "GroupList").SelectedItem = groups[1];
             var otherGroup = RenderAndReadCamera(page, Slab(0, 103));
@@ -483,6 +657,29 @@ public class OutputConflictPageTests
     }
 
     [Fact]
+    public void SwitchingToAnotherNifStartsFromTheDefaultPose()
+    {
+        // 上一条管的是"同一个 nif 换模组别动"，这条管它的反面：换到另一条冲突就是另一件衣服，
+        // 转过的角度、滚轮的缩放、拖出来的平移一起回到默认——不然新那件一进来是歪的，还得手动转回去。
+        var bikini = Group(OutPath, ("Bikini Red", "ModA", 0), ("Bikini Blue", "ModB", 1));
+        var armor = Group(OutPath + "2", ("Armor Steel", "ModC", 0), ("Armor Iron", "ModD", 1));
+
+        var outcome = WithPage(new[] { bikini, armor }, page =>
+        {
+            var front = RenderAndReadCamera(page, Slab(0, 103));
+            TurnTheCamera(page, Math.PI / 2, 0.4, 0.5, new Vector3D(0, 30, 0));
+            var turned = RenderAndReadCamera(page, Slab(0, 103)); // 同一条冲突里换行：姿态留着
+            Box(page, "GroupList").SelectedItem = Box(page, "GroupList").Items.Cast<object>().ToList()[1];
+            var otherNif = RenderAndReadCamera(page, Slab(0, 103));
+            return (front, turned, otherNif, angles: AnglesOf(page));
+        });
+
+        Assert.NotEqual(outcome.front, outcome.turned);      // 转过的角度在同一条冲突里确实生效
+        Assert.Equal(outcome.front, outcome.otherNif);       // 换 nif：机位回到默认
+        Assert.Equal((Math.PI, 0d, 1d), outcome.angles);     // 转/俯/缩三个都回了默认，不只是画面看着正
+    }
+
+    [Fact]
     public void ChoosingAnotherBodyInTheDropdownFramesAgain()
     {
         // 上面那条锁不能把"用户自己换身体"也锁掉：披风本来只框它自己，切到「女体」就得连身体一起框，
@@ -494,13 +691,17 @@ public class OutputConflictPageTests
             var body = Slab(0, 103);
             var outfitOnly = RenderAndReadCamera(page, Slab(40, 60));        // 框衣服自己
             var paddedRow = RenderAndReadCamera(page, Slab(40, 60), body);   // 换行：仍框衣服自己
+            TurnTheCamera(page, 2.0, 0.2, 0.8, new Vector3D(3, 3, 3));
+            var turned = RenderAndReadCamera(page, Slab(40, 60), body);      // 只是转了个角度
             SetBodyOption(page, "Female");                                    // 等于他动了「身体」下拉
             var framedByChoice = RenderAndReadCamera(page, Slab(40, 60), body);
-            return (outfitOnly, paddedRow, framedByChoice);
+            return (outfitOnly, paddedRow, turned, framedByChoice, angles: AnglesOf(page));
         });
 
-        Assert.Equal(outcome.outfitOnly, outcome.paddedRow);                  // 换行不动
-        Assert.NotEqual(outcome.paddedRow, outcome.framedByChoice);            // 换下拉取值：连身体一起重新框
+        Assert.Equal(outcome.outfitOnly, outcome.paddedRow);                 // 换行不动
+        Assert.NotEqual(outcome.paddedRow, outcome.turned);                  // 转角度当然会动（下面那条的前提）
+        Assert.NotEqual(outcome.turned, outcome.framedByChoice);             // 换下拉取值：连身体一起重新框
+        Assert.Equal((2.0, 0.2, 0.8), outcome.angles);                       // 但那是同一件衣服：他转好的角度留着
     }
 
     // ── 按用户分组分类（左栏两级列表 + 「只看某组」）──

@@ -261,7 +261,8 @@
     <sys:String x:Key="L.Conflict_CandidatesHeader" xml:space="preserve">Construit par</sys:String>
     <sys:String x:Key="L.Conflict_PreviewHeader" xml:space="preserve">Aperçu</sys:String>
     <sys:String x:Key="L.Conflict_BatchScope" xml:space="preserve">Pour les {0} groupes listés :</sys:String>
-    <sys:String x:Key="L.Conflict_Filter" xml:space="preserve">Filtrer le chemin / la tenue / le mod…</sys:String>
+    <sys:String x:Key="L.Conflict_Filter" xml:space="preserve">Filtrer chemin / tenue / mod ; plusieurs mots…</sys:String>
+    <sys:String x:Key="L.Conflict_FilterTip" xml:space="preserve">Plusieurs mots séparés par ; ou , — un groupe reste si l'un d'eux correspond (sans tenir compte de la casse). Filtrez d'abord le lot, puis attribuez-le d'un coup avec les actions ci-dessous.</sys:String>
     <sys:String x:Key="L.Conflict_OnlyCrossMod" xml:space="preserve">Seulement les conflits entre mods</sys:String>
     <sys:String x:Key="L.Conflict_OnlyCrossModTip" xml:space="preserve">{0} conflits entre mods, {1} groupes partageant un fichier au sein d'un même mod. Des centaines de variantes de couleur d'une tenue partageant un fichier sont normales pour un mod ; cochez pour ne plus les voir.</sys:String>
     <sys:String x:Key="L.Conflict_RescanTip" xml:space="preserve">Relancer l'analyse des mods et des tenues et reconstruire cette liste de conflits. Les choix faits sur cette page ne changent que les réglages de cet outil et ne relancent pas l'analyse.</sys:String>
@@ -271,6 +272,11 @@
     <sys:String x:Key="L.Conflict_AutoAllTip" xml:space="preserve">Pour chaque groupe affiché, prendre le mod prioritaire — celui que le jeu charge déjà</sys:String>
     <sys:String x:Key="L.Conflict_ClearAll" xml:space="preserve">Tout effacer</sys:String>
     <sys:String x:Key="L.Conflict_ClearAllTip" xml:space="preserve">Effacer le choix de chaque groupe affiché et laisser BodySlide demander à nouveau</sys:String>
+    <sys:String x:Key="L.Conflict_PickOwnerAll" xml:space="preserve">Attribuer à un mod…</sys:String>
+    <sys:String x:Key="L.Conflict_PickOwnerAllTip" xml:space="preserve">Ouvre la liste des mods : chaque groupe affiché où le mod choisi a un candidat lui est attribué ; les groupes sans lui restent tels quels. Le choix automatique par priorité de mod prend toujours la couche la plus forte — ici, c'est vous qui nommez le mod.</sys:String>
+    <sys:String x:Key="L.Conflict_PickOwnerItem" xml:space="preserve">{0} · {1} groupes</sys:String>
+    <sys:String x:Key="L.Conflict_PickOwnerEmpty" xml:space="preserve">Aucun mod à attribuer dans la liste actuelle</sys:String>
+    <sys:String x:Key="L.Conflict_SetWinner" xml:space="preserve">En faire le gagnant de ce groupe</sys:String>
     <sys:String x:Key="L.Conflict_Export" xml:space="preserve">Écrire pour BodySlide…</sys:String>
     <sys:String x:Key="L.Conflict_ExportTip" xml:space="preserve">Écrit les choix dans BuildSelection.xml au sein du répertoire de sortie actuel — le même dossier BodySlide que les fichiers de groupes (en mode « Personnalisé », le dossier choisi lui-même ; sous MO2, celui que BodySlide lit réellement) ; la boîte de confirmation affiche le chemin complet, l'ancien fichier est sauvegardé en .bak</sys:String>
     <sys:String x:Key="L.Conflict_ExportHint" xml:space="preserve">Écrit BuildSelection.xml dans la sortie ; l'ancien fichier part en .bak</sys:String>
@@ -293,7 +299,7 @@
     <sys:String x:Key="L.Preview_BodyFemale" xml:space="preserve">Féminin</sys:String>
     <sys:String x:Key="L.Preview_BodyMale" xml:space="preserve">Masculin</sys:String>
     <sys:String x:Key="L.Preview_BodyNone" xml:space="preserve">Aucun</sys:String>
-    <sys:String x:Key="L.Conflict_PreviewTip" xml:space="preserve">Clic sur une ligne : voir son modèle 3D ; clic droit : en faire le gagnant. Glisser (clic gauche) : orbiter ; glisser (clic droit) : déplacer ; molette : zoomer.</sys:String>
+    <sys:String x:Key="L.Conflict_PreviewTip" xml:space="preserve">Clic sur une ligne : voir son modèle 3D ; clic droit : la sélectionner et ouvrir le menu (premier item : trancher ce seul groupe ; second : attribuer au mod tous ses conflits). Glisser (clic gauche) : orbiter ; glisser (clic droit) : déplacer ; molette : zoomer.</sys:String>
     <sys:String x:Key="L.Conflict_OpenTip" xml:space="preserve">Ouvre la sélection du gagnant. Les choix restent dans cet outil tant que vous n'avez pas cliqué « Écrire pour BodySlide… »</sys:String>
     <sys:String x:Key="L.Confirm_ExportBuildSel" xml:space="preserve">Écrire {0} choix dans :
 {1}
