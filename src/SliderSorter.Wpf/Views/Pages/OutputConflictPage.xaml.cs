@@ -1306,7 +1306,8 @@ public partial class OutputConflictPage : UserControl
         if (sender is not FrameworkElement source)
             return;
         menu.PlacementTarget = source;
-        menu.Placement = PlacementMode.Bottom;
+        // 这颗在窗口最底下的操作行上：往下方开就会被屏幕边缘切掉，菜单得朝上长
+        menu.Placement = PlacementMode.Top;
         BuildOwnerMenu();
         menu.IsOpen = true;
     }
