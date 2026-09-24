@@ -6,7 +6,6 @@
 
     <!-- Menu -->
     <sys:String x:Key="L.Menu_ImportGroups">Importer des fichiers de groupes…(_I)</sys:String>
-    <sys:String x:Key="L.Menu_Undo">Annuler(_A)</sys:String>
     <sys:String x:Key="L.Theme_Dark">Sombre</sys:String>
     <sys:String x:Key="L.Theme_Light">Clair</sys:String>
 
@@ -68,7 +67,6 @@
     <sys:String x:Key="L.Main_Rename">Renommer</sys:String>
     <sys:String x:Key="L.Main_DeleteGroup">Supprimer le groupe</sys:String>
     <sys:String x:Key="L.Main_ViewGroup">Voir les membres</sys:String>
-    <sys:String x:Key="L.Main_RuleGrouping">Groupement par règles</sys:String>
     <sys:String x:Key="L.Main_Save">Enregistrer les fichiers de groupes</sys:String>
     <sys:String x:Key="L.Main_SaveDirtyTip">Des modifications de groupes ne sont pas enregistrées</sys:String>
 
@@ -86,7 +84,6 @@
     <sys:String x:Key="L.Btn_Cancel">Annuler</sys:String>
     <sys:String x:Key="L.Btn_Close">Fermer</sys:String>
     <sys:String x:Key="L.Banner_Dismiss">Masquer ce message</sys:String>
-    <sys:String x:Key="L.Btn_Apply">Appliquer</sys:String>
     <sys:String x:Key="L.Btn_CopyAll">Tout copier</sys:String>
     <sys:String x:Key="L.Word_Add">ajouté(s) au groupe</sys:String>
     <sys:String x:Key="L.Word_Remove">retiré(s) du groupe</sys:String>
@@ -175,7 +172,8 @@
     <sys:String x:Key="L.Log_NewModsFound">{0} nouveau(x) mod(s) de tenues trouvé(s) : {1}{2}</sys:String>
     <sys:String x:Key="L.Log_NoGroupsForNew">Aucun groupe pour l'instant : créez-en un d'abord ; ces tenues restent trouvables via « Non attribuées uniquement ».</sys:String>
     <sys:String x:Key="L.Log_NewModsApplied">Groupement des nouveaux mods : {0} tenue(s) ajoutée(s) au groupe « {1} » ; pensez à enregistrer les fichiers de groupes.</sys:String>
-    <sys:String x:Key="L.Log_RuleApplied">Groupement par règles : {0} tenue(s) {1} « {2} » (désormais {3} membre(s)).</sys:String>
+    <sys:String x:Key="L.Log_GroupMissing" xml:space="preserve">Groupe cible « {0} » introuvable : ce regroupement n’a rien fait (le groupe vient peut-être d’être renommé ou supprimé).</sys:String>
+    <sys:String x:Key="L.Log_RuleApplied">Règles de groupement : {0} tenue(s) {1} « {2} » (désormais {3} membre(s)).</sys:String>
     <sys:String x:Key="L.Log_PresetSaved">Préréglage de règles « {0} » enregistré (groupe cible : {1} ; {2} préréglage(s) au total).</sys:String>
     <sys:String x:Key="L.Log_PresetsSkipped">Groupement par préréglages : {0} tenue(s) au total ; groupes manquants ignorés : {1}</sys:String>
     <sys:String x:Key="L.Log_PresetsDone">Groupement par préréglages : {0} tenue(s) ajoutée(s) aux groupes cibles ; pensez à enregistrer les fichiers de groupes.</sys:String>
@@ -199,8 +197,6 @@
     <sys:String x:Key="L.Msg_SelectGroupFirst">Sélectionnez d'abord un groupe.</sys:String>
     <sys:String x:Key="L.Msg_SelectOutfitsFirst">Cochez d'abord les tenues à retirer (cochez un mod ou un séparateur pour tout sélectionner).</sys:String>
     <sys:String x:Key="L.Msg_ConfirmRemove">Retirer {0} tenue(s) du groupe « {1} » ?</sys:String>
-    <sys:String x:Key="L.Msg_NeedGroupFirst">Aucun groupe pour l’instant. Le groupement par règles nécessite un groupe cible : créez-en un d’abord.</sys:String>
-    <sys:String x:Key="L.Msg_NoOutfits">Aucune tenue n'a encore été analysée.</sys:String>
     <sys:String x:Key="L.Msg_ScanIncomplete">L'analyse n'est pas terminée ou l'emplacement d'écriture est inconnu.</sys:String>
     <sys:String x:Key="L.Msg_NoGroupsYet">Aucun groupe pour l'instant. Créez un groupe et cochez des tenues.</sys:String>
     <sys:String x:Key="L.Msg_EmptyGroupName">Un groupe a un nom vide ; renommez-le d'abord.</sys:String>
@@ -218,6 +214,7 @@
     <sys:String x:Key="L.Msg_AlreadyRunning">SliderSorter est déjà en cours d'exécution.</sys:String>
     <sys:String x:Key="L.Msg_OutputDirUndetermined">L'analyse n'est pas terminée, le dossier de sortie ne peut donc pas être déterminé.</sys:String>
     <sys:String x:Key="L.Msg_CopiedToClipboard">Copié dans le presse-papiers.</sys:String>
+    <sys:String x:Key="L.Msg_ClipboardFailed" xml:space="preserve">Échec de la copie : un autre programme occupe le presse-papiers. Réessayez dans un instant.</sys:String>
     <sys:String x:Key="L.Msg_UnsavedOnExit" xml:space="preserve">Des modifications de groupes ne sont pas enregistrées ; quitter maintenant les perdra.&#x0a;&#x0a;Oui : enregistrer et quitter&#x0a;Non : quitter sans enregistrer&#x0a;Annuler : rester dans l'application</sys:String>
 
     <!-- Crash log -->
@@ -238,7 +235,7 @@
     <sys:String x:Key="L.NewMods_FilterMods">Filtrer les mods / séparateurs…</sys:String>
     <sys:String x:Key="L.NewMods_FilterCount">{0} tenue(s) affichée(s) ({1} encore à grouper)</sys:String>
     <sys:String x:Key="L.NewMods_PresetsBtn">Appliquer les préréglages ({0})</sys:String>
-    <sys:String x:Key="L.NewMods_PresetsTip">Exécute tous les préréglages de règles enregistrés (sur toutes les tenues) ; les éléments traités sont retirés de la liste. Gérez les préréglages dans Outils → Préréglages de règles.</sys:String>
+    <sys:String x:Key="L.NewMods_PresetsTip">Exécute tous les préréglages de règles enregistrés (sur toutes les tenues) ; les éléments traités sont retirés de la liste. Les préréglages se gèrent dans l'onglet « Règles de groupement ».</sys:String>
     <sys:String x:Key="L.NewMods_TopRemaining">{0} tenue(s) encore non groupée(s) ({1} nouveau(x) mod(s), {2} tenue(s) dans cette analyse).</sys:String>
     <sys:String x:Key="L.NewMods_TopRemainingHint">Continuez à cocher → choisissez un groupe cible → « Ajouter la sélection ». Vous pouvez répéter avec d'autres groupes ; « Fermer » arrête à tout moment.</sys:String>
     <sys:String x:Key="L.NewMods_TopFirst">Cette analyse a trouvé {0} nouveau(x) mod(s) de tenues ({1} tenue(s) au total).</sys:String>
@@ -306,7 +303,7 @@ Le fichier existant sera sauvegardé en BuildSelection.xml.bak. Après redémarr
     <sys:String x:Key="L.Msg_ConflictNothingToExport" xml:space="preserve">Aucun gagnant n'a été choisi ; rien à écrire.</sys:String>
     <sys:String x:Key="L.Msg_ExportFail" xml:space="preserve">Échec de l'écriture de BuildSelection.xml.</sys:String>
     <sys:String x:Key="L.Msg_BuildSelWritten" xml:space="preserve">{0} entrées écrites, {1} supprimées → {2}. Redémarrez BodySlide.</sys:String>
-    <sys:String x:Key="L.Log_OutputConflictsFound" xml:space="preserve">{0} tenues sont écrites dans le même fichier par plusieurs mods ; {1} groupes au total (préréglages d'un même mod compris), {2} sans choix — choisissez dans Outils → Conflits de sortie…</sys:String>
+    <sys:String x:Key="L.Log_OutputConflictsFound" xml:space="preserve">{0} tenues sont écrites dans le même fichier par plusieurs mods ; {1} groupes au total (préréglages d'un même mod compris), {2} sans choix — choisissez sur l'onglet Conflits de sortie</sys:String>
     <sys:String x:Key="L.Log_BuildSelWritten" xml:space="preserve">BuildSelection.xml écrit : {0} ajoutées/modifiées, {1} supprimées → {2}</sys:String>
     <sys:String x:Key="L.Vm_ConflictsInline" xml:space="preserve">conflits de sortie : {0} ({1} sans choix)</sys:String>
     <sys:String x:Key="L.Diag_SecConflicts" xml:space="preserve">Conflits de sortie</sys:String>
@@ -314,9 +311,20 @@ Le fichier existant sera sauvegardé en BuildSelection.xml.bak. Après redémarr
     <sys:String x:Key="L.Diag_ConflictLine" xml:space="preserve">{0} groupes ({1} entre mods), {2} avec un gagnant</sys:String>
     <sys:String x:Key="L.Diag_ConflictMore" xml:space="preserve">({0} groupes de plus omis)</sys:String>
 
-    <!-- Rule grouping -->
-    <sys:String x:Key="L.RuleGroup_Title">Groupement par règles</sys:String>
-    <sys:String x:Key="L.RuleGroup_Explainer">Ajout et retrait en lot des tenues analysées vers le groupe sélectionné ci-dessus, ou depuis celui-ci, par mots-clés : une seule correspondance suffit (séparez par ;), et l'aperçu ci-dessous se met à jour en direct. Cliquez sur « Appliquer » pour exécuter. Enregistrez les conditions fréquentes comme préréglage — elles s'exécutent automatiquement à la détection de nouveaux mods installés.</sys:String>
+    <!-- Rule grouping (presets and the rule editor share this section. It is not a tab:
+         it is a drawer at the bottom of the Grouping page, and L.Main_RuleGroup is its toggle button.) -->
+    <sys:String x:Key="L.Main_RuleGroup">Règles de groupement</sys:String>
+    <sys:String x:Key="L.RuleGroup_Intro">Ajout et retrait en lot des tenues analysées vers un groupe, ou depuis celui-ci, par mots-clés : une seule correspondance suffit, séparez-en plusieurs par ;, vide = sans limite. Inutile d'enregistrer d'abord - l'aperçu des correspondances, à droite, montre ce qui correspond, et « Appliquer cette règle » l'exécute aussitôt (Ctrl+Z annule). Une règle enregistrée comme préréglage s'exécute aussi via « Appliquer les préréglages » quand une analyse détecte de nouveaux mods installés.</sys:String>
+    <sys:String x:Key="L.RuleGroup_DrawerTip">Ouvre ou ferme le panneau de règles sous cette page : sélection en lot par mots-clés et conditions réutilisables enregistrées en préréglages.</sys:String>
+    <sys:String x:Key="L.RuleGroup_PresetsHeader">Préréglages enregistrés</sys:String>
+    <sys:String x:Key="L.RuleGroup_ConditionsHeader">Conditions de la règle</sys:String>
+    <sys:String x:Key="L.RuleGroup_PreviewHeader">Aperçu des correspondances</sys:String>
+    <sys:String x:Key="L.RuleGroup_PresetCount">{0} au total</sys:String>
+    <sys:String x:Key="L.RuleGroup_HitCount">{0} tenue(s) correspondante(s)</sys:String>
+    <sys:String x:Key="L.RuleGroup_DirtyMark">Non enregistré</sys:String>
+    <sys:String x:Key="L.RuleGroup_DirtyTip">Ces conditions diffèrent du préréglage enregistré ; cliquez sur « Enregistrer le préréglage » pour les consigner.</sys:String>
+    <sys:String x:Key="L.RuleGroup_Name">Nom du préréglage</sys:String>
+    <sys:String x:Key="L.RuleGroup_WmName">Nommez cette règle</sys:String>
     <sys:String x:Key="L.RuleGroup_Target">Groupe cible</sys:String>
     <sys:String x:Key="L.RuleGroup_Direction">Action</sys:String>
     <sys:String x:Key="L.RuleGroup_Add">Ajouter au groupe</sys:String>
@@ -329,26 +337,24 @@ Le fichier existant sera sauvegardé en BuildSelection.xml.bak. Après redémarr
     <sys:String x:Key="L.RuleGroup_WmMod">Filtrer par nom de mod ; séparez par ; vide = indifférent</sys:String>
     <sys:String x:Key="L.RuleGroup_WmOutfit">Séparez par ; vide = toutes les tenues</sys:String>
     <sys:String x:Key="L.RuleGroup_WmExclude">Les tenues correspondantes seront exclues</sys:String>
-    <sys:String x:Key="L.RuleGroup_SavePresetBtn">Enregistrer comme préréglage</sys:String>
-    <sys:String x:Key="L.RuleGroup_Preview">{0} tenue(s) correspondante(s) :</sys:String>
-    <sys:String x:Key="L.RuleGroup_NotInTree" xml:space="preserve">(correspondances non affichées dans l'arborescence principale ({0}))</sys:String>
-    <sys:String x:Key="L.RuleGroup_SavePresetTitle">Enregistrer comme préréglage de règle</sys:String>
-    <sys:String x:Key="L.RuleGroup_SavePresetPrompt">Nom du préréglage (groupe cible : {0})</sys:String>
-
-    <!-- Rule presets -->
-    <sys:String x:Key="L.RulePresets_Title">Préréglages de règles</sys:String>
-    <sys:String x:Key="L.RulePresets_Head">Un préréglage = une règle de groupement automatique réutilisable.</sys:String>
-    <sys:String x:Key="L.RulePresets_Steps" xml:space="preserve">Un préréglage est un ensemble réutilisable de conditions de groupement. Vous pouvez en créer, modifier ou supprimer à tout moment ; ils sont indépendants les uns des autres.&#x0a;· Créer ou modifier : cliquez sur « Nouveau préréglage… », ou sélectionnez-en un et cliquez sur « Modifier la sélection… » (double-clic sur la ligne également). Choisissez le groupe cible, saisissez les mots-clés, vérifiez l’aperçu. Le nom est prérempli : confirmer écrase l’original.&#x0a;· Quand ils s’exécutent : à la détection de nouveaux mods installés, cliquez sur « Appliquer les préréglages » dans la fenêtre ; vous pouvez aussi en lancer un à tout moment depuis l’onglet Groupes via « ⋯ → Groupement par règles ».</sys:String>
-    <sys:String x:Key="L.RulePresets_New">Nouveau préréglage…</sys:String>
-    <sys:String x:Key="L.RulePresets_Edit">Modifier la sélection…</sys:String>
-    <sys:String x:Key="L.RulePresets_Delete">Supprimer la sélection</sys:String>
-    <sys:String x:Key="L.RulePresets_Empty">Aucun préréglage. Cliquez sur « Nouveau préréglage… » ci-dessous pour créer votre première règle de groupement automatique.</sys:String>
-    <sys:String x:Key="L.RulePresets_NoSelection">Sélectionnez un préréglage à gauche pour voir ses détails.</sys:String>
-    <sys:String x:Key="L.RulePresets_RowTitle">{0} → {1} « {2} »</sys:String>
-    <sys:String x:Key="L.RulePresets_RowDetail">Mots-clés de mods : {0} · Mots-clés de tenues : {1} · Exclus : {2}</sys:String>
-    <sys:String x:Key="L.RulePresets_UnassignedSuffix" xml:space="preserve"> · non attribuées uniquement</sys:String>
-    <sys:String x:Key="L.RulePresets_SelectToDelete">Sélectionnez d'abord un préréglage à supprimer.</sys:String>
-    <sys:String x:Key="L.RulePresets_SelectToEdit">Sélectionnez d'abord un préréglage à modifier.</sys:String>
+    <sys:String x:Key="L.RuleGroup_EmptyPresets">Aucun préréglage. Remplissez les conditions à droite, puis cliquez sur « Enregistrer le préréglage » en bas.</sys:String>
+    <sys:String x:Key="L.RuleGroup_NoHits">Aucune tenue ne correspond à ces conditions. Assouplissez un mot-clé, ou décochez « Tenues non attribuées uniquement ».</sys:String>
+    <sys:String x:Key="L.RuleGroup_RowSummary">{0} - « {1} »</sys:String>
+    <sys:String x:Key="L.RuleGroup_RowKeywords" xml:space="preserve"> - mods {0} / tenues {1} / exclus {2}</sys:String>
+    <sys:String x:Key="L.RuleGroup_UnassignedSuffix" xml:space="preserve"> - non attribuées uniquement</sys:String>
+    <sys:String x:Key="L.RuleGroup_OutsideTree" xml:space="preserve">(correspondances hors de l'arborescence des mods ({0}))</sys:String>
+    <sys:String x:Key="L.RuleGroup_New">Nouveau préréglage</sys:String>
+    <sys:String x:Key="L.RuleGroup_Save">Enregistrer le préréglage</sys:String>
+    <sys:String x:Key="L.RuleGroup_Delete">Supprimer le préréglage</sys:String>
+    <sys:String x:Key="L.RuleGroup_Apply">Appliquer cette règle</sys:String>
+    <sys:String x:Key="L.RuleGroup_ApplyTip">Ajouter ou retirer les tenues correspondantes du groupe cible selon les conditions de gauche (Ctrl+Z annule).</sys:String>
+    <sys:String x:Key="L.RuleGroup_ApplyAll">Appliquer tous les préréglages</sys:String>
+    <sys:String x:Key="L.RuleGroup_ApplyAllTip">Exécuter dans l'ordre tous les préréglages de gauche, sur l'analyse en cours.</sys:String>
+    <sys:String x:Key="L.RuleGroup_NameRequired">Donnez un nom à cette règle avant de l'enregistrer comme préréglage.</sys:String>
+    <sys:String x:Key="L.RuleGroup_SelectToDelete">Sélectionnez d'abord un préréglage à supprimer.</sys:String>
+    <sys:String x:Key="L.RuleGroup_NoScanTip">Rien d'analysé pour l'instant - lancez l'analyse dans l'onglet Groupes.</sys:String>
+    <sys:String x:Key="L.RuleGroup_NoGroupTip">Aucun groupe pour l'instant - créez-en un dans l'onglet Groupes.</sys:String>
+    <sys:String x:Key="L.RuleGroup_NoPresetsTip">Aucun préréglage à exécuter - enregistrez d'abord une condition.</sys:String>
 
     <!-- Save success -->
     <sys:String x:Key="L.SaveOk_Title">Terminé</sys:String>
@@ -405,8 +411,8 @@ Un fichier par groupe, nommé d'après le groupe : {1}{2} ({3}).
     <sys:String x:Key="L.Help_12">Une case cochée ne fait que désigner ce sur quoi vous voulez agir — rien n'est écrit avant de cliquer sur « Ajouter au groupe » / « Retirer du groupe » au milieu. Cocher un mod ou un séparateur coche toutes ses tenues.</sys:String>
     <sys:String x:Key="L.Help_13">La marque devant un nom de tenue signifie qu’elle est déjà dans le groupe sélectionné ; le badge « dans le groupe x/total » à droite du nom d’un mod indique combien de ses tenues y figurent.</sys:String>
     <sys:String x:Key="L.Help_S2_Groups">[Panneau des groupes à droite]</sys:String>
-    <sys:String x:Key="L.Help_14">Liste des groupes : un clic sélectionne (les cases et les marques à gauche suivent sans perdre la position de défilement), un double-clic ouvre l'aperçu des membres. Création, renommage, consultation, regroupement par règles et suppression sont regroupés sous « ⋯ » dans l'en-tête, et aussi accessibles par clic droit sur la liste.</sys:String>
-    <sys:String x:Key="L.Help_15">« ⋯ » → « Regroupement par règles » : travail par lot à partir de mots-clés, voir section 5.</sys:String>
+    <sys:String x:Key="L.Help_14">Liste des groupes : un clic sélectionne (les cases et les marques à gauche suivent sans perdre la position de défilement), un double-clic ouvre l'aperçu des membres. Création, renommage, consultation, suppression et import sont regroupés sous « ... » dans l'en-tête, et aussi accessibles par clic droit sur la liste ; « Annuler » et « Règles de groupement » sont les deux boutons juste à côté.</sys:String>
+    <sys:String x:Key="L.Help_15">Le bouton « Règles de groupement » (à côté de « Annuler ») ouvre un panneau en bas de cette page : travail par lot à partir de mots-clés, voir section 5.</sys:String>
     <sys:String x:Key="L.Help_16">Annuler (Ctrl+Z, ou Édition → Annuler) : revient sur les 30 dernières actions de regroupement, voir section 6.</sys:String>
     <sys:String x:Key="L.Help_17">Fichier → Importer des fichiers de groupes… : fusionne d'autres XML de groupes dans la liste courante pour continuer à éditer.</sys:String>
     <sys:String x:Key="L.Help_18">Rappel des nouveaux mods : lorsqu'une analyse trouve des mods de tenues nouvellement installés, une fenêtre les liste par séparateur → mod → tenue (comme l'arborescence principale, dépliable) — cochez, choisissez un groupe cible, cliquez sur « Ajouter la sélection » (annulable), et vous pouvez répéter avec d'autres groupes cibles. Pour les listes longues, utilisez les deux champs de filtre ci-dessus (celui de gauche filtre les noms de tenues, celui de droite les noms de mods / séparateurs) ; les coches survivent au filtrage. Fermer reporte l'opération ; ces tenues restent trouvables via « Non attribuées uniquement ».</sys:String>
@@ -419,14 +425,15 @@ Un fichier par groupe, nommé d'après le groupe : {1}{2} ({3}).
     <sys:String x:Key="L.Help_23">Remarque : si un dossier de sortie personnalisé n'est pas à un emplacement lu par BodySlide (les SliderGroups du chemin de projet effectif, ou d'un mod), BodySlide ne chargera pas ces groupes.</sys:String>
     <sys:String x:Key="L.Help_H4">4. Enregistrement et organisation des fichiers</sys:String>
     <sys:String x:Key="L.Help_24">Avec un grand nombre de tenues, utilisez des mots-clés pour traiter toute une série d'un coup :</sys:String>
-    <sys:String x:Key="L.Help_25">1. Sélectionnez d'abord le groupe cible à droite ; « ⋯ » → « Regroupement par règles » (ou clic droit sur la liste des groupes) ouvre une fenêtre séparée, la fenêtre principale restant utilisable.</sys:String>
+    <sys:String x:Key="L.Help_25">1. Sélectionnez d'abord le groupe cible à droite ; le bouton « Règles de groupement » dans l'en-tête Groupes (ou Ctrl+3) ouvre le tiroir de règles en bas de cette page, ce groupe étant déjà rempli comme cible.</sys:String>
     <sys:String x:Key="L.Help_26">2. Trois types de mots-clés (séparez-en plusieurs par ;, une seule correspondance suffit ; correspondance de sous-chaîne insensible à la casse) :</sys:String>
     <sys:String x:Key="L.Help_27">Mots-clés de mods : filtrent d'abord les mods candidats par nom, puis recherchent les tenues à l'intérieur — les tenues de même nom dans d'autres mods ne sont pas incluses ; vide = tous les mods.</sys:String>
     <sys:String x:Key="L.Help_28">Mots-clés de tenues : correspondance sur le nom de la tenue ; vide = toutes les tenues.</sys:String>
     <sys:String x:Key="L.Help_29">Mots-clés exclus : les tenues dont le nom correspond sont écartées.</sys:String>
     <sys:String x:Key="L.Help_30">3. « Tenues non attribuées uniquement » laisse tranquilles celles déjà groupées ; l'action est « ajouter au » ou « retirer du » groupe.</sys:String>
-    <sys:String x:Key="L.Help_31">4. L'aperçu montre séparateur → mod → tenues correspondantes (même hiérarchie que l'arborescence principale) avec un compteur en direct « N tenue(s) correspondante(s) » ; cliquez sur « Appliquer » pour exécuter — Ctrl+Z annule. Exemple : mot-clé de mod ube, exclusion localisation, non attribuées uniquement → rassemble en une fois toutes les tenues UBE non groupées dans le groupe cible (les noms de tenues n'ont pas besoin de contenir ube).</sys:String>
-    <sys:String x:Key="L.Help_H5">5. Regroupement par règles</sys:String>
+    <sys:String x:Key="L.Help_31">4. L'aperçu montre séparateur -> mod -> tenues correspondantes (même hiérarchie que l'arborescence principale) avec un compteur en direct « N tenue(s) correspondante(s) » ; cliquez sur « Appliquer cette règle » pour exécuter - Ctrl+Z annule. Exemple : mot-clé de mod ube, exclusion localisation, non attribuées uniquement -> rassemble en une fois toutes les tenues UBE non groupées dans le groupe cible (les noms de tenues n'ont pas besoin de contenir ube).</sys:String>
+    <sys:String x:Key="L.Help_H5">5. Règles de groupement (lot et préréglages)</sys:String>
+    <sys:String x:Key="L.Help_Presets">5. Cliquez sur « Enregistrer le préréglage » pour les conditions fréquentes et reprenez-les à la visite suivante ; « Appliquer tous les préréglages » les exécute dans l'ordre (le même chemin que « Appliquer les préréglages » de la fenêtre des nouveaux mods). Enregistrer sous un autre nom conserve l'original et crée un second préréglage.</sys:String>
     <sys:String x:Key="L.Help_32">« Annuler » (Ctrl+Z, ou Édition → Annuler) revient pas à pas sur les 30 dernières actions : ajout/retrait, regroupement par règles, création/renommage/suppression de groupe, import et retraits effectués dans la liste des membres. Enregistrer sur le disque ne vide pas l'historique, mais redémarrer l'application si.</sys:String>
     <sys:String x:Key="L.Help_33">Cinq modes de sortie :</sys:String>
     <sys:String x:Key="L.Help_34">Auto (recommandé) : écrit dans les SliderGroups du chemin de projet effectif lorsqu'il s'agit d'un vrai dossier ; lorsque c'est CalienteTools\BodySlide sous le Data virtuel de MO2 (le cas le plus courant), écrit dans le mod dédié MO2 « SliderSorter Output ».</sys:String>
@@ -451,7 +458,7 @@ Un fichier par groupe, nommé d'après le groupe : {1}{2} ({3}).
     <sys:String x:Key="L.Help_Toc">Sommaire</sys:String>
     <sys:String x:Key="L.Help_TocHint">Cliquez sur un titre pour accéder à la section.</sys:String>
     <sys:String x:Key="L.Help_Task1">Regrouper les tenues d'un même mod — cochez ce mod à gauche (cocher le nom du mod sélectionne toutes ses tenues) → sélectionnez le groupe cible à droite → cliquez sur « Ajouter au groupe » au milieu → cliquez sur « Enregistrer les fichiers de groupes ».</sys:String>
-    <sys:String x:Key="L.Help_Task2">Rassembler des tenues similaires dispersées dans plusieurs mods — « ⋯ » à droite → « Regroupement par règles », puis ciblez-les en une passe avec des mots-clés (voir section 5).</sys:String>
+    <sys:String x:Key="L.Help_Task2">Rassembler des tenues similaires dispersées dans plusieurs mods — appuyez sur « Règles de groupement » à droite, puis ciblez-les en une passe avec des mots-clés (voir section 5).</sys:String>
     <sys:String x:Key="L.Help_Task3">Une tenue s'est retrouvée dans le mauvais groupe — cochez-la à gauche → cliquez sur « Retirer du groupe » ; ou appuyez simplement sur Ctrl+Z pour annuler la dernière étape.</sys:String>
     <sys:String x:Key="L.Help_Task4">Les nouveaux groupes n'apparaissent pas dans BodySlide — redémarrez d'abord BodySlide (si vous le lancez via MO2, redémarrez aussi MO2) ; s'ils manquent toujours, ouvrez Outils → Diagnostic et vérifiez que le « chemin de projet effectif » correspond au « dossier de sortie ».</sys:String>
     <sys:String x:Key="L.Help_Task5">Voir ce que contient un groupe — double-cliquez sur le nom du groupe, ou « ⋯ » → « Voir le groupe » pour ouvrir la liste des membres (filtrable, avec retrait par lot).</sys:String>
@@ -513,6 +520,9 @@ Un fichier par groupe, nommé d'après le groupe : {1}{2} ({3}).
     <sys:String x:Key="L.Core_GroupNeedSelection">Créez ou sélectionnez d'abord un groupe à droite.</sys:String>
     <sys:String x:Key="L.Core_GroupTargetMissing">Groupe cible introuvable.</sys:String>
     <sys:String x:Key="L.Core_GroupNothingToUndo">Rien à annuler.</sys:String>
+    <sys:String x:Key="L.Core_SettingsSaveFail" xml:space="preserve">Impossible d’enregistrer les réglages sur le disque : ce changement ne survit qu’à cette session. Motif : {0}</sys:String>
+    <sys:String x:Key="L.Core_SettingsBroken" xml:space="preserve">Impossible de lire le fichier de réglages ; cette session démarre avec les valeurs par défaut. Motif : {0}</sys:String>
+    <sys:String x:Key="L.Core_SettingsBrokenKept" xml:space="preserve">Impossible de lire le fichier de réglages ; cette session démarre avec les valeurs par défaut (l’original a été conservé sous {0}, à restaurer à la main). Motif : {1}</sys:String>
     <sys:String x:Key="L.Core_InstancePortable">portable</sys:String>
     <sys:String x:Key="L.Core_InstanceGlobal">globale</sys:String>
     <sys:String x:Key="L.Core_InstanceManual">manuelle</sys:String>

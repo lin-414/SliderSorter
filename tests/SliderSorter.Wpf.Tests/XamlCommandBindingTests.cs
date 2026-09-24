@@ -30,7 +30,7 @@ public class XamlCommandBindingTests
         ["Views/MainWindow.xaml"] = typeof(MainViewModel),
         ["Views/Pages/GroupGenerationPage.xaml"] = typeof(MainViewModel),
         ["Views/Pages/OutputConflictPage.xaml"] = typeof(MainViewModel),
-        ["Views/Pages/RulePresetsPage.xaml"] = typeof(MainViewModel),
+        ["Views/Pages/RuleGroupPage.xaml"] = typeof(MainViewModel),
         ["Views/Pages/SettingsPage.xaml"] = typeof(MainViewModel),
         // 这两个窗口的 DataContext 就是自己（DataContext = this），绑定路径即窗口自身的公开属性
         ["Views/InputWindow.xaml"] = typeof(InputWindow),

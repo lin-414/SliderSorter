@@ -234,11 +234,11 @@
                </Grid.ColumnDefinitions>
 
          标签轨靠 SharedSizeGroup 取全页最宽的那个标签，语言一变自己跟着变宽 ——
-         定死像素会在法语「Langue de l’interface」下压窄标签，而探针正是按四语量这个的。 -->
+         定死像素会在法语「Langue de l’interface」下压窄标签，而探针正是按五语量这个的。 -->
 
     <!-- 字段行里的动作按钮（检测 / 浏览…）：「贴右、不参与拉伸」，
          而不是让它去挤字段列——字段列少 90px 时，BodySlide 路径就显示不全了。
-         MinWidth 90 与既有手写值一致，四语下都放得下（探针验证）。 -->
+         MinWidth 90 与既有手写值一致，五语下都放得下（探针验证）。 -->
     <Style x:Key="FieldAction" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
         <Setter Property="MinWidth" Value="90" />
         <Setter Property="Margin" Value="10,0,0,0" />

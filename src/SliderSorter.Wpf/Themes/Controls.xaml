@@ -255,7 +255,7 @@
         </Setter>
     </Style>
 
-    <!-- 单选钮：全项目只有「输出冲突与选择」页在用（候选服装里挑一个），原先一直走系统默认模板——
+    <!-- 单选钮：全项目只有「输出归属」页在用（候选服装里挑一个），原先一直走系统默认模板——
          默认模板的圆环与圆心取自系统色，暗色主题下是一枚浅灰圆环压在深色卡面上，看着像别人的控件。
          形态与 CheckBox 对齐（16×16、B.Card 底、B.CheckBorder 边、选中转 Accent），
          区别只在选中标记是一枚实心圆点而不是对勾。 -->
@@ -944,6 +944,17 @@
         <Setter Property="VerticalContentAlignment" Value="Center" />
     </Style>
 
+    <!-- 单行表单输入框：与 FieldCombo 同边距（0,4），高度取 34 而不是 30。
+         30 是"看着顺眼"的数，34 是算出来的：边框 2 + 内距 8 之后只剩 20 给文字，
+         而这套字体（Segoe UI + 微软雅黑）在 13px 下的行盒就要 16.8，占位文字与输入文字
+         两种排字路径分到的余量不一样，盒子一矮，两者的基线就错开——表现为"填了字的框"
+         里的字与隔壁"只有占位文字的框"不在一条线上。留够一行半，居中才轮到说了算。 -->
+    <Style x:Key="FieldBox" TargetType="TextBox" BasedOn="{StaticResource {x:Type TextBox}}">
+        <Setter Property="Height" Value="34" />
+        <Setter Property="Margin" Value="0,4" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+    </Style>
+
     <!-- 设置页的分组卡片。项目此前没有卡片样式，各处手搓 Border，这里补一个共用表面：
          底色 B.Card + 1px B.Border，与日志框、下拉面板同一套表面语言。
          Padding 取四周等宽的 12、Margin 底部 12：对齐 boutique 的 GroupBox 表面
@@ -1079,7 +1090,7 @@
         </Setter>
     </Style>
 
-    <!-- ── 分组头折叠条（「输出冲突与选择」左栏的用户分组）──
+    <!-- ── 分组头折叠条（「输出归属」左栏的用户分组）──
          与上面 DisclosureToggle 同源：同样用 ToggleButton + 旋转箭头，理由见那一段
          （IsChecked 天然就是展开态，无障碍工具看得见、键盘用户按得出、状态报得回来）。
 
@@ -1151,7 +1162,10 @@
     <!-- ── 标签页（主窗口顶部标签条）──
          全项目原先没有任何 TabControl/TabItem 样式，默认 Aero 标签在暗色主题下就是一块白，
          而对比度门禁只读色板、主题门禁只查 B.* 引用是否存在——漏了没人会红，只能两套主题截图看。
-         形态：标签头排在 B.Panel 条上，选中项用 B.Accent 下沿标记（不加粗：选中变字重会把标签撑宽）。 -->
+         形态：标签头排在 B.Panel 条上，选中项用 B.Selected 底 + B.Accent 下沿标记（不加粗：选中变字重
+         会把标签撑宽）。底色必须挂在 IsSelected 上：原先它挂在 IsKeyboardFocused 上，而刚打开程序时
+         标签头并没有键盘焦点，于是"当前在哪一页"要等用户点一下才亮起来。
+         焦点因此不能再靠换底色表示（会和选中态撞成同一个样子），改成描一圈边。 -->
     <Style TargetType="TabControl">
         <Setter Property="Background" Value="{DynamicResource B.Window}" />
         <Setter Property="BorderBrush" Value="{DynamicResource B.BorderSoft}" />
@@ -1188,19 +1202,26 @@
                          会现场造一个 TextBlock，只靠继承链拿不到 TabItem.Foreground 的触发器结果。 -->
                     <!-- 圆角只收上面两角：选中态那 2px 下沿是这一页的"我在哪"标记，
                          四角全圆会让它在两端翘起来，读起来就不是一条边了。 -->
-                    <Border x:Name="bd" Background="{TemplateBinding Background}"
-                            TextElement.Foreground="{TemplateBinding Foreground}"
-                            BorderBrush="Transparent" BorderThickness="0,0,0,2"
-                            CornerRadius="4,4,0,0" Margin="0,0,2,0" Padding="{TemplateBinding Padding}">
-                        <ContentPresenter ContentSource="Header" RecognizesAccessKey="True"
-                                          HorizontalAlignment="Center" VerticalAlignment="Center" />
-                    </Border>
+                    <Grid>
+                        <Border x:Name="bd" Background="{TemplateBinding Background}"
+                                TextElement.Foreground="{TemplateBinding Foreground}"
+                                BorderBrush="Transparent" BorderThickness="0,0,0,2"
+                                CornerRadius="4,4,0,0" Margin="0,0,2,0" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter ContentSource="Header" RecognizesAccessKey="True"
+                                              HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <!-- 让开那 2px 下沿：环压在它上面会把两条边糊成一条 -->
+                        <Border x:Name="focus" BorderBrush="{DynamicResource B.TextDim}" BorderThickness="1"
+                                CornerRadius="4,4,0,0" Margin="0,0,2,2"
+                                Visibility="Collapsed" IsHitTestVisible="False" />
+                    </Grid>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
                             <Setter TargetName="bd" Property="Background" Value="{DynamicResource B.Hover}" />
                             <Setter Property="Foreground" Value="{DynamicResource B.Text}" />
                         </Trigger>
                         <Trigger Property="IsSelected" Value="True">
+                            <Setter TargetName="bd" Property="Background" Value="{DynamicResource B.Selected}" />
                             <Setter TargetName="bd" Property="BorderBrush" Value="{DynamicResource B.Accent}" />
                             <Setter Property="Foreground" Value="{DynamicResource B.Text}" />
                         </Trigger>
@@ -1212,7 +1233,7 @@
                             <Setter TargetName="bd" Property="BorderBrush" Value="{DynamicResource B.BorderSoft}" />
                         </MultiTrigger>
                         <Trigger Property="IsKeyboardFocused" Value="True">
-                            <Setter TargetName="bd" Property="Background" Value="{DynamicResource B.Selected}" />
+                            <Setter TargetName="focus" Property="Visibility" Value="Visible" />
                         </Trigger>
                         <Trigger Property="IsEnabled" Value="False">
                             <Setter Property="Opacity" Value="0.5" />

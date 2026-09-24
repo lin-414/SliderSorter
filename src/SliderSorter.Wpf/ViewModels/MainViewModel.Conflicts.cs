@@ -28,6 +28,10 @@ public sealed class ConflictRequest
     /// <summary>记下某个分组的折叠状态（true = 收起）。页面点一下分组头就会调它。</summary>
     public required Action<string, bool> SetGroupCollapsed { get; init; }
 
+    /// <summary>批量记住折叠状态（左栏「全部展开/全部折叠」）。逐条走上面那个就是
+    /// 一次点击重写几十遍 settings.json，这里改完整份清单只落盘一次。</summary>
+    public required Action<IReadOnlyDictionary<string, bool>> SetGroupsCollapsed { get; init; }
+
     /// <summary>该 set 的源网格（BodySlide 建它时读的 .nif）在本机的实际路径；解析不到为 null。</summary>
     public required Func<string, string?> SourceNifOf { get; init; }
 
@@ -109,7 +113,7 @@ public partial class MainViewModel
         return index;
     }
 
-    /// <summary>「工具 → 输出冲突与选择…」与状态栏的冲突计数。没东西可看时不切页——
+    /// <summary>状态栏那枚冲突计数：点了切到「输出归属」页。没东西可看时不切页——
     /// 跳到一个空白页比原地不动更让人困惑。</summary>
     [RelayCommand]
     private void OpenConflicts()
@@ -142,6 +146,7 @@ public partial class MainViewModel
             UserGroups = () => Store.Groups,
             IsGroupCollapsed = name => Settings.CollapsedConflictGroups.Contains(name, StringComparer.Ordinal),
             SetGroupCollapsed = SetConflictGroupCollapsed,
+            SetGroupsCollapsed = SetConflictGroupsCollapsed,
             SourceNifOf = name => sourceNif.TryGetValue(name, out var path) ? path : null,
             Save = SaveConflictChoices,
             BuildSelectionPath = ResolveBuildSelectionPath() ?? "",
@@ -155,17 +160,26 @@ public partial class MainViewModel
     /// <para>
     /// 先判重再写：分组头点开又点回都会走到这里，不判重就是每点一下重写一遍 settings.json。
     /// </para></summary>
-    private void SetConflictGroupCollapsed(string groupName, bool collapsed)
+    private void SetConflictGroupCollapsed(string groupName, bool collapsed) =>
+        SetConflictGroupsCollapsed(new Dictionary<string, bool> { [groupName] = collapsed });
+
+    private void SetConflictGroupsCollapsed(IReadOnlyDictionary<string, bool> collapsedByName)
     {
         var names = Settings.CollapsedConflictGroups;
-        var at = names.FindIndex(n => string.Equals(n, groupName, StringComparison.Ordinal));
-        if (collapsed == (at >= 0))
-            return;
-        if (collapsed)
-            names.Add(groupName);
-        else
-            names.RemoveAt(at);
-        Settings.Save();
+        var changed = false;
+        foreach (var (groupName, collapsed) in collapsedByName)
+        {
+            var at = names.FindIndex(n => string.Equals(n, groupName, StringComparison.Ordinal));
+            if (collapsed == (at >= 0))
+                continue; // 点开又点回都会走到这里，不判重就是每点一下重写一遍设置
+            if (collapsed)
+                names.Add(groupName);
+            else
+                names.RemoveAt(at);
+            changed = true;
+        }
+        if (changed)
+            Settings.Save();
     }
 
     /// <summary>预览用的数据视图。层序必须和扫描时一模一样（模组从强到弱，最后才是真实的 Data），

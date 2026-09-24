@@ -59,6 +59,9 @@ REQUIRED: list[tuple[str, str, float, str]] = [
     ("AccentBorder", "Card", 3.0, "勾选态/聚焦边框（树/列表底）"),
     ("AccentBorder", "Window", 3.0, "勾选态/聚焦边框（窗口底）"),
     ("AccentBorder", "Panel", 3.0, "勾选态/聚焦边框（面板底）"),
+    # 标签头选中行自己带底色，它的聚焦环只能压在这块绿上：AccentBorder 压 Selected 只有 1.94:1，
+    # 环会糊进底色里看不见，所以那一圈用 TextDim。
+    ("TextDim", "Selected", 3.0, "标签头聚焦环压选中底色"),
 ]
 
 COLOR_RE = re.compile(r'<Color\s+x:Key="C\.(?P<name>[\w]+)"\s*>\s*(?P<hex>#[0-9A-Fa-f]{6,8})\s*</Color>')

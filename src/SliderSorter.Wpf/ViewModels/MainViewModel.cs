@@ -14,9 +14,9 @@ namespace SliderSorter.Wpf.ViewModels;
 public sealed record WriteModeItem(WriteMode Mode, string Label);
 
 /// <summary>设置页「界面主题 / 界面语言」下拉项：Value 是 ThemeManager/L10n 认的键，Label 随语言变。
-/// 语言那四项（中文 / English / Русский / Français）的 Label 恒为各语言自己的写法——
+/// 语言那五项（中文 / English / Deutsch / Русский / Français）的 Label 恒为各语言自己的写法——
 /// 把俄语界面翻坏了时，那是唯一还能认出「这里能切回中文」的线索，所以它们不进语言文件。
-/// 「跟随系统」是唯一的例外：它描述的是行为不是语言名，法/俄用户该看到自己的说法，走 L.Settings_LanguageSystem。</summary>
+/// 「跟随系统」是唯一的例外：它描述的是行为不是语言名，法/德/俄用户该看到自己的说法，走 L.Settings_LanguageSystem。</summary>
 public sealed record OptionItem(string Value, string Label);
 
 /// <summary>内联提示条的级别。与日志级别分开：日志是"发生了什么"的流水账，
@@ -95,26 +95,31 @@ public partial class MainViewModel : ObservableObject
     [RelayCommand]
     private void DismissBanner() => Banner = null;
 
-    /// <summary>视图注入：打开规则归组编辑器（非模态，同一个编辑器不叠加第二个窗口）。
-    /// 返回是否已就绪——「规则预设」窗口据此决定要不要关掉自己。
-    /// 走注入而不是让分组页去转强类型找壳：壳换成了三页之后，页面不该认识 MainWindow。</summary>
-    public Func<RulePreset?, bool>? RuleEditorOpener { get; set; }
+    /// <summary>「分组生成」页底部那条规则分组抽屉是否摊开。放在 VM 而不是页面上：
+    /// `Ctrl+3` 要能把它拉开，而那份快捷键挂在壳的窗口上。</summary>
+    [ObservableProperty] private bool _isRuleDrawerOpen;
 
     // ── 标签页（壳的 TabControl 选中项）────────────────────────────────
     // 状态放在 VM 上：状态栏的冲突计数、「工具 → 输出冲突…」、F1 都要能主动切页。
     // 用事件转给壳的话，壳还得反过来告诉 VM 当前是哪页，绕一圈仍是同一份状态。
+    // 只有三页：规则分组不再是其中一页，它是分组生成页里的一条抽屉（见 IsRuleDrawerOpen）。
     public const int TabGenerate = 0;
     public const int TabConflicts = 1;
-    public const int TabRulePresets = 2;
-    public const int TabSettings = 3;
+    public const int TabSettings = 2;
 
     [ObservableProperty] private int _selectedTab = TabGenerate;
 
     [RelayCommand]
     private void OpenGenerate() => SelectedTab = TabGenerate;
 
+    /// <summary>`Ctrl+3`：回到分组生成页并把规则抽屉拉开。只开抽屉不切页的话，
+    /// 用户在设置页按 Ctrl+3 会什么都看不见。</summary>
     [RelayCommand]
-    private void OpenRulePresets() => SelectedTab = TabRulePresets;
+    private void OpenRuleGroup()
+    {
+        SelectedTab = TabGenerate;
+        IsRuleDrawerOpen = true;
+    }
 
     [RelayCommand]
     private void OpenSettings() => SelectedTab = TabSettings;
@@ -153,15 +158,20 @@ public partial class MainViewModel : ObservableObject
     /// 因此这里刻意不给 setter：换集合这件事在编译期就被挡住。</summary>
     public ObservableCollection<GroupItem> Groups { get; } = [];
 
-    [ObservableProperty] private int _selectedGroupIndex = -1;
+    /// <summary>组列表当前选中的那一行，按 <see cref="GroupItem"/> **身份**而不是下标。
+    /// 用下标会错口径：ListBox 绑的是 <see cref="GroupsView"/>（过滤后的投影），它的 SelectedIndex
+    /// 是**视图内**下标，而 <see cref="Groups"/> 是完整列表——过滤生效时同一个数字指向两个组，
+    /// 光是打字就能把「当前组」换成用户没点的那一个，之后的重命名/删除/搬运全落在错组上。</summary>
+    [ObservableProperty] private GroupItem? _selectedGroup;
     [ObservableProperty] private string _groupInfo = L10n.Tr("L.Vm_NoGroupSelected");
 
     /// <summary>组列表过滤词。与左树的时装/模组过滤互不影响——那两个筛的是「可加入的服装」，
     /// 这个筛的是「已有的组」，组多到几十个时才有用。</summary>
     [ObservableProperty] private string _groupFilterText = "";
 
-    /// <summary>过滤后的组列表视图。<see cref="Groups"/> 始终是完整列表（SelectedGroupIndex 的语义、
-    /// 保存顺序、右键菜单都依赖它），过滤只影响这里绑给 ListBox 的投影。
+    /// <summary>过滤后的组列表视图。<see cref="Groups"/> 始终是完整列表（保存顺序、右键菜单、
+    /// 「当前组」都按它算），过滤只影响这里绑给 ListBox 的投影。列表选哪一行由
+    /// <see cref="SelectedGroup"/> 按**身份**记住，别按这一列的下标——视图与完整列表的下标口径不同。
     /// <para>
     /// ⚠️ 本属性**没有变更通知**，所以它绑定的那个集合实例必须长命——与 <see cref="Groups"/> 是同生共死的关系。
     /// </para></summary>
@@ -416,6 +426,14 @@ public partial class MainViewModel : ObservableObject
         _selectedLanguageOption = LanguageOptions.FirstOrDefault(o => o.Value == L10n.Normalize(Settings.UiLanguage))
             ?? LanguageOptions[0];
 
+        // 设置读不出来或写不进磁盘都要在日志里留一句。整份配置（含冲突页手选的赢家、实例与 Profile）
+        // 静默回落到默认值时，用户的感受是"程序怎么又忘了我配过什么"，而不是"文件坏了"。
+        // AppSettings 那边只存键与实参，取词要到这一层才做得动（Localizer 在 App.OnStartup 才注入）。
+        if (AppSettings.LoadNote is { } loadNote)
+            LogWarning(loadNote);
+        if (AppSettings.SaveNote is { } saveNote)
+            LogWarning(saveNote);
+
         ReloadInstances();
     }
 
@@ -451,6 +469,7 @@ public partial class MainViewModel : ObservableObject
         new OptionItem(L10n.System, L10n.Tr("L.Settings_LanguageSystem")),
         new OptionItem(L10n.Zh, "中文"),
         new OptionItem(L10n.En, "English"),
+        new OptionItem(L10n.De, "Deutsch"),
         new OptionItem(L10n.Ru, "Русский"),
         new OptionItem(L10n.Fr, "Français"),
     ]);
@@ -656,9 +675,26 @@ public partial class MainViewModel : ObservableObject
         var pick = candidates.FirstOrDefault(c => c.AppDir == previous)
                    ?? candidates.FirstOrDefault(c => c.AppDir == last)
                    ?? candidates.FirstOrDefault();
-        SelectedBodySlide = pick;
         if (pick is not null)
             Settings.LastBodySlideDir = pick.AppDir;
+        SelectBodySlide(pick);
+    }
+
+    /// <summary>选定 BodySlide 目录，并保证"点一次就真扫一次"。
+    /// <para>
+    /// 不能只靠 <see cref="OnSelectedBodySlideChanged"/>：那是 <c>[ObservableProperty]</c> 的钩子，
+    /// 而 <see cref="BodySlideCandidate"/> 是位置 record，重新探测回到同一个目录时逐字段相等，
+    /// setter 判定"没变"就不发通知、钩子也不跑——于是「重新扫描」按钮第一次有效（Source 从
+    /// 「模组根目录」变成「上次使用」），第二次起成了纯 no-op。同实例内切 Profile 也一样：
+    /// BodySlide 目录没变，界面却停在旧 Profile 的树与冲突清单上，而检测遮罩闪一下看着像扫过了。
+    /// </para>
+    /// 值真的变了由钩子扫，没变由这里补扫，两条路都只扫一次。</summary>
+    private void SelectBodySlide(BodySlideCandidate? pick)
+    {
+        var changed = !Equals(SelectedBodySlide, pick);
+        SelectedBodySlide = pick;
+        if (!changed)
+            _ = RunScanAsync();
     }
 
     partial void OnSelectedBodySlideChanged(BodySlideCandidate? value)
@@ -670,7 +706,7 @@ public partial class MainViewModel : ObservableObject
             Settings.Save();
         }
         RaiseConfigState(); // BodySlide 目录决定 CanRescan 与"未配置"引导条的显隐
-        _ = RunScanAsync();
+        _ = RunScanAsync(); // 只在值真的变了时才会到这里，另一半见 SelectBodySlide
     }
 
     // ── 扫描 ──

@@ -264,6 +264,13 @@ public partial class MainViewModel
             ApplyBatch = (groupName, outfitsToAdd) =>
             {
                 var applied = Store.ApplyToGroup(groupName, outfitsToAdd, true);
+                if (applied < 0)
+                {
+                    // 组名来自弹窗里那份组列表，用户看不到"组不见了"这回事：预设或改名脚本
+                    // 刚把目标组弄走时，这里必须说清楚，否则弹窗那边把项剔掉了而组里什么也没有
+                    LogError(L10n.TrF("L.Log_GroupMissing", groupName));
+                    return;
+                }
                 Log(L10n.TrF("L.Log_NewModsApplied", applied, groupName));
                 RefreshGroupsList();
                 RefreshTree();
@@ -309,6 +316,15 @@ public partial class MainViewModel
             .ToList();
 
         var applied = Store.ApplyToGroup(groupName, matched, add);
+        if (applied < 0)
+        {
+            // 组不存在时不能只 return -1 就完事：调用方原先会照旧刷新一遍列表与树，
+            // 用户看到的是一句"已应用 0 条"或者什么都没有，规则却一条没动
+            var missing = L10n.TrF("L.Log_GroupMissing", groupName);
+            LogError(missing);
+            ShowBanner(BannerKind.Warn, missing);
+            return applied;
+        }
         Log(L10n.TrF("L.Log_RuleApplied", applied, L10n.Tr(add ? "L.Word_Add" : "L.Word_Remove"), groupName, Store.GetGroup(groupName)?.Members.Count ?? 0));
         return applied;
     }
@@ -424,13 +440,22 @@ public partial class MainViewModel
         }
         var candidate = new BodySlideCandidate(path, Path.Combine(path, "BodySlide x64.exe"), L10n.Tr("L.Word_Manual"));
         BodySlideDirs.Insert(0, candidate);
-        SelectedBodySlide = candidate;
+        // 走 SelectBodySlide 而不是直接赋值：手动挑的目录与当前那条逐字段相等时（同一个路径点两次）
+        // setter 判定"没变"，挂在 changed 钩子上的扫描就不会跑（见 SelectBodySlide 的说明）
+        SelectBodySlide(candidate);
     }
 
+    /// <summary>「导入现有组文件…」：弹框，并把选中的那个文件真的导进来。
+    /// 早先这里是 <c>_ = FilePicker?.Invoke(...)</c>——返回值直接丢掉，而 <see cref="ImportFiles"/>
+    /// 只有拖拽那条路会调，于是这个按钮点了等于只弹了个框：选完文件什么也不发生，也没有日志。</summary>
     [RelayCommand]
-    private void ImportGroups() => _ = FilePicker?.Invoke(L10n.Tr("L.Pick_ImportGroups"));
+    private void ImportGroups() => OpenImportDialog();
 
-    public void OpenImportDialog() => _ = FilePicker?.Invoke(L10n.Tr("L.Pick_ImportGroups"));
+    public void OpenImportDialog()
+    {
+        if (FilePicker?.Invoke(L10n.Tr("L.Pick_ImportGroups")) is { } file)
+            ImportFiles([file]);
+    }
 
     // ── 更新检查 ──
     /// <summary>「发现新版本」提示的「不再提示」记忆键（存于 AppSettings.SuppressedPrompts）。</summary>
@@ -504,7 +529,13 @@ public partial class MainViewModel
         try
         {
             if (Directory.Exists(path))
-                System.Diagnostics.Process.Start("explorer.exe", path);
+                // 走 ArgumentList 而不是把路径直接拼成参数字符串：explorer 按空格拆参数，
+                // 装在 "Mod Organizer 2"、"Steam library" 这类目录下的输出位置会打开错的地方
+                // （常见结果是退回「文档」），而用户只会觉得"点了没反应"。
+                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo("explorer.exe")
+                {
+                    ArgumentList = { path },
+                });
         }
         catch
         {

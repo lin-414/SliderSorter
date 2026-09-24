@@ -20,10 +20,11 @@
     <Window.InputBindings>
         <KeyBinding Modifiers="Control" Key="S" Command="{Binding SaveCommand}" />
         <KeyBinding Modifiers="Control" Key="Z" Command="{Binding UndoCommand}" />
-        <!-- 四页的直达键。菜单栏取消后，键盘是唯一的全局入口；Ctrl+, 是通用的"打开设置"。 -->
+        <!-- 三页 + 一条抽屉的直达键。菜单栏取消后，键盘是唯一的全局入口；Ctrl+, 是通用的"打开设置"。
+             Ctrl+3 不是切页——规则分组已经是分组生成页里的抽屉，它回到那一页并把抽屉拉开。 -->
         <KeyBinding Modifiers="Control" Key="D1" Command="{Binding OpenGenerateCommand}" />
         <KeyBinding Modifiers="Control" Key="D2" Command="{Binding OpenConflictsCommand}" />
-        <KeyBinding Modifiers="Control" Key="D3" Command="{Binding OpenRulePresetsCommand}" />
+        <KeyBinding Modifiers="Control" Key="D3" Command="{Binding OpenRuleGroupCommand}" />
         <KeyBinding Modifiers="Control" Key="D4" Command="{Binding OpenSettingsCommand}" />
         <KeyBinding Modifiers="Control" Key="OemComma" Command="{Binding OpenSettingsCommand}" />
     </Window.InputBindings>
@@ -36,9 +37,9 @@
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <!-- ── 行 0：四个页面。原先的菜单栏整个取消了：它剩下的每一项要么和页内按钮重复
-             （保存分组文件＝右下角那颗、撤销＝组管理菜单），要么本身就该是个页面
-             （输出冲突、规则预设、设置），要么不值得占一个菜单（退出＝关窗口、导入＝组管理菜单里就有）。
+        <!-- ── 行 0：三个页面。原先的菜单栏整个取消了：它剩下的每一项要么与页内控件重复
+             （保存分组文件＝右下角那颗、撤销＝组面板标题那颗、规则分组＝分组页里的抽屉），
+             要么本身就该是个页面（输出冲突、设置），要么不值得占一个菜单（退出＝关窗口、导入＝组管理菜单里就有）。
              选中项放在 VM 的 SelectedTab 上（不是壳的字段）：状态栏的冲突计数、F1 都要主动切页。 ── -->
         <TabControl Grid.Row="0" SelectedIndex="{Binding SelectedTab}">
             <TabItem Header="{DynamicResource L.Tab_Generate}">
@@ -50,9 +51,6 @@
                      进度现在写在冲突页标题的右侧，紧挨着操作它的那些控件；壳层只留状态栏那一段
                      可点击的计数，它同时也是这一页的第二个入口。 -->
                 <pages:OutputConflictPage />
-            </TabItem>
-            <TabItem Header="{DynamicResource L.RulePresets_Title}">
-                <pages:RulePresetsPage />
             </TabItem>
             <TabItem Header="{DynamicResource L.Tab_Settings}">
                 <pages:SettingsPage />

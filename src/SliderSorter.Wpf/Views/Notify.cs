@@ -8,7 +8,7 @@ namespace SliderSorter.Wpf.Views;
 /// 提示/确认框的统一出口。
 /// <para>
 /// 为什么不直接用系统 MessageBox：暗色主题下它会弹出一个纯白矩形，图标是 Vista 时代的位图，
-/// 按钮文字还跟随**操作系统**语言——英文界面里冒出中文「确定」，直接破坏了"四种界面语言可切换"的承诺。
+/// 按钮文字还跟随**操作系统**语言——英文界面里冒出中文「确定」，直接破坏了"五种界面语言可切换"的承诺。
 /// 全部调用点都收在这里，样式与语言才由程序自己掌握。
 /// </para>
 /// </summary>
@@ -60,6 +60,26 @@ public static class Notify
     /// <summary>错误告知。</summary>
     public static void Error(Window? owner, string title, string message) =>
         Show(owner, title, message, NotifyKind.Error);
+
+    /// <summary>复制一段文本到剪贴板，并把结果说一句。
+    /// <para>
+    /// 为什么要接异常：WPF 在剪贴板被别的进程占着时抛 <c>ExternalException</c>（远程桌面、
+    /// 剪贴板历史、输入法都可能正占着它），而它不在 App 的可恢复白名单里 —— 不接住就是
+    /// 点一下「复制」整个程序按致命崩溃退出，还会在崩溃处理里再弹一个框。
+    /// </para></summary>
+    public static void CopyText(Window? owner, string title, string text)
+    {
+        try
+        {
+            Clipboard.SetText(text);
+        }
+        catch (System.Runtime.InteropServices.ExternalException)
+        {
+            Warn(owner, title, L10n.Tr("L.Msg_ClipboardFailed"));
+            return;
+        }
+        Info(owner, title, L10n.Tr("L.Msg_CopiedToClipboard"));
+    }
 
     /// <summary>确认（确定 / 取消）。</summary>
     public static bool Confirm(Window? owner, string title, string message, bool destructive = false) =>

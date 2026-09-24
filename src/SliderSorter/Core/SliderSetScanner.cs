@@ -217,10 +217,12 @@ public static class SliderSetScanner
             .ToList();
 
         // 名字 → 拥有它的那一条（winners 下标 + 文件内下标）。判重忽略大小写：BodySlide 的 outfitNameSource
-        // 是 case_insensitive_compare（只折 ASCII），.NET 侧与之等价的就是 OrdinalIgnoreCase（同样只折 ASCII）。
-        // 声明次数 >1 即"同名先见者胜之外还有人被丢掉"，也就是树里要标注的 HasConflict。
-        var owner = new Dictionary<string, (int Winner, int Set)>(StringComparer.OrdinalIgnoreCase);
-        var declarations = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        // 是 case_insensitive_compare（StringStuff.h:56-62 逐字节 tolower，**只有 ASCII 字母会折**），
+        // 所以这里用 AsciiCaseInsensitiveComparer 而不是 OrdinalIgnoreCase——后者连 Ы/ы、É/é 都折成相等，
+        // 会把 BodySlide 视为两件衣服的 set 合成一条。声明次数 >1 即"同名先见者胜之外还有人被丢掉"，
+        // 也就是树里要标注的 HasConflict。
+        var owner = new Dictionary<string, (int Winner, int Set)>(AsciiCaseInsensitiveComparer.Instance);
+        var declarations = new Dictionary<string, int>(AsciiCaseInsensitiveComparer.Instance);
         foreach (var i in loadOrder)
         {
             var sets = setsPerFile[i];
@@ -275,10 +277,12 @@ public static class SliderSetScanner
     /// <c>std::map&lt;std::string, std::vector&lt;std::string&gt;, case_insensitive_compare&gt;</c>
     /// （<c>BodySlideApp.h:202</c>，从 v5.1 到 master 都是），所以 <c>Meshes/Foo</c> 与 <c>meshes/foo</c>
     /// 在它眼里是**一组**冲突、批建时会弹窗；这里若按 Ordinal 分就成了两组各一人、谁都不算冲突，
-    /// 于是这个功能正好漏掉它存在的理由。模组名仍按 Ordinal 去重（那是本工具自己的概念）。</summary>
+    /// 于是这个功能正好漏掉它存在的理由。折大小写的范围照它来（只折 ASCII，见
+    /// <see cref="AsciiCaseInsensitiveComparer"/>），不是按 .NET 的 OrdinalIgnoreCase——后者把
+    /// Ы/ы 也折在一起，那在 BodySlide 里是两组。模组名仍按 Ordinal 去重（那是本工具自己的概念）。</summary>
     private static void MarkOutputConflicts(List<OutfitEntry> outfits)
     {
-        var owners = new Dictionary<string, HashSet<string>>(StringComparer.OrdinalIgnoreCase);
+        var owners = new Dictionary<string, HashSet<string>>(AsciiCaseInsensitiveComparer.Instance);
         foreach (var outfit in outfits)
         {
             if (outfit.OutputFilePath is not { } path)
@@ -332,7 +336,13 @@ public static class SliderSetScanner
             IgnoreWhitespace = true,
             IgnoreComments = true,
             IgnoreProcessingInstructions = true,
-            DtdProcessing = DtdProcessing.Prohibit, // 既省事，也避免外部实体（XXE）
+            // 跳过 DTD 而不是禁止它：Prohibit 会让**任何**带 <!DOCTYPE> 的文件当场抛异常、
+            // 整件作废（下面 catch 里 sets.Clear()），而 tinyxml2 是跳过 DTD 照常读里面的 SliderSet。
+            // 用某些 XML 工具或导出器存过的 .xml/.osp 就长这样，代价是那个模组的服装凭空消失。
+            // 安全性不打折：Ignore 不解析也不取 DTD 里的内容，外部实体不会去读；
+            // XmlResolver 再显式关掉，等于彻底不许解析期碰网络与磁盘上的第二份文件。
+            DtdProcessing = DtdProcessing.Ignore,
+            XmlResolver = null,
             CloseInput = true,
         };
 

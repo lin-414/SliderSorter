@@ -28,6 +28,8 @@ public class LanguageResolutionTests
     [InlineData("zh-Hans", L10n.Zh)]
     [InlineData("zh-TW", L10n.Zh)]
     [InlineData("en-US", L10n.En)]
+    [InlineData("de-DE", L10n.De)]
+    [InlineData("de-CH", L10n.De)]
     [InlineData("ru-RU", L10n.Ru)]
     [InlineData("fr-CA", L10n.Fr)]
     public void SystemLanguageMapsToItsTwoLetterLanguageFile(string culture, string expected)
@@ -36,12 +38,14 @@ public class LanguageResolutionTests
     }
 
     /// <summary>不支持的显示语言回落英语而不是中文：走这条路径的本来就不是中文用户。
-    /// 这条断言同时钉住"回落目标"这个决定——改成 Zh 会让德语/日语/西语用户的界面突然变中文。</summary>
+    /// 这条断言同时钉住"回落目标"这个决定——改成 Zh 会让日语/西语/波兰语用户的界面突然变中文。
+    /// 用例挑的都是没建语言文件的：加一门语言时要把它的地区名从这里挪到上面的映射表里，
+    /// 德语曾在这一栏里，2026-09-24 起有 Lang.de.xaml 了。</summary>
     [Theory]
-    [InlineData("de-DE")]
     [InlineData("ja-JP")]
     [InlineData("es-ES")]
     [InlineData("pl-PL")]
+    [InlineData("nl-NL")]
     public void UnsupportedSystemLanguageFallsBackToEnglish(string culture)
     {
         Assert.Equal(L10n.En, L10n.ResolveSystemLanguage(new CultureInfo(culture)));
@@ -60,10 +64,11 @@ public class LanguageResolutionTests
     [Theory]
     [InlineData(null, L10n.Zh)]
     [InlineData("", L10n.Zh)]
-    [InlineData("de", L10n.Zh)]
+    [InlineData("it", L10n.Zh)]
     [InlineData("zh-CN", L10n.Zh)]
     [InlineData(L10n.Zh, L10n.Zh)]
     [InlineData("EN", L10n.En)]
+    [InlineData(L10n.De, L10n.De)]
     [InlineData(L10n.Fr, L10n.Fr)]
     [InlineData(L10n.System, L10n.System)]
     [InlineData("SYSTEM", L10n.System)]
@@ -91,7 +96,7 @@ public class LanguageResolutionTests
         using var scope = IsolatedUserState.Enter();
         var vm = new MainViewModel();
 
-        Assert.Equal([L10n.System, L10n.Zh, L10n.En, L10n.Ru, L10n.Fr],
+        Assert.Equal([L10n.System, L10n.Zh, L10n.En, L10n.De, L10n.Ru, L10n.Fr],
             vm.LanguageOptions.Select(o => o.Value));
         Assert.Equal(L10n.System, vm.SelectedLanguageOption?.Value);
     }

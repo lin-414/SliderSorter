@@ -101,9 +101,9 @@ public partial class GroupGenerationPage : UserControl
         { Owner = Shell }.ShowDialog();
     }
 
-    /// <summary>规则编辑器归壳管（它同时服务「规则预设」窗口，且全窗口只能开一个），
-    /// 所以这里走 VM 上注入的委托，而不是把页面转成 MainWindow 再调方法。</summary>
-    private void Rules_Click(object sender, RoutedEventArgs e) => _vm.RuleEditorOpener?.Invoke(null);
+    /// <summary>开关本页下方的「规则分组」抽屉。它原先是顶栏第 3 个标签页，
+    /// 现在贴着组列表开合——写规则时手边就是这个组，不必再切到别的界面去回忆目标组是谁。</summary>
+    private void RuleDrawer_Click(object sender, RoutedEventArgs e) => _vm.IsRuleDrawerOpen = !_vm.IsRuleDrawerOpen;
 
     /// <summary>双击某一行 = 看它的成员。落在空白处不算——<see cref="ViewMembers_Click"/> 取的是
     /// <c>Store.Current</c>（当前选中的组）而不是被双击的那一行，所以不校验命中行的话，
@@ -128,8 +128,7 @@ public partial class GroupGenerationPage : UserControl
 
     private void LogCopy_Click(object sender, RoutedEventArgs e)
     {
-        Clipboard.SetText(_vm.LogTextAll);
-        Notify.Info(Shell, L10n.Tr("L.Title_Tip"), L10n.Tr("L.Msg_CopiedToClipboard"));
+        Notify.CopyText(Shell, L10n.Tr("L.Title_Tip"), _vm.LogTextAll);
     }
 
     private void LogClear_Click(object sender, RoutedEventArgs e) => _vm.ClearLog();

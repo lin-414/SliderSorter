@@ -39,7 +39,7 @@ internal static class Program
     // Core 才是 SliderSorter.Core。写错会报"找不到程序集"而不是"找不到资源"。
     private const string AppAssembly = "SliderSorter";
 
-    private static readonly string[] Langs = ["zh", "en", "ru", "fr"];
+    private static readonly string[] Langs = ["zh", "en", "de", "ru", "fr"];
     private static readonly string[] Themes = ["Boutique", "Light"];
 
     [DllImport("user32.dll")]

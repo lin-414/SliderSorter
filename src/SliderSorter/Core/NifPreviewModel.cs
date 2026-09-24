@@ -1,6 +1,7 @@
 using System.Numerics;
 using NiflySharp;
 using NiflySharp.Blocks;
+using NiflySharp.Enums;
 using NiflySharp.Structs;
 
 namespace SliderSorter.Core;
@@ -25,6 +26,12 @@ public sealed class NifShape
     public Vector3 BoundsMin { get; init; }
     public Vector3 BoundsMax { get; init; }
 
+    /// <summary>这个形状要不要连背面一起画。照 BodySlide 的口径两条：着色器的双面位，
+    /// 以及模板属性里的 <c>DRAW_BOTH</c>（<c>GLSurface.cpp:1439-1458</c> 里 cullMode 就是这么定的）。
+    /// 没开的还硬把背面画出来，裙摆内侧那一片只有环境光的暗面会挡在身体前面，而游戏与 BodySlide
+    /// 那里是"透过去看到内衬的另一侧"。本机实测 53% 的形状开着。</summary>
+    public bool DoubleSided { get; init; }
+
     public int TriangleCount => Indices.Count / 3;
 
     public bool IsTextured => TexturePath is not null && Uvs.Count == Positions.Count;
@@ -42,15 +49,83 @@ public sealed class NifPreviewModel
     public int TriangleCount => Shapes.Sum(s => s.TriangleCount);
     public int TexturedShapeCount => Shapes.Count(s => s.IsTextured);
 
-    /// <summary>这份网格里已经有一个贴了身体贴图的形状——也就是作者把身体一起导出了。
-    /// 实测 350 个 set 里占 32%，所以"垫一个身体打底"必须先问这一条，否则那三分之一会出现两层身体互相穿插。</summary>
-    public bool CarriesOwnBody => Shapes.Any(s =>
-        s.TexturePath is { } t &&
-        (t.Contains("femalebody", StringComparison.OrdinalIgnoreCase) ||
-         t.Contains("malebody", StringComparison.OrdinalIgnoreCase)));
+    /// <summary>这份网格里已经有一个贴了身体贴图、而且**高到像一整个人**的形状——也就是作者把身体
+    /// 一起导出了。本机 400 件抽样里 26% 属于这种，所以"垫一个身体打底"必须先问这一条，
+    /// 否则那四分之一的件会出现两层身体互相穿插。</summary>
+    public bool CarriesOwnBody => Shapes.Any(s => SkinShapeHeight(s) >= MinBodyShapeHeight);
+
+    /// <summary>光看贴图名会把配件误判成"自带身体"：手套、靴子、袜子、高跟鞋这些件的源网格里也有
+    /// 一块贴 femalebody 的皮肤，但那只是手或脚。本机 400 件抽样里判为"自带身体"的 147 件分成两堆——
+    /// 皮肤块高 90~120 的 106 件是真身体，高 11~18 的 41 件是手脚，60~90 之间一件都没有，
+    /// 所以阈值划在 60（nif 单位＝厘米，一个女体约 103 高）落在空档里。</summary>
+    public const float MinBodyShapeHeight = 60f;
+
+    /// <summary>这块皮肤形状有多高（nif 的 Z 是竖直方向）；不是皮肤形状则为 0。</summary>
+    static float SkinShapeHeight(NifShape s) => s.TexturePath is not { } texture ||
+        !texture.Contains("femalebody", StringComparison.OrdinalIgnoreCase) &&
+        !texture.Contains("malebody", StringComparison.OrdinalIgnoreCase)
+        ? 0
+        : s.BoundsMax.Z - s.BoundsMin.Z;
 
     /// <summary>因为超出三角形预算而没画出来的形状数。非零时界面要说明这不是"衣服本来就这么点"。</summary>
     public int SkippedShapeCount { get; init; }
+
+    /// <summary>离打底的身体超过这个距离（nif 单位＝厘米）的衣服形状，不参与取景。</summary>
+    public const float OffBodyGapUnits = 20f;
+
+    /// <summary>摆相机用的包围盒。
+    /// <para>
+    /// 蒙皮到四肢/头颈的配件（项链坠、护臂那类）顶点是按骨骼空间存的，静态读顶点会把它留在绑定位置——
+    /// 本机实测有一件项链的四块落在脚底下。这种形状照样画（用户转着看时该发现它在那儿），
+    /// 但不该拿它框镜头：为它拉远会把整件衣服压成画面中央的几个像素。
+    /// </para>
+    /// 参照是**打底的身体**而不是"其它形状"：一件套装的上衣和腰带本来就隔着几十厘米，
+    /// 按形状互距判会把它们误判成碎片；而"在身体范围外一大截"只有一种解释。
+    /// 没垫身体（用户选了「无」）时全部参与取景——那种情况下没有参照物可言。</summary>
+    public static (Vector3 Min, Vector3 Max) FramingBounds(NifPreviewModel? outfit, NifPreviewModel? body)
+    {
+        var min = new Vector3(float.MaxValue);
+        var max = new Vector3(float.MinValue);
+        var any = false;
+
+        void Add(Vector3 lo, Vector3 hi)
+        {
+            min = Vector3.Min(min, lo);
+            max = Vector3.Max(max, hi);
+            any = true;
+        }
+
+        if (body is not null)
+            Add(body.BoundsMin, body.BoundsMax);
+
+        var keepWholeOutfit = body is null;
+        var anyOnBody = false;
+        foreach (var shape in outfit?.Shapes ?? [])
+            if (keepWholeOutfit || GapBetween(shape, body!.BoundsMin, body.BoundsMax) <= OffBodyGapUnits)
+            {
+                anyOnBody = true;
+                Add(shape.BoundsMin, shape.BoundsMax);
+            }
+
+        // 衣服整件都不在打底身体的范围里（体型对不上、或那具身体本来就不是它的参照）：
+        // 只框身体的话衣服会跑到画面外，所以退回把衣服一起框住
+        if (!anyOnBody && outfit?.Shapes.Count > 0)
+            Add(outfit.BoundsMin, outfit.BoundsMax);
+
+        // 两个都空（读不出网格时页面根本走不到取景）才到这里：给一个退化盒
+        return any ? (min, max) : (Vector3.Zero, Vector3.Zero);
+    }
+
+    /// <summary>形状到某个轴对齐包围盒的最短距离；落在盒内（含贴边）为 0。</summary>
+    static float GapBetween(NifShape shape, Vector3 boxMin, Vector3 boxMax)
+    {
+        static float Axis(float aMin, float aMax, float bMin, float bMax) =>
+            Math.Max(0, Math.Max(aMin - bMax, bMin - aMax));
+        var dx = Axis(shape.BoundsMin.X, shape.BoundsMax.X, boxMin.X, boxMax.X);
+        var dy = Axis(shape.BoundsMin.Y, shape.BoundsMax.Y, boxMin.Y, boxMax.Y);
+        var dz = Axis(shape.BoundsMin.Z, shape.BoundsMax.Z, boxMin.Z, boxMax.Z);
+        return MathF.Sqrt(dx * dx + dy * dy + dz * dz);
+    }
 }
 
 /// <summary>用 Nifly（GPL-3.0，见 README 的许可一节）把 Creation Engine 的 .nif 读成可渲染的形状。
@@ -182,6 +257,7 @@ public static class NifPreviewLoader
                     return false;
                 }
 
+
                 model = new NifPreviewModel
                 {
                     Shapes = shapes,
@@ -243,9 +319,27 @@ public static class NifPreviewLoader
             Uvs = uvs is { Count: > 0 } && uvs.Count == verts.Count ? uvs : Array.Empty<Vector2>(),
             Indices = indices,
             TexturePath = TexturePathOf(nif, shader),
+            DoubleSided = DoubleSidedOf(nif, shape, shader),
             BoundsMin = min,
             BoundsMax = max,
         };
+    }
+
+    /// <summary>这个形状要不要连背面一起画。照 BodySlide 的口径两条：着色器的双面位，
+    /// 以及模板属性里的 <c>DRAW_BOTH</c>（<c>GLSurface.cpp:1439-1458</c> 里 cullMode 就是这么定的）。
+    /// 取属性数组可能像 <see cref="ReadShader"/> 那样抛（有的导出工具干脆不给 Properties 赋值），就地兜住。</summary>
+    static bool DoubleSidedOf(NifFile nif, INiShape shape, INiShader shader)
+    {
+        if (shader.DoubleSided)
+            return true;
+        try
+        {
+            return nif.GetPropertyOfType<NiStencilProperty>(shape)?.DrawMode == StencilDrawMode.DRAW_BOTH;
+        }
+        catch (Exception)
+        {
+            return false;
+        }
     }
 
     /// <summary>

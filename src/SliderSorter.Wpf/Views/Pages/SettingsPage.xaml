@@ -9,7 +9,7 @@
          标签轨靠 Grid.IsSharedSizeScope + 每节首列 SharedSizeGroup="SettingsRail" 对齐，
          而不是照抄 boutique 的 Width="140"：它的标签最长是英文， ours 是法语
          「Langue de l’interface」。定死 140 会在 fr/ru 下把标签压窄，而布局探针正是按
-         4 语言 × 2 主题 × 三档尺寸量这个的（README 也写了不得按单一语言定死容器尺寸）。
+         5 语言 × 2 主题 × 三档尺寸量这个的（README 也写了不得按单一语言定死容器尺寸）。
          Auto + 共享组的取法是"全页取最宽的那个标签"，既对齐又随语言自己变宽。
          代价是四节几何被耦合：任一节冒出长标签会撑宽全页的标签列，
          真撑不住时该改的是译文或把该项拆成独立一节，不是给 FieldLabel 加 TextTrimming
@@ -234,7 +234,7 @@
 
                 <!-- ── ③ 外观 ──
                      以前是菜单栏顶层的两个勾选菜单项，图的是"点一下就切"。语言项的标签恒为各语言自己的
-                     写法（中文 / English / Русский / Français）：界面被翻坏时，那是唯一还认得出来的线索。 -->
+                     写法（中文 / English / Deutsch / Русский / Français）：界面被翻坏时，那是唯一还认得出来的线索。 -->
                 <Border Style="{StaticResource SettingCard}">
                     <StackPanel>
                         <TextBlock Style="{StaticResource SettingSectionHeader}"
@@ -329,7 +329,7 @@
                                            Stretch="Uniform" VerticalAlignment="Center" />
                                     <StackPanel Grid.Column="1" Orientation="Horizontal"
                                                 Margin="12,0,0,0" VerticalAlignment="Center">
-                                        <!-- 应用名是品牌字标，故意不进 Lang 文件（四语同形，且 verify_l10n 扫不到它）。
+                                        <!-- 应用名是品牌字标，故意不进 Lang 文件（各语言同形，且 verify_l10n 扫不到它）。
                                              字号走 H2（SectionTitleText，16）：页标题 18 要当全页最大的字，
                                              否则一级层次读不出来。 -->
                                         <TextBlock Text="SliderSorter" Style="{StaticResource SectionTitleText}"
@@ -354,7 +354,7 @@
                                            Text="{DynamicResource L.About_Desc}" />
 
                                 <!-- 元信息标签轨。作者与仓库地址都是标识符而不是文案 —— 与字标同理，
-                                     四语同形，所以不进 Lang 文件；显示文本由 code-behind 从 RepoUrl 派生，
+                                     各语言同形，所以不进 Lang 文件；显示文本由 code-behind 从 RepoUrl 派生，
                                      免得仓库搬家时 URL 在两处各改一次。 -->
                                 <Grid Margin="0,10,0,0">
                                     <Grid.ColumnDefinitions>

@@ -14,7 +14,8 @@ Themes/Controls.xaml 里 TargetType="Window" 的隐式样式会兜住；实际�
   §3 两套色板的 B.* 键集合是否完全一致（少一个键 → 某个主题下 DynamicResource 静默解析为空）
   §4 XAML 里引用的每个 B.* 键是否在两套色板里都存在
   §5 每个 B.* 画刷引用的 C.* 颜色是否真的定义了
-  §6 Views/Pages 下的每份页面是否真的被壳（Views/MainWindow.xaml）引用
+  §6 Views/Pages 下的每份页面是否都能从壳（Views/MainWindow.xaml）走到——直接被壳挂上，
+     或被另一份已被壳挂上的页面嵌进去，都算走到
   §7 各资源字典之间的 x:Key 是否重名（后合并的会静默覆盖先合并的）
 
 §1/§2 只作用于根 <Window>：Views/Pages 下的页面根是 <UserControl>，背景/前景/字体由壳继承而来，
@@ -195,9 +196,12 @@ def main() -> int:
         print("  通过（所有画刷的 C.* 引用均已定义）")
     failures += bad_color
 
-    # ── §6 页面必须被壳引用 ──
-    # 挡的是"页面写了却没接进 TabControl"：这种文件编译得过、门禁查得到，运行时却永远不出现。
-    print("\n§6 Views/Pages 下的页面是否被 Views/MainWindow.xaml 引用")
+    # ── §6 页面必须能从壳走到 ──
+    # 挡的是"页面写了却没接进去"：这种文件编译得过、门禁查得到，运行时却永远不出现。
+    # 2026-09-23 起不再要求"直接挂在壳的 TabControl 上"：规则分组从第 3 个标签页降级成
+    # 分组生成页里的一条抽屉，引用它的不是壳而是另一份页面。所以这里查的是可达性
+    # （壳 → 页面 → 页面），而不是只看壳那一层——只查壳会把这种合法嵌套报成孤儿。
+    print("\n§6 Views/Pages 下的页面是否都能从 Views/MainWindow.xaml 走到")
     shell_path = os.path.join(wpf, "Views", "MainWindow.xaml")
     pages = sorted(glob.glob(os.path.join(wpf, "Views", "Pages", "*.xaml")))
     if not pages:
@@ -206,13 +210,23 @@ def main() -> int:
         print("  [命中] 找不到壳 Views/MainWindow.xaml，无从判断页面是否被引用")
         failures += 1
     else:
-        shell_txt = read(shell_path)  # 注释已剥掉：在注释里提一嘴不算接上
-        orphans = [os.path.splitext(os.path.basename(p))[0] for p in pages
-                   if os.path.splitext(os.path.basename(p))[0] not in shell_txt]
+        # 注释已剥掉：在注释里提一嘴不算接上
+        stems = {os.path.splitext(os.path.basename(p))[0] for p in pages}
+        texts = {os.path.splitext(os.path.basename(p))[0]: read(p) for p in pages}
+        texts["__shell__"] = read(shell_path)
+        reached = set()
+        queue = ["__shell__"]
+        while queue:
+            host = texts[queue.pop()]
+            for stem in stems - reached:
+                if stem in host:
+                    reached.add(stem)
+                    queue.append(stem)
+        orphans = sorted(stems - reached)
         for stem in orphans:
-            print(f"  [命中] Views/Pages/{stem}.xaml 未被壳引用（TabControl 里没有它）")
+            print(f"  [命中] Views/Pages/{stem}.xaml 壳与其余页面里都没有引用它（既不在 TabControl 里，也没被谁嵌进抽屉）")
         if not orphans:
-            print(f"  通过（{len(pages)} 份页面全部被壳引用）")
+            print(f"  通过（{len(pages)} 份页面全部可达）")
         failures += len(orphans)
 
     # ── §7 跨字典的 x:Key 不得重名 ──

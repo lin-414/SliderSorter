@@ -62,4 +62,25 @@ public class IniParserTests
         // 十六进制位数不足 → 按未知转义原样保留，别吃掉字符
         Assert.Equal(@"C:\Games\x4Z", ValueOf(@"@ByteArray(C:\\Games\x4Z)"));
     }
+
+
+    /// <summary>@ByteArray 里装的是**字节**：Qt 把非 ASCII 写成 \xHH，一个中文字是三个字节（它的
+    /// UTF-8）。逐字节 <c>(char)b</c> 等于按 Latin-1 解码，路径当场读成乱码 —— 于是
+    /// <c>Directory.Exists</c> 全失败、模组一个也扫不到，而诊断里显示的还是那个错路径。</summary>
+    [Fact]
+    public void HexEscapesAreUtf8BytesNotLatin1()
+    {
+        Assert.Equal(@"E:\游戏\Skyrim", ValueOf(@"@ByteArray(E:\\\xe6\xb8\xb8\xe6\x88\x8f\\Skyrim)"));
+        // 俄语目录同样：\xd0\xa9 = «Щ»
+        Assert.Equal(@"D:\Щ\games", ValueOf(@"@ByteArray(D:\\\xd0\xa9\\games)"));
+        // 纯 ASCII（真实 MO2 的 gamePath 基本如此）行为一字不变
+        Assert.Equal(@"E:\Skyrim AE\Skyrim Special Edition",
+            ValueOf(@"@ByteArray(E:\\Skyrim AE\\Skyrim Special Edition)"));
+    }
+
+    /// <summary>不是合法 UTF-8 的字节串（老设置里可能按本地 ANSI 代码页存的）退回逐字节直投：
+    /// 与修复前一致，至少不把字符吃掉。</summary>
+    [Fact]
+    public void NonUtf8ByteRunsFallBackToBytePerChar() =>
+        Assert.Equal(@"A:\éé", ValueOf(@"@ByteArray(A:\\\xe9\xe9)"));
 }

@@ -60,7 +60,7 @@ public class GroupStore
 
     public void SelectGroup(string? name)
     {
-        if (string.Equals(CurrentGroupName, name, StringComparison.Ordinal))
+        if (string.Equals(CurrentGroupName, name, StringComparison.OrdinalIgnoreCase))
             return;
         CurrentGroupName = name;
         Changed?.Invoke();
@@ -82,7 +82,7 @@ public class GroupStore
 
     public (bool Ok, string? Error) RenameGroup(string oldName, string newName)
     {
-        var group = _groups.FirstOrDefault(g => string.Equals(g.Name, oldName, StringComparison.Ordinal));
+        var group = _groups.FirstOrDefault(g => string.Equals(g.Name, oldName, StringComparison.OrdinalIgnoreCase));
         if (group is null)
             return (false, CoreStrings.Get("L.Core_GroupRenameMissing"));
         newName = newName.Trim();
@@ -92,7 +92,7 @@ public class GroupStore
             return (false, CoreStrings.Get("L.Core_GroupDuplicate"));
         Snapshot();
         group.Name = newName;
-        if (string.Equals(CurrentGroupName, oldName, StringComparison.Ordinal))
+        if (string.Equals(CurrentGroupName, oldName, StringComparison.OrdinalIgnoreCase))
             CurrentGroupName = newName;
         MarkDirty();
         return (true, null);
@@ -100,12 +100,12 @@ public class GroupStore
 
     public bool DeleteGroup(string name)
     {
-        var group = _groups.FirstOrDefault(g => string.Equals(g.Name, name, StringComparison.Ordinal));
+        var group = _groups.FirstOrDefault(g => string.Equals(g.Name, name, StringComparison.OrdinalIgnoreCase));
         if (group is null)
             return false;
         Snapshot();
         _groups.Remove(group);
-        if (string.Equals(CurrentGroupName, name, StringComparison.Ordinal))
+        if (string.Equals(CurrentGroupName, name, StringComparison.OrdinalIgnoreCase))
             CurrentGroupName = _groups.FirstOrDefault()?.Name;
         MarkDirty();
         return true;
@@ -134,10 +134,14 @@ public class GroupStore
         return (true, null);
     }
 
-    /// <summary>把一批服装加入/移出指定名称的组（规则归组用）。</summary>
+    /// <summary>把一批服装加入/移出指定名称的组（规则归组用）。
+    /// 组名一律按忽略大小写找：<c>GetGroup</c>/<c>GroupNameExists</c>/<c>Current</c> 都是这个口径，
+    /// 这里若按 Ordinal 找，把组 <c>Armor</c> 重命名成 <c>ARMOR</c> 之后预设里那句
+    /// <c>Group="Armor"</c> 就会静默匹配不上——规则看起来执行了（调用方还按 GetGroup 打出成员数），
+    /// 实际一条没动。找不到组返回 -1，调用方必须说给用户听。</summary>
     public int ApplyToGroup(string groupName, IEnumerable<string> outfits, bool add)
     {
-        var group = _groups.FirstOrDefault(g => string.Equals(g.Name, groupName, StringComparison.Ordinal));
+        var group = _groups.FirstOrDefault(g => string.Equals(g.Name, groupName, StringComparison.OrdinalIgnoreCase));
         if (group is null)
             return -1;
         Snapshot();
@@ -211,7 +215,7 @@ public class GroupStore
         var restored = _undoStack.Pop();
         _groups.Clear();
         _groups.AddRange(restored);
-        if (CurrentGroupName is not null && _groups.All(g => g.Name != CurrentGroupName))
+        if (CurrentGroupName is not null && _groups.All(g => !string.Equals(g.Name, CurrentGroupName, StringComparison.OrdinalIgnoreCase)))
             CurrentGroupName = _groups.FirstOrDefault()?.Name;
         Dirty = true;
         InvalidateMembershipCache();

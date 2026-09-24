@@ -6,7 +6,6 @@
 
     <!-- Menu -->
     <sys:String x:Key="L.Menu_ImportGroups">Import group files…(_I)</sys:String>
-    <sys:String x:Key="L.Menu_Undo">Undo(_U)</sys:String>
     <sys:String x:Key="L.Theme_Dark">Dark</sys:String>
     <sys:String x:Key="L.Theme_Light">Light</sys:String>
 
@@ -68,7 +67,6 @@
     <sys:String x:Key="L.Main_Rename">Rename</sys:String>
     <sys:String x:Key="L.Main_DeleteGroup">Delete group</sys:String>
     <sys:String x:Key="L.Main_ViewGroup">View members</sys:String>
-    <sys:String x:Key="L.Main_RuleGrouping">Rule grouping</sys:String>
     <sys:String x:Key="L.Main_Save">Save group files</sys:String>
     <sys:String x:Key="L.Main_SaveDirtyTip">You have unsaved group changes</sys:String>
 
@@ -86,7 +84,6 @@
     <sys:String x:Key="L.Btn_Cancel">Cancel</sys:String>
     <sys:String x:Key="L.Btn_Close">Close</sys:String>
     <sys:String x:Key="L.Banner_Dismiss">Dismiss this message</sys:String>
-    <sys:String x:Key="L.Btn_Apply">Apply</sys:String>
     <sys:String x:Key="L.Btn_CopyAll">Copy all</sys:String>
     <sys:String x:Key="L.Word_Add">added to</sys:String>
     <sys:String x:Key="L.Word_Remove">removed from</sys:String>
@@ -175,6 +172,7 @@
     <sys:String x:Key="L.Log_NewModsFound">Found {0} new outfit mod(s): {1}{2}</sys:String>
     <sys:String x:Key="L.Log_NoGroupsForNew">No groups yet: create one first; these outfits can also be found later via "Unassigned only".</sys:String>
     <sys:String x:Key="L.Log_NewModsApplied">New-mod grouping: {0} outfit(s) added to group "{1}"; remember to save the group files.</sys:String>
+    <sys:String x:Key="L.Log_GroupMissing" xml:space="preserve">Target group "{0}" was not found, so this grouping did nothing (the group may have just been renamed or deleted).</sys:String>
     <sys:String x:Key="L.Log_RuleApplied">Rule grouping: {0} outfit(s) {1} group "{2}" (now {3} member(s)).</sys:String>
     <sys:String x:Key="L.Log_PresetSaved">Saved rule preset "{0}" (target group: {1}; {2} preset(s) total).</sys:String>
     <sys:String x:Key="L.Log_PresetsSkipped">Preset grouping: {0} outfit(s) total; skipped missing groups: {1}</sys:String>
@@ -200,8 +198,6 @@
     <sys:String x:Key="L.Msg_SelectGroupFirst">Select a group first.</sys:String>
     <sys:String x:Key="L.Msg_SelectOutfitsFirst">Tick the outfits to remove first (tick a mod or a separator to select them in bulk).</sys:String>
     <sys:String x:Key="L.Msg_ConfirmRemove">Remove {0} outfit(s) from group "{1}"?</sys:String>
-    <sys:String x:Key="L.Msg_NeedGroupFirst">No groups yet. Rule grouping needs a target group — create one first.</sys:String>
-    <sys:String x:Key="L.Msg_NoOutfits">No outfits have been scanned yet.</sys:String>
     <sys:String x:Key="L.Msg_ScanIncomplete">Scanning is not finished or the write location is unknown.</sys:String>
     <sys:String x:Key="L.Msg_NoGroupsYet">There are no groups yet. Create a group and tick outfits first.</sys:String>
     <sys:String x:Key="L.Msg_EmptyGroupName">A group has an empty name; rename it first.</sys:String>
@@ -223,6 +219,7 @@ Open the release page to download?</sys:String>
     <sys:String x:Key="L.Msg_AlreadyRunning">SliderSorter is already running.</sys:String>
     <sys:String x:Key="L.Msg_OutputDirUndetermined">Scanning has not finished, so the output folder cannot be determined.</sys:String>
     <sys:String x:Key="L.Msg_CopiedToClipboard">Copied to the clipboard.</sys:String>
+    <sys:String x:Key="L.Msg_ClipboardFailed" xml:space="preserve">Copy failed: another program is holding the clipboard. Try again in a moment.</sys:String>
     <sys:String x:Key="L.Msg_UnsavedOnExit" xml:space="preserve">There are unsaved group changes; quitting now will lose them.&#x0a;&#x0a;Yes: save and quit&#x0a;No: quit without saving&#x0a;Cancel: stay in the app</sys:String>
 
     <!-- Crash log -->
@@ -243,7 +240,7 @@ Open the release page to download?</sys:String>
     <sys:String x:Key="L.NewMods_FilterMods">Filter mods / separators…</sys:String>
     <sys:String x:Key="L.NewMods_FilterCount">Showing {0} outfit(s) ({1} still to group)</sys:String>
     <sys:String x:Key="L.NewMods_PresetsBtn">Apply presets ({0})</sys:String>
-    <sys:String x:Key="L.NewMods_PresetsTip">Run all saved rule presets (over all outfits); processed items are removed from the list. Manage presets under Tools → Rule presets.</sys:String>
+    <sys:String x:Key="L.NewMods_PresetsTip">Run all saved rule presets (over all outfits); processed items are removed from the list. Presets themselves are managed on the Rule grouping tab.</sys:String>
     <sys:String x:Key="L.NewMods_TopRemaining">{0} outfit(s) still ungrouped ({1} new mod(s), {2} outfit(s) in this scan).</sys:String>
     <sys:String x:Key="L.NewMods_TopRemainingHint">Keep ticking → pick a target group → "Add selected". You can repeat with different target groups; "Close" stops anytime.</sys:String>
     <sys:String x:Key="L.NewMods_TopFirst">This scan found {0} new outfit mod(s) ({1} outfit(s) in total).</sys:String>
@@ -311,7 +308,7 @@ The existing file is backed up as BuildSelection.xml.bak. BodySlide stops asking
     <sys:String x:Key="L.Msg_ConflictNothingToExport" xml:space="preserve">No conflict group has a chosen winner yet, so there is nothing to write.</sys:String>
     <sys:String x:Key="L.Msg_ExportFail" xml:space="preserve">Failed to write BuildSelection.xml.</sys:String>
     <sys:String x:Key="L.Msg_BuildSelWritten" xml:space="preserve">{0} entries written, {1} removed → {2}. Restart BodySlide to pick them up.</sys:String>
-    <sys:String x:Key="L.Log_OutputConflictsFound" xml:space="preserve">{0} outfits are written to the same output file by more than one mod; {1} groups in total counting one mod's own presets, {2} of them still unset — pick winners under Tools → Output conflicts…</sys:String>
+    <sys:String x:Key="L.Log_OutputConflictsFound" xml:space="preserve">{0} outfits are written to the same output file by more than one mod; {1} groups in total counting one mod's own presets, {2} of them still unset — pick winners on the Output conflicts tab</sys:String>
     <sys:String x:Key="L.Log_BuildSelWritten" xml:space="preserve">Wrote BuildSelection.xml: {0} added/changed, {1} removed → {2}</sys:String>
     <sys:String x:Key="L.Vm_ConflictsInline" xml:space="preserve">output conflicts: {0} ({1} unset)</sys:String>
     <sys:String x:Key="L.Diag_SecConflicts" xml:space="preserve">Output file conflicts</sys:String>
@@ -319,9 +316,20 @@ The existing file is backed up as BuildSelection.xml.bak. BodySlide stops asking
     <sys:String x:Key="L.Diag_ConflictLine" xml:space="preserve">{0} groups ({1} across mods), {2} with a chosen winner</sys:String>
     <sys:String x:Key="L.Diag_ConflictMore" xml:space="preserve">({0} further groups omitted)</sys:String>
 
-    <!-- Rule grouping -->
-    <sys:String x:Key="L.RuleGroup_Title">Rule grouping</sys:String>
-    <sys:String x:Key="L.RuleGroup_Explainer">Batch-add/remove scanned outfits to/from the group selected above by keywords: any keyword hit counts (separate with ;), and the preview below refreshes live. Click "Apply" to execute. Save frequently used conditions as a preset — they run automatically when newly installed mods are found.</sys:String>
+    <!-- Rule grouping (presets and the rule editor share this section. It is not a tab:
+         it is a drawer at the bottom of the Grouping page, and L.Main_RuleGroup is its toggle button.) -->
+    <sys:String x:Key="L.Main_RuleGroup">Rule grouping</sys:String>
+    <sys:String x:Key="L.RuleGroup_Intro">Batch-add or remove scanned outfits from a group by keyword: any keyword counts, separate several with ";", empty = no limit. You don't have to save first - the Match preview on the right shows what would match, and "Apply this rule" runs it at once (Ctrl+Z undoes). A rule saved as a preset also runs under "Group by presets" when a later scan finds newly installed mods.</sys:String>
+    <sys:String x:Key="L.RuleGroup_DrawerTip">Open or close the rule panel below this page: batch-select outfits by keyword and keep reusable conditions as presets.</sys:String>
+    <sys:String x:Key="L.RuleGroup_PresetsHeader">Saved presets</sys:String>
+    <sys:String x:Key="L.RuleGroup_ConditionsHeader">Rule conditions</sys:String>
+    <sys:String x:Key="L.RuleGroup_PreviewHeader">Match preview</sys:String>
+    <sys:String x:Key="L.RuleGroup_PresetCount">{0} total</sys:String>
+    <sys:String x:Key="L.RuleGroup_HitCount">{0} outfit(s) matched</sys:String>
+    <sys:String x:Key="L.RuleGroup_DirtyMark">Not saved</sys:String>
+    <sys:String x:Key="L.RuleGroup_DirtyTip">These conditions differ from the saved preset; click "Save preset" to write them down.</sys:String>
+    <sys:String x:Key="L.RuleGroup_Name">Preset name</sys:String>
+    <sys:String x:Key="L.RuleGroup_WmName">Name this rule</sys:String>
     <sys:String x:Key="L.RuleGroup_Target">Target group</sys:String>
     <sys:String x:Key="L.RuleGroup_Direction">Direction</sys:String>
     <sys:String x:Key="L.RuleGroup_Add">Add to group</sys:String>
@@ -334,26 +342,24 @@ The existing file is backed up as BuildSelection.xml.bak. BodySlide stops asking
     <sys:String x:Key="L.RuleGroup_WmMod">Filter by mod name; separate with ; empty = any</sys:String>
     <sys:String x:Key="L.RuleGroup_WmOutfit">Separate with ; empty = all outfits</sys:String>
     <sys:String x:Key="L.RuleGroup_WmExclude">Matching outfits will be excluded</sys:String>
-    <sys:String x:Key="L.RuleGroup_SavePresetBtn">Save as preset</sys:String>
-    <sys:String x:Key="L.RuleGroup_Preview">Will match {0} outfit(s):</sys:String>
-    <sys:String x:Key="L.RuleGroup_NotInTree" xml:space="preserve">(hits not shown in the main tree ({0}))</sys:String>
-    <sys:String x:Key="L.RuleGroup_SavePresetTitle">Save as rule preset</sys:String>
-    <sys:String x:Key="L.RuleGroup_SavePresetPrompt">Preset name (target group: {0})</sys:String>
-
-    <!-- Rule presets -->
-    <sys:String x:Key="L.RulePresets_Title">Rule presets</sys:String>
-    <sys:String x:Key="L.RulePresets_Head">A preset = one reusable auto-grouping rule.</sys:String>
-    <sys:String x:Key="L.RulePresets_Steps" xml:space="preserve">A preset is a reusable set of grouping conditions. You can create, edit or delete them at any time; presets are independent of one another.&#x0a;· Create or change: click "New preset…", or select one and click "Edit selected…" (double-clicking the row works too). Choose a target group, fill in keywords, confirm the preview. The name is pre-filled, so confirming overwrites the original.&#x0a;· When they run: when a later scan finds newly installed mods, click "Apply presets" in the popup to run them all in order; you can also run one any time from the Grouping tab via "⋯ → Rule grouping".</sys:String>
-    <sys:String x:Key="L.RulePresets_New">New preset…</sys:String>
-    <sys:String x:Key="L.RulePresets_Edit">Edit selected…</sys:String>
-    <sys:String x:Key="L.RulePresets_Delete">Delete selected</sys:String>
-    <sys:String x:Key="L.RulePresets_Empty">No presets yet. Click "New preset…" below to create your first auto-grouping rule.</sys:String>
-    <sys:String x:Key="L.RulePresets_NoSelection">Select a preset on the left to see its details.</sys:String>
-    <sys:String x:Key="L.RulePresets_RowTitle">{0} → {1} group "{2}"</sys:String>
-    <sys:String x:Key="L.RulePresets_RowDetail">Mod keywords: {0} · Outfit keywords: {1} · Excluded: {2}</sys:String>
-    <sys:String x:Key="L.RulePresets_UnassignedSuffix" xml:space="preserve"> · unassigned only</sys:String>
-    <sys:String x:Key="L.RulePresets_SelectToDelete">Select a preset to delete first.</sys:String>
-    <sys:String x:Key="L.RulePresets_SelectToEdit">Select a preset to edit first.</sys:String>
+    <sys:String x:Key="L.RuleGroup_EmptyPresets">No presets yet. Fill in the conditions on the right, then click "Save preset" below.</sys:String>
+    <sys:String x:Key="L.RuleGroup_NoHits">No outfit matches these conditions. Loosen a keyword, or clear "Unassigned outfits only".</sys:String>
+    <sys:String x:Key="L.RuleGroup_RowSummary">{0} - "{1}"</sys:String>
+    <sys:String x:Key="L.RuleGroup_RowKeywords" xml:space="preserve"> - mods {0} / outfits {1} / excluded {2}</sys:String>
+    <sys:String x:Key="L.RuleGroup_UnassignedSuffix" xml:space="preserve"> - unassigned only</sys:String>
+    <sys:String x:Key="L.RuleGroup_OutsideTree" xml:space="preserve">(hits outside the mod tree ({0}))</sys:String>
+    <sys:String x:Key="L.RuleGroup_New">New preset</sys:String>
+    <sys:String x:Key="L.RuleGroup_Save">Save preset</sys:String>
+    <sys:String x:Key="L.RuleGroup_Delete">Delete preset</sys:String>
+    <sys:String x:Key="L.RuleGroup_Apply">Apply this rule</sys:String>
+    <sys:String x:Key="L.RuleGroup_ApplyTip">Add or remove the matching outfits from the target group using the conditions on the left (Ctrl+Z to undo).</sys:String>
+    <sys:String x:Key="L.RuleGroup_ApplyAll">Apply all presets</sys:String>
+    <sys:String x:Key="L.RuleGroup_ApplyAllTip">Run every preset on the left, in order, against the current scan.</sys:String>
+    <sys:String x:Key="L.RuleGroup_NameRequired">Give this rule a name before saving it as a preset.</sys:String>
+    <sys:String x:Key="L.RuleGroup_SelectToDelete">Select a preset to delete first.</sys:String>
+    <sys:String x:Key="L.RuleGroup_NoScanTip">Nothing scanned yet - scan on the Grouping tab first.</sys:String>
+    <sys:String x:Key="L.RuleGroup_NoGroupTip">No groups yet - create one on the Grouping tab.</sys:String>
+    <sys:String x:Key="L.RuleGroup_NoPresetsTip">No presets to run - "Save preset" a condition first.</sys:String>
 
     <!-- Save success -->
     <sys:String x:Key="L.SaveOk_Title">Done</sys:String>
@@ -410,8 +416,8 @@ One file per group, named after the group: {1}{2} ({3}).
     <sys:String x:Key="L.Help_12">A tick only marks what you want to act on — nothing is written until you click "Add to group" / "Remove from group" in the middle. Ticking a mod or a separator ticks all of its outfits.</sys:String>
     <sys:String x:Key="L.Help_13">The mark before an outfit name means it is already in the currently selected group; the "in group x/total" badge to the right of a mod title shows how many of its outfits are in that group.</sys:String>
     <sys:String x:Key="L.Help_S2_Groups">[Right group panel]</sys:String>
-    <sys:String x:Key="L.Help_14">Group list: click to select (the ticks and marks on the left follow along without losing your scroll position), double-click to preview its members. New / rename / view / rule grouping / delete all live under "⋯" in the header, and are also on the list's right-click menu.</sys:String>
-    <sys:String x:Key="L.Help_15">"⋯" → "Rule grouping": batch work by keyword — see section 5.</sys:String>
+    <sys:String x:Key="L.Help_14">Group list: click to select (the ticks and marks on the left follow along without losing your scroll position), double-click to preview its members. New / rename / view / delete and import all live under "..." in the header, and are also on the list's right-click menu; "Undo" and "Rule grouping" are the two buttons next to it.</sys:String>
+    <sys:String x:Key="L.Help_15">The "Rule grouping" button (next to "Undo") opens a panel at the bottom of this page: batch work by keyword - see section 5.</sys:String>
     <sys:String x:Key="L.Help_16">Undo (Ctrl+Z, or Edit → Undo): rolls back the last 30 grouping actions — see section 6.</sys:String>
     <sys:String x:Key="L.Help_17">File → Import group files…: merge other group XMLs into the current list and keep editing.</sys:String>
     <sys:String x:Key="L.Help_18">New-mod reminder: when a scan finds newly installed outfit mods a popup lists them by separator → mod → outfit (same as the main tree, expandable) — tick, pick a target group, click "Add selected" (undoable), and you can repeat with different target groups. For long lists use the two filter boxes above (left filters outfit names, right filters mod / separator names); ticks survive filtering. Closing defers it; you can still find those outfits later via "Unassigned only".</sys:String>
@@ -424,14 +430,15 @@ One file per group, named after the group: {1}{2} ({3}).
     <sys:String x:Key="L.Help_23">Note: if a custom output folder is not somewhere BodySlide reads (the SliderGroups of the effective project path, or of a mod), BodySlide will not load those groups.</sys:String>
     <sys:String x:Key="L.Help_H4">4. Saving and file layout</sys:String>
     <sys:String x:Key="L.Help_24">With large outfit counts, use keywords to round up a whole batch at once:</sys:String>
-    <sys:String x:Key="L.Help_25">1. Select the target group on the right first; "⋯" → "Rule grouping" (or right-click the group list) opens a separate window while the main window stays usable.</sys:String>
+    <sys:String x:Key="L.Help_25">1. Select the target group on the right first; the "Rule grouping" button in the Groups header (or Ctrl+3) opens the rule drawer at the bottom of this page with that group already filled in as the target.</sys:String>
     <sys:String x:Key="L.Help_26">2. Three kinds of keywords (separate several with ;, any hit counts; case-insensitive substring match):</sys:String>
     <sys:String x:Key="L.Help_27">Mod keywords: filter candidate mods by mod name first, then search outfits within them — same-named outfits in other mods are not pulled in; empty = any mod.</sys:String>
     <sys:String x:Key="L.Help_28">Outfit keywords: match by outfit name; empty = all outfits.</sys:String>
     <sys:String x:Key="L.Help_29">Excluded keywords: outfits whose name matches are dropped.</sys:String>
     <sys:String x:Key="L.Help_30">3. "Unassigned outfits only" leaves already-grouped ones alone; the direction is "add to" or "remove from" the group.</sys:String>
-    <sys:String x:Key="L.Help_31">4. The preview shows separator → mod → matched outfits (same hierarchy as the main tree) with a live "will match N outfits" count; click "Apply" to execute — Ctrl+Z undoes it. Example: mod keyword ube, exclude localisation, unassigned only → pulls all ungrouped UBE outfits into the target group in one go (outfit names need not contain ube).</sys:String>
-    <sys:String x:Key="L.Help_H5">5. Rule grouping (batch grouping)</sys:String>
+    <sys:String x:Key="L.Help_31">4. The preview shows separator -> mod -> matched outfits (same hierarchy as the main tree) with a live "N outfit(s) matched" count; click "Apply this rule" to execute - Ctrl+Z undoes it. Example: mod keyword ube, exclude localisation, unassigned only -> pulls all ungrouped UBE outfits into the target group in one go (outfit names need not contain ube).</sys:String>
+    <sys:String x:Key="L.Help_H5">5. Rule grouping (batch grouping and presets)</sys:String>
+    <sys:String x:Key="L.Help_Presets">5. Click "Save preset" on conditions you use often and pick them up next time; "Apply all presets" runs every preset in order (the same path as "Group by presets" in the new-mods popup). Saving under a different name keeps the original and creates a second preset.</sys:String>
     <sys:String x:Key="L.Help_32">Undo (Ctrl+Z, or Edit → Undo) rolls back the last 30 grouping actions one step at a time: add/remove, rule grouping, new/rename/delete group, import, and removals made in the member list. Saving to disk does not clear the undo history, but restarting the app does.</sys:String>
     <sys:String x:Key="L.Help_33">Five output modes:</sys:String>
     <sys:String x:Key="L.Help_34">Auto (recommended): writes to the effective project path's SliderGroups when it is a real folder; when it is CalienteTools\BodySlide under MO2's virtual Data (the most common case), writes to the MO2-dedicated mod "SliderSorter Output".</sys:String>
@@ -460,7 +467,7 @@ One file per group, named after the group: {1}{2} ({3}).
     <sys:String x:Key="L.Help_Toc">Contents</sys:String>
     <sys:String x:Key="L.Help_TocHint">Click a heading to jump to that section.</sys:String>
     <sys:String x:Key="L.Help_Task1">Put one mod's outfits into a group — tick that mod on the left (ticking the mod name selects all its outfits) → select the target group on the right → click "Add to group" in the middle → click "Save group files".</sys:String>
-    <sys:String x:Key="L.Help_Task2">Gather similar outfits scattered across several mods — "⋯" on the right → "Rule grouping", then narrow them down with keywords in one pass (see section 5).</sys:String>
+    <sys:String x:Key="L.Help_Task2">Gather similar outfits scattered across several mods - press the "Rule grouping" button on the right, then narrow them down with keywords in one pass (see section 5).</sys:String>
     <sys:String x:Key="L.Help_Task3">An outfit ended up in the wrong group — tick it on the left → click "Remove from group"; or just press Ctrl+Z to undo the last step.</sys:String>
     <sys:String x:Key="L.Help_Task4">New groups do not show up in BodySlide — restart BodySlide first (if you launch it through MO2, restart MO2 too); if they are still missing, open Tools → Diagnostics and check that the "effective project path" matches the "output dir".</sys:String>
     <sys:String x:Key="L.Help_Task5">See what is inside a group — double-click the group name, or use "⋯" → "View group" to open the member list (filterable, with batch removal).</sys:String>
@@ -522,6 +529,9 @@ One file per group, named after the group: {1}{2} ({3}).
     <sys:String x:Key="L.Core_GroupNeedSelection">Create or select a group on the right first.</sys:String>
     <sys:String x:Key="L.Core_GroupTargetMissing">Target group not found.</sys:String>
     <sys:String x:Key="L.Core_GroupNothingToUndo">Nothing to undo.</sys:String>
+    <sys:String x:Key="L.Core_SettingsSaveFail" xml:space="preserve">Settings could not be written to disk (this change only lives in this run). Reason: {0}</sys:String>
+    <sys:String x:Key="L.Core_SettingsBroken" xml:space="preserve">The settings file could not be read, so this session started from defaults. Reason: {0}</sys:String>
+    <sys:String x:Key="L.Core_SettingsBrokenKept" xml:space="preserve">The settings file could not be read, so this session started from defaults (the original was kept as {0}; restore it by hand if needed). Reason: {1}</sys:String>
     <sys:String x:Key="L.Core_InstancePortable">portable</sys:String>
     <sys:String x:Key="L.Core_InstanceGlobal">global</sys:String>
     <sys:String x:Key="L.Core_InstanceManual">manual</sys:String>

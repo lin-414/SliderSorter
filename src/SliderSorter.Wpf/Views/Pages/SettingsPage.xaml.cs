@@ -116,8 +116,7 @@ public partial class SettingsPage : UserControl
 
     private void DiagnosticsCopy_Click(object sender, RoutedEventArgs e)
     {
-        Clipboard.SetText(ReportBox.Text);
-        Notify.Info(Window.GetWindow(this), L10n.Tr("L.Title_Tip"), L10n.Tr("L.Msg_CopiedToClipboard"));
+        Notify.CopyText(Window.GetWindow(this), L10n.Tr("L.Title_Tip"), ReportBox.Text);
     }
 
     private void Repo_Click(object sender, RoutedEventArgs e) => MainViewModel.OpenUrl(RepoUrl);

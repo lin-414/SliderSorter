@@ -3,13 +3,14 @@ using System.Windows;
 
 namespace SliderSorter.Wpf.Services;
 
-/// <summary>界面语言：向 Application 资源装载 Strings/Lang.zh|en|ru|fr 字典（合并字典后加优先，追加到末尾），
+/// <summary>界面语言：向 Application 资源装载 Strings/Lang.zh|en|de|ru|fr 字典（合并字典后加优先，追加到末尾），
 /// 与 ThemeManager 同一套换字典机制，切换对 DynamicResource 绑定即时生效。
 /// 代码后台/ViewModel 经 Tr/TrF 取词——Tr 读的是普通字典快照，见 <see cref="Apply"/>。</summary>
 public static class L10n
 {
     public const string Zh = "zh";
     public const string En = "en";
+    public const string De = "de";
     public const string Ru = "ru";
     public const string Fr = "fr";
 
@@ -18,15 +19,17 @@ public static class L10n
     /// 或者程序将来多支持了一种语言，它都不会自己跟上——"跟随系统"就退化成"首次启动时是什么就是什么"。</summary>
     public const string System = "system";
 
-    /// <summary>系统 UI 语言不在受支持列表时的回落（德语 / 日语系统 → 英文界面）。
+    /// <summary>系统 UI 语言不在受支持列表时的回落（日语 / 西语系统 → 英文界面）。
     /// 刻意不用 Zh：走这条路径的本来就不是中文用户，给英语比给中文有用；
     /// 而"设置里没写"或"写了不认识的值"仍按老规矩回落到 Zh（见 <see cref="Normalize"/>）。</summary>
     public const string SystemFallback = En;
 
     /// <summary>受支持的语言代码，同时也是 Strings/Lang.*.xaml 的文件名。
     /// 新增语言只需在此追加常量并补一份同名语言文件；Apply 对未知值一律回落到 Zh。
-    /// <see cref="System"/> 不是一个语言文件，所以不在此列——它由 <see cref="ResolveSystemLanguage"/> 解析。</summary>
-    public static readonly string[] Supported = [Zh, En, Ru, Fr];
+    /// <see cref="System"/> 不是一个语言文件，所以不在此列——它由 <see cref="ResolveSystemLanguage"/> 解析。
+    /// 这里加了语言，MainViewModel 的语言下拉、tools/layout-probe 的语言矩阵和
+    /// 各份"支持哪几种语言"的说明也得跟着加，否则新语言装载得进来却点不到、也没被布局门禁量过。</summary>
+    public static readonly string[] Supported = [Zh, En, De, Ru, Fr];
 
     /// <summary>实际装载的语言，恒为 <see cref="Supported"/> 里的某一个：界面上真正显示的就是它。
     /// 代码里要判断"现在是什么语言"（换语言后重建缓存串之类）一律看这个。

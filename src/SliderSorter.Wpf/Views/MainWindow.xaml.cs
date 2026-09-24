@@ -8,11 +8,10 @@ using Microsoft.Win32;
 
 namespace SliderSorter.Wpf.Views;
 
-/// <summary>壳：菜单 + 标签条 + 状态栏 + 扫描遮罩。三页的内容与布局各自在 Views/Pages 下。</summary>
+/// <summary>壳：标签条 + 状态栏 + 扫描遮罩。四页的内容与布局各自在 Views/Pages 下。</summary>
 public partial class MainWindow : Window
 {
     private readonly MainViewModel _vm;
-    private RuleGroupWindow? _ruleWindow;
 
     public MainWindow()
     {
@@ -35,9 +34,6 @@ public partial class MainWindow : Window
         // owner 才是真正有窗口身份的壳。
         _vm.FolderPicker = description => PickFolder(description);
         _vm.FilePicker = _ => PickImportFile();
-        // 规则归组编辑器全窗口只开一个，却有两个入口（分组页的「规则归组」+「规则预设」窗口），
-        // 所以它归壳管，页面走 VM 上这个注入委托——页面不该认识 MainWindow 这个类型。
-        _vm.RuleEditorOpener = OpenRuleEditor;
         _vm.NewModsDetected += request => Dispatcher.Invoke(() => ShowNewMods(request));
         _vm.SaveCompleted += (dir, bsAppDir) => Dispatcher.Invoke(() => ShowSaveSuccess(dir, bsAppDir));
         // 更新提示不在这里订阅：CheckForUpdatesAsync 内部用 SuppressibleConfirmHandler 弹确认框并打开下载页
@@ -114,56 +110,6 @@ public partial class MainWindow : Window
     }
 
     private void Conflicts_Click(object sender, MouseButtonEventArgs e) => _vm.OpenConflictsCommand.Execute(null);
-
-    /// <summary>打开规则归组编辑器（非模态；规则预设页的「新建预设」「编辑所选」经
-    /// <see cref="MainViewModel.RuleEditorOpener"/> 走这里）。
-    /// 返回编辑器是否已就绪——调用方据此决定要不要留着自己是合理的。
-    /// <paramref name="presetToEdit"/> 非空时把该预设载入各控件，同名保存即覆盖。</summary>
-    private bool OpenRuleEditor(Core.RulePreset? presetToEdit = null)
-    {
-        if (_ruleWindow is { } existing && existing.IsLoaded)
-        {
-            if (presetToEdit is not null)
-                existing.LoadPreset(presetToEdit);
-            existing.Activate(); // 已打开时不再叠加新窗口（两个窗口叠在一起会互相干扰点击）
-            return true;
-        }
-        if (_vm.Store.Count == 0)
-        {
-            Notify.Info(this, L10n.Tr("L.Title_Tip"), L10n.Tr("L.Msg_NeedGroupFirst"));
-            return false;
-        }
-        if (_vm.Scan is null || _vm.Scan.Outfits.Count == 0)
-        {
-            Notify.Info(this, L10n.Tr("L.Title_Tip"), L10n.Tr("L.Msg_NoOutfits"));
-            return false;
-        }
-        var ownerMap = _vm.OwnerByOutfit();
-        RuleGroupWindow? window = null;
-        window = new RuleGroupWindow(_vm.Store.Groups, presetToEdit?.GroupName ?? _vm.Store.Current?.Name,
-            _vm.GetTreeDisplayStructure(),
-            (modInclude, outfitInclude, outfitExclude, unassignedOnly) =>
-                _vm.RuleMatchPreview(ownerMap, modInclude, outfitInclude, outfitExclude, unassignedOnly),
-            onApply: () =>
-            {
-                if (window is null)
-                    return;
-                var applied = _vm.RuleApply(window.GroupName, window.Add, window.ModInclude,
-                    window.OutfitInclude, window.OutfitExclude, window.UnassignedOnly);
-                if (applied < 0)
-                    return;
-                _vm.RefreshGroupsList();
-                _vm.RefreshTree();
-                window.UpdatePreview();
-            },
-            onSavePreset: preset => _vm.SaveRulePreset(preset),
-            presetToEdit: presetToEdit)
-        { Owner = this };
-        _ruleWindow = window;
-        window.Closed += (_, _) => { if (ReferenceEquals(_ruleWindow, window)) _ruleWindow = null; };
-        window.Show();
-        return true;
-    }
 
     private void Output_Click(object sender, MouseButtonEventArgs e)
     {

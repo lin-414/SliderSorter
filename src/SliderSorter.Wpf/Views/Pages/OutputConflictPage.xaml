@@ -2,7 +2,7 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:ui="clr-namespace:SliderSorter.Wpf.Services">
-    <!-- 输出冲突与选择页：多个模组的服装写同一个 .nif 时，为每一组指定由谁来生成
+    <!-- 输出归属页：多个模组的服装写同一个 .nif 时，为每一组指定由谁来生成
          （对应 BodySlide 批建时那个"以下 set 会覆盖同样的文件"的弹窗）。
          原先这是从菜单点出来的模态窗口，现在是壳的四个标签页之一：
          没有「关闭」按钮，也没有"关掉就找不回来"——入口是标签头本身，以及状态栏上那段可点击的冲突计数。

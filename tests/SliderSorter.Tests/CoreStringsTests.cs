@@ -5,7 +5,7 @@ namespace SliderSorter.Tests;
 
 /// <summary>
 /// Core 层的取词契约。Core 不依赖 UI，只能经 <see cref="CoreStrings.Localizer"/> 拿文案；
-/// 这条边界是"en/ru/fr 界面下日志与诊断报告不再冒中文"的全部依据，所以要钉住。
+/// 这条边界是"en/de/ru/fr 界面下日志与诊断报告不再冒中文"的全部依据，所以要钉住。
 /// </summary>
 public class CoreStringsTests
 {

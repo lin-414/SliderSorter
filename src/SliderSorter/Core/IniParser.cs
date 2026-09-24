@@ -72,41 +72,99 @@ public static class IniParser
     /// Qt byte array 转义解码（保守版）：只认 <c>\\</c>、<c>\0</c>、<c>\a \b \f \n \r \t \v</c>
     /// 与 <c>\xHH</c>；其余（含结尾孤立的反斜杠、位数不足的 <c>\x</c>）**原样保留两个字符**。
     /// 宁可留下一个多余的反斜杠让用户看得见，也不能把路径里的字符吃掉——丢字符是静默损坏。
+    /// <para>
+    /// 关键在于 <c>@ByteArray</c> 里装的是**字节**，而 Qt 把非 ASCII 一律写成 <c>\xHH</c>：
+    /// 一个中文字是三个 <c>\xHH</c>（它的 UTF-8 字节）。逐字节直接 <c>(char)b</c> 等于按 Latin-1 解码，
+    /// <c>\xe6\xb8\xb8</c> 就变成三个奇形字符，路径当场读成乱码 —— 于是 <c>Directory.Exists</c>
+    /// 全失败、模组一个也扫不到，而诊断里显示的仍是这个错路径。所以整段先收成字节，末尾按 UTF-8 解。
+    /// 真实 MO2 安装里的 gamePath 基本是纯 ASCII（<c>@ByteArray(E:\\Skyrim AE\\...)</c>），
+    /// 那种情况按字节直投，结果与逐字符一致。
+    /// </para>
     /// </summary>
     private static string UnescapeQtByteArray(string text)
     {
-        var sb = new StringBuilder(text.Length);
+        var bytes = new List<byte>(text.Length);
         for (var i = 0; i < text.Length; i++)
         {
             var c = text[i];
             if (c != '\\' || i + 1 >= text.Length)
             {
-                sb.Append(c);
+                AddUtf8(bytes, c); // 值里也可能本来就是没转义的非 ASCII 字符：按 UTF-8 收进同一个流
                 continue;
             }
 
             var next = text[++i];
             switch (next)
             {
-                case '\\': sb.Append('\\'); break;
-                case '0': sb.Append('\0'); break;
-                case 'a': sb.Append('\a'); break;
-                case 'b': sb.Append('\b'); break;
-                case 'f': sb.Append('\f'); break;
-                case 'n': sb.Append('\n'); break;
-                case 'r': sb.Append('\r'); break;
-                case 't': sb.Append('\t'); break;
-                case 'v': sb.Append('\v'); break;
+                case '\\': bytes.Add((byte)'\\'); break;
+                case '0': bytes.Add(0); break;
+                case 'a': bytes.Add((byte)'\a'); break;
+                case 'b': bytes.Add((byte)'\b'); break;
+                case 'f': bytes.Add((byte)'\f'); break;
+                case 'n': bytes.Add((byte)'\n'); break;
+                case 'r': bytes.Add((byte)'\r'); break;
+                case 't': bytes.Add((byte)'\t'); break;
+                case 'v': bytes.Add((byte)'\v'); break;
                 case 'x' when i + 2 < text.Length && IsHexDigit(text[i + 1]) && IsHexDigit(text[i + 2]):
-                    sb.Append((char)((HexValue(text[i + 1]) << 4) | HexValue(text[i + 2])));
+                    bytes.Add((byte)((HexValue(text[i + 1]) << 4) | HexValue(text[i + 2])));
                     i += 2;
                     break;
                 default:
-                    sb.Append('\\').Append(next);
+                    bytes.Add((byte)'\\');
+                    AddUtf8(bytes, next);
                     break;
             }
         }
-        return sb.ToString();
+
+        return DecodeQtBytes(bytes);
+    }
+
+    private static void AddUtf8(List<byte> bytes, char c)
+    {
+        if (c <= 0x7F)
+            bytes.Add((byte)c);
+        else
+            bytes.AddRange(Encoding.UTF8.GetBytes(c.ToString()));
+    }
+
+    /// <summary>只用来判"这段字节是不是合法 UTF-8"的解码器：非法序列抛
+    /// <see cref="DecoderFallbackException"/>，而不是像 <c>Encoding.UTF8</c> 那样换成 U+FFFD 蒙混过关。</summary>
+    private static readonly UTF8Encoding StrictUtf8 = new(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
+
+    /// <summary>整段字节按 UTF-8 解。解不动（不是合法 UTF-8，例如早先按本地 ANSI 代码页存的值）时
+    /// 退回逐字节直投，与修复前的行为一致——至少不吞字符。含非 ASCII 而 UTF-8 又解得开时，
+    /// 得到的就是原始那个路径，这是本次修复的目的。</summary>
+    private static string DecodeQtBytes(List<byte> bytes)
+    {
+        var ascii = true;
+        foreach (var b in bytes)
+            if (b > 0x7F)
+            {
+                ascii = false;
+                break;
+            }
+
+        if (ascii)
+        {
+            var chars = new char[bytes.Count];
+            for (var i = 0; i < chars.Length; i++)
+                chars[i] = (char)bytes[i];
+            return new string(chars);
+        }
+
+        var raw = bytes.ToArray();
+        try
+        {
+            // 严格判定：非法序列要显式抛出来，而不是让 Encoding.UTF8 换成 U+FFFD 蒙混过关
+            return StrictUtf8.GetString(raw);
+        }
+        catch (DecoderFallbackException)
+        {
+            var chars = new char[raw.Length];
+            for (var i = 0; i < chars.Length; i++)
+                chars[i] = (char)raw[i];
+            return new string(chars);
+        }
     }
 
     private static bool IsHexDigit(char c) =>

@@ -86,19 +86,20 @@ public static class OutputConflicts
     /// <c>BodySlideApp.h:202</c>，从 v5.1 起就没变过），只保留 2 个及以上成员的组，
     /// 组内按覆盖层从强到弱排序（层序相同即同一模组内的多个文件，按发现顺序）。
     /// <para>
-    /// 这个比较器只折 ASCII 字母（<c>StringStuff.h:56-62</c> 逐字节 <c>ToLower</c>），.NET 侧与之
-    /// 等价的正是 <see cref="StringComparer.OrdinalIgnoreCase"/>：它同样不动非 ASCII 字符，
-    /// 所以俄语/中文路径仍然按字面区分。
+    /// 折大小写的范围必须与它一致：那个比较器逐字节 <c>tolower</c>，只动 ASCII 字母
+    /// （<c>StringStuff.h:56-62</c>）。<see cref="StringComparer.OrdinalIgnoreCase"/> 看着像但不等价——
+    /// 它按不变文化简单折叠，Ы/ы、É/é 也算相等，于是会把 BodySlide 眼里两组各一人的路径并成一组冲突。
+    /// 用的是 <see cref="AsciiCaseInsensitiveComparer"/>。
     /// </para></summary>
     public static List<OutputConflictGroup> Detect(ScanResult scan, IReadOnlyDictionary<string, string>? choices = null)
     {
-        var byPath = new Dictionary<string, List<OutfitEntry>>(StringComparer.OrdinalIgnoreCase);
-        // 选择表按忽略大小写建一份视图（键是路径），但逐条 TryAdd 而不是交给字典复制构造函数——
+        var byPath = new Dictionary<string, List<OutfitEntry>>(AsciiCaseInsensitiveComparer.Instance);
+        // 选择表按同样的口径建一份视图（键是路径），但逐条 TryAdd 而不是交给字典复制构造函数——
         // 老设置里可能留着只差大小写的两条键，复制构造会直接抛"相同的键已添加"。
         Dictionary<string, string>? choiceMap = null;
         if (choices is not null)
         {
-            choiceMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            choiceMap = new Dictionary<string, string>(AsciiCaseInsensitiveComparer.Instance);
             foreach (var (key, value) in choices)
                 choiceMap.TryAdd(key, value);
         }

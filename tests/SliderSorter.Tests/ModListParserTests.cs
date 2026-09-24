@@ -76,4 +76,25 @@ public class ModListParserTests
         Assert.Equal("Real Mod", enabled[0].Entry.Name);
         Assert.Equal("Second Mod", enabled[1].Entry.Name);
     }
+
+
+    /// <summary>「跳过备份模组」只该跳过名字**结尾**就是 backup（可带序号/括号）的那些。
+    /// 早先的表达式 <c>^.*backup[0-9]*$</c> 允许任意前缀且数字可为零位，于是任何以 backup
+    /// 结尾的模组名都被无声丢掉（用户只会觉得整合包坏了），而 MO2 常见的
+    /// <c>X (Backup 1)</c> 反而匹配不上——两头都不讨好。</summary>
+    [Theory]
+    [InlineData("SomeMod backup0", true)]              // 真备份：丢
+    [InlineData("SomeMod (Backup 1)", true)]           // MO2 里的括号写法：丢
+    [InlineData("SomeMod - backup", true)]             // 结尾整段就是 backup：丢
+    [InlineData("Backup", true)]                       // 名字就叫 Backup：丢
+    [InlineData("MCM Memory - Settings Backup and Restore", false)] // backup 只是名字中间一个词：留
+    [InlineData("MyBackup", false)]                    // 连词都不是：留
+    [InlineData("Kalilies Brows backup fix", false)]   // 结尾不是 backup：留
+    public void OnlyTrailingBackupNamesAreSkipped(string name, bool dropped)
+    {
+        var entries = ModListParser.ParseContent($"+{name}\n");
+        Assert.Equal(!dropped, entries.Count == 1);
+        if (!dropped)
+            Assert.Equal(name, entries[0].Name);
+    }
 }

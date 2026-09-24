@@ -17,9 +17,12 @@ public sealed class GameDataResolver : IDisposable
     private readonly IReadOnlyList<string> _roots;
     private readonly object _gate = new();
 
-    /// <summary>相对路径 → <see cref="_archivePaths"/> 下标。按层序从强到弱插入，先见的获胜。</summary>
-    private Dictionary<string, int>? _archiveIndex;
+    /// <summary>相对路径 → 含它的归档下标列表，按层从强到弱（同层内先枚举到的那个）。
+    /// 必须是列表而不是单个下标：判定"这一层有没有"要按层问，把整张表压成"最强层那一个"
+    /// 就退化成"所有层的散文件都优先于任何归档"（见 <see cref="TryRead"/>）。</summary>
+    private Dictionary<string, List<int>>? _archiveIndex;
     private readonly List<string> _archivePaths = new();
+    private readonly List<int> _archiveLayer = new();
 
     public GameDataResolver(IReadOnlyList<string> roots)
     {
@@ -33,23 +36,33 @@ public sealed class GameDataResolver : IDisposable
         if (Normalize(relativePath) is not { } rel)
             return null;
 
-        foreach (var root in _roots)
+        // 一层一层往下走，层内先散文件、再查这一层的归档——游戏与 MO2 的 usvfs 都是这个口径。
+        // 反过来（全部层的散文件读完才碰归档）会让强层打进 .bsa 的贴图被弱层的同名散文件盖掉，
+        // 预览于是和进游戏所见不一致，而用户正是照着预览在冲突页选赢家。
+        for (var layer = 0; layer < _roots.Count; layer++)
         {
-            var full = Combine(root, rel);
-            if (full is null)
-                continue;
-            try
-            {
-                if (File.Exists(full))
-                    return File.ReadAllBytes(full);
-            }
-            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException)
-            {
-                // 这一层读不到不影响别的层：接着往下找
-            }
+            if (TryReadLoose(_roots[layer], rel) is { } loose)
+                return loose;
+            if (TryReadFromArchive(rel, layer) is { } archived)
+                return archived;
         }
 
-        return TryReadFromArchive(rel);
+        return null;
+    }
+
+    /// <summary>这一层根目录下的散文件。读不到（不存在、被占用、路径非法）返回 null，由调用方接着找下一层。</summary>
+    private static byte[]? TryReadLoose(string root, string rel)
+    {
+        if (Combine(root, rel) is not { } full)
+            return null;
+        try
+        {
+            return File.Exists(full) ? File.ReadAllBytes(full) : null;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException)
+        {
+            return null;
+        }
     }
 
     /// <summary>归一数据相对路径：正斜杠换反斜杠、去掉开头的 <c>.\</c> 与多余分隔符（作者写法不一）、
@@ -79,12 +92,25 @@ public sealed class GameDataResolver : IDisposable
         }
     }
 
-    private byte[]? TryReadFromArchive(string rel)
+    /// <summary>只在指定层里找这个相对路径的归档条目；该层没有归档含它时返回 null（不是"没有这个文件"，
+    /// 调用方还要继续往下层走）。</summary>
+    private byte[]? TryReadFromArchive(string rel, int layer)
     {
         var index = EnsureArchiveIndex();
-        if (index is null || !index.TryGetValue(rel, out var archiveId))
+        if (index is null || !index.TryGetValue(rel, out var ids))
             return null;
 
+        // ids 按层从强到弱追加，同层只留一个（先枚举到的那个归档）
+        foreach (var id in ids)
+        {
+            if (_archiveLayer[id] == layer)
+                return ReadEntryFromArchive(id, rel);
+        }
+        return null;
+    }
+
+    private byte[]? ReadEntryFromArchive(int archiveId, string rel)
+    {
         // 每次重新打开归档、按路径找回条目：一次预览只有个位数张贴图，而整合包里有几百个归档，
         // 常驻文件句柄不值当；解出来的位图由渲染端缓存，所以这里不会被反复走到。
         try
@@ -120,20 +146,23 @@ public sealed class GameDataResolver : IDisposable
         return stream.ToArray();
     }
 
-    private Dictionary<string, int>? EnsureArchiveIndex()
+    private Dictionary<string, List<int>>? EnsureArchiveIndex()
     {
         lock (_gate)
         {
             if (_archiveIndex is not null)
                 return _archiveIndex;
 
-            var index = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            var index = new Dictionary<string, List<int>>(StringComparer.OrdinalIgnoreCase);
 
             // 清单必须按层序串行收集：同名文件归谁由层序决定，并行填字典会把胜负顺序写乱
-            // （和 SliderSetScanner.BuildShapeDataIndex 同一套规矩）
+            // （和 SliderSetScanner.BuildShapeDataIndex 同一套规矩）。记下每条来自哪一层，
+            // TryRead 才问得出"这一层有没有归档含它"。
+            var layers = new List<int>();
             var paths = new List<string>();
-            foreach (var root in _roots)
+            for (var layer = 0; layer < _roots.Count; layer++)
             {
+                var root = _roots[layer];
                 foreach (var pattern in new[] { "*.bsa", "*.ba2" })
                 {
                     try
@@ -141,7 +170,10 @@ public sealed class GameDataResolver : IDisposable
                         if (!Directory.Exists(root))
                             continue;
                         foreach (var file in Directory.GetFiles(root, pattern))
+                        {
                             paths.Add(file);
+                            layers.Add(layer);
+                        }
                     }
                     catch (Exception)
                     {
@@ -170,14 +202,24 @@ public sealed class GameDataResolver : IDisposable
                 }
             });
 
+            // 装配仍是串行的、按 layers 的强到弱顺序，所以每个键下的下标表天然按层序排好
             for (var i = 0; i < names.Length; i++)
             {
                 if (names[i] is null)
                     continue;
                 _archivePaths.Add(paths[i]);
+                _archiveLayer.Add(layers[i]);
                 var id = _archivePaths.Count - 1;
                 foreach (var name in names[i])
-                    index.TryAdd(Normalize(name) ?? name, id); // 先见的强层获胜
+                {
+                    if (Normalize(name) is not { } key)
+                        continue;
+                    if (!index.TryGetValue(key, out var list))
+                        index[key] = list = [];
+                    // 同一层里多个归档含同一个文件时先见的赢；换层了才再记一个
+                    if (list.Count == 0 || _archiveLayer[list[^1]] != layers[i])
+                        list.Add(id);
+                }
             }
 
             _archiveIndex = index;

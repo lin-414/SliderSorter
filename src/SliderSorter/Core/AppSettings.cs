@@ -39,7 +39,7 @@ public class AppSettings
     /// <summary>界面主题："boutique"（暗色，默认）或 "light"（上一版亮色）。</summary>
     public string UiTheme { get; set; } = "boutique";
 
-    /// <summary>界面语言："system"（跟随系统，默认）、"zh"、"en"、"ru" 或 "fr"。
+    /// <summary>界面语言："system"（跟随系统，默认）、"zh"、"en"、"de"、"ru" 或 "fr"。
     /// 这里存的是**诉求**而不是算出来的语言码——"system" 每次启动按系统 UI 语言现算
     /// （系统语言不在受支持列表里时由 L10n 回落到 "en"），未知值与 null 回落到 "zh"。
     /// 存语言码就等于"跟随系统"只用一次，用户在系统里换了显示语言它也不会再跟。</summary>
@@ -61,7 +61,7 @@ public class AppSettings
     /// 所以别的实例留下的条目既不会被误用、也不会被误删。</summary>
     public Dictionary<string, string> OutputChoices { get; set; } = new();
 
-    /// <summary>「输出冲突与选择」左栏里被**收起**的分组名（空串 = 「未入组」那一桶，
+    /// <summary>「输出归属」左栏里被**收起**的分组名（空串 = 「未入组」那一桶，
     /// 与 <see cref="UserGroupConflicts.GroupName"/> 的哨兵同一口径）。
     /// <para>
     /// 存"收起的"而不是"展开的"：默认全展开，于是新分组、新用户、以及老设置文件
@@ -110,30 +110,100 @@ public class AppSettings
         Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
     };
 
+    // 两处麻烦都按"键 + 实参"的形式存着，取的时候才本地化：<c>Load()</c> 是在 App.OnStartup 里跑的，
+    // 那时 CoreStrings.Localizer 还没注入（它要等语言字典装载完），当场拼文案只会得到键名。
+    private static (string? Kept, string Reason)? _loadFailure;
+    private static string? _saveFailureReason;
+
+    /// <summary>上次 <see cref="Load"/> 遇到的麻烦：文件读不动或解不开（坏文件会留一份档）。
+    /// 界面在启动日志里带一句，别让用户在"设置怎么全没了"里自己猜。每次 Load 重置。</summary>
+    public static string? LoadNote => _loadFailure is not { } f
+        ? null
+        : f.Kept is null
+            ? CoreStrings.Format("L.Core_SettingsBroken", f.Reason)
+            : CoreStrings.Format("L.Core_SettingsBrokenKept", f.Kept, f.Reason);
+
+    /// <summary>上次 <see cref="Save"/> 失败的原因（这次的改动就只存在于内存里了）。
+    /// <c>Save()</c> 是从各处调的，就地弹框会打断操作，所以先记账，由界面在日志里说。</summary>
+    public static string? SaveNote => _saveFailureReason is null
+        ? null
+        : CoreStrings.Format("L.Core_SettingsSaveFail", _saveFailureReason);
+
     public static AppSettings Load()
     {
+        _loadFailure = null;
         try
         {
             if (File.Exists(SettingsPath))
-                return JsonSerializer.Deserialize<AppSettings>(File.ReadAllText(SettingsPath), JsonOptions) ?? new AppSettings();
+                return JsonSerializer.Deserialize<AppSettings>(ReadShared(SettingsPath), JsonOptions) ?? new AppSettings();
         }
-        catch
+        catch (Exception ex)
         {
-            // 设置损坏时回到默认值即可
+            // 损坏的设置不能悄悄丢掉：里面存着用户在冲突页手选的赢家、实例与 Profile、写盘模式，
+            // 一句"回到默认值"会让下次启动看着像程序自己忘了配过什么。把坏文件留下并说清楚去了哪。
+            _loadFailure = (KeepBrokenCopy(), ex.Message);
         }
         return new AppSettings();
     }
 
-    public void Save()
+    /// <summary>把读不动的设置文件改名留档（带时间戳，别覆盖上一份坏的），返回留下的文件名；
+    /// 改名也失败时返回 null——原文件可能是只读或被别的实例占着，此时宁可不动它。</summary>
+    private static string? KeepBrokenCopy()
     {
+        var target = Path.Combine(SettingsDir,
+            $"settings.broken-{DateTime.Now:yyyyMMdd-HHmmss}.json");
         try
         {
             Directory.CreateDirectory(SettingsDir);
-            File.WriteAllText(SettingsPath, JsonSerializer.Serialize(this, JsonOptions));
+            if (File.Exists(target))
+                return null;
+            File.Move(SettingsPath, target, overwrite: false);
+            return Path.GetFileName(target);
         }
-        catch
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException
+                                   or ArgumentException or System.Security.SecurityException)
         {
-            // 忽略保存失败（如目录权限问题）
+            return null;
+        }
+    }
+
+    /// <summary>读成字符串。MO2/编辑器可能正持有 settings.json，与 ini、modlist 同一口径要允许共享读。</summary>
+    private static string ReadShared(string path)
+    {
+        using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+        using var reader = new StreamReader(stream, System.Text.Encoding.UTF8, detectEncodingFromByteOrderMarks: true);
+        return reader.ReadToEnd();
+    }
+
+    public void Save()
+    {
+        _saveFailureReason = null;
+        try
+        {
+            Directory.CreateDirectory(SettingsDir);
+            // 先写临时文件再替换：WriteAllText 是直接截断原文件，写一半时断电/磁盘满/杀软打断，
+            // 留下的就是半份 JSON——下次启动整份设置作废（见 Load 的分支）。替换是原子的，
+            // 最坏结果是新内容没写进去，旧那份仍然完整可读。
+            var tmp = SettingsPath + ".tmp";
+            File.WriteAllText(tmp, JsonSerializer.Serialize(this, JsonOptions));
+            try
+            {
+                if (File.Exists(SettingsPath))
+                    File.Replace(tmp, SettingsPath, destinationBackupFileName: null);
+                else
+                    File.Move(tmp, SettingsPath);
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or PlatformNotSupportedException)
+            {
+                // 目标在别的文件系统上、或被别的进程以不共享写的方式开着：
+                // Replace/Move 都会抛。退回直接覆盖写，至少不让这次的改动丢掉。
+                File.Move(tmp, SettingsPath, overwrite: true);
+            }
+        }
+        catch (Exception ex)
+        {
+            // 保存失败（目录权限、磁盘满）先记下来由界面说，不在这儿弹框：Save() 是从各处调的。
+            _saveFailureReason = ex.Message;
         }
     }
 }

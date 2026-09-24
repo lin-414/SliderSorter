@@ -17,7 +17,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 namespace SliderSorter.Wpf.Views.Pages;
 
 /// <summary>
-/// 输出冲突与选择页：多个模组的服装写同一个 .nif 时，为每一组指定由谁来生成
+/// 输出归属页：多个模组的服装写同一个 .nif 时，为每一组指定由谁来生成
 /// （对应 BodySlide 批建时那个"以下 set 会覆盖同样的文件"的弹窗）。
 /// <para>
 /// 勾选即时存进本工具自己的设置；「写入 BodySlide…」把它们落成 BodySlide 认得的
@@ -117,6 +117,9 @@ public partial class OutputConflictPage : UserControl
     private Dictionary<string, string> _working = new(StringComparer.Ordinal);
     private string? _selectedPath;
     private bool _rebuilding;
+    /// <summary>非空 = 正在批量改展开态。分组键手上的回写通道会把每次变更投到这里，
+    /// 而不是逐个把自己那份写进设置（几十个分组头就是几十次 settings.json 重写）。</summary>
+    private Dictionary<string, bool>? _pendingCollapsed;
 
     /// <summary>「只看某组」当前选中的组名；null = 全部分组。存值而不是存下拉的选中项：
     /// 选项每次重建都是新对象，按值还原才稳。</summary>
@@ -302,6 +305,10 @@ public partial class OutputConflictPage : UserControl
         UnresolvedLabel.Visibility = rest > 0 ? Visibility.Visible : Visibility.Collapsed;
     }
 
+    /// <summary>左栏列表的滚动宿主：ListBox 模板里那块固定叫 <c>PART_ScrollViewer</c>。</summary>
+    private ScrollViewer? GroupScroller =>
+        GroupList.Template?.FindName("PART_ScrollViewer", GroupList) as ScrollViewer;
+
     private void RebuildGroups()
     {
         if (_request is not { } request)
@@ -357,12 +364,25 @@ public partial class OutputConflictPage : UserControl
                 intra));
         }
 
+        // 换 ItemsSource 会把左栏的滚动位置归零：改一个赢家要整表重建（行是不可变记录），
+        // 但用户正在翻的那一屏不该被弹回顶部。记下偏移，重建后原样放回。
+        var offset = GroupScroller?.VerticalOffset ?? 0;
         _rebuilding = true;
         GroupList.ItemsSource = BuildGroupedView(rows, grouping);
         GroupList.SelectedItem =
             rows.Find(r => r.Group.OutputFilePath == _selectedPath) ?? rows.FirstOrDefault();
         _selectedPath = (GroupList.SelectedItem as GroupRow)?.Group.OutputFilePath;
         _rebuilding = false;
+        if (offset > 0)
+        {
+            // 新 ItemsSource 还没排版时 ScrollToVerticalOffset 会被当成超出范围而夹住，
+            // 所以先补一次布局；拿不到滚动宿主（换了模板）就退回把选中行滚进视野
+            GroupList.UpdateLayout();
+            if (GroupScroller is { } scroller)
+                scroller.ScrollToVerticalOffset(offset);
+            else
+                GroupList.ScrollIntoView(GroupList.SelectedItem);
+        }
 
         // 一条冲突可能挂在多个分组下，行数因此可能大于冲突数。这两个标签说的都是"有几组冲突"
         //（批量动作也是按冲突作用），所以按 Group 去重。
@@ -403,7 +423,7 @@ public partial class OutputConflictPage : UserControl
     /// 那一屏本来就是"我要看这一组"，若它的展开态落了盘，用户在"全部分组"下特意收起的意图
     /// 会被这一次查看悄悄抹掉。
     /// </para></summary>
-    private static Dictionary<string, ConflictGroupKey> BuildGroupKeys(
+    private Dictionary<string, ConflictGroupKey> BuildGroupKeys(
         ConflictRequest request,
         IReadOnlyList<(OutputConflictGroup Group, string GroupName, bool Intra)> kept,
         bool forceExpand)
@@ -417,7 +437,9 @@ public partial class OutputConflictPage : UserControl
                 intras[name] = intras.GetValueOrDefault(name) + 1;
         }
 
-        Action<string, bool> persist = forceExpand ? static (_, _) => { } : request.SetGroupCollapsed;
+        // 「只看某组」那一屏不许写回设置（见方法注释），其余走 PersistCollapsed：
+        // 它认得批量折叠的暂存态，逐个点折叠条时仍然即时落盘
+        Action<string, bool> persist = forceExpand ? static (_, _) => { } : PersistCollapsed;
         var keys = new Dictionary<string, ConflictGroupKey>(StringComparer.Ordinal);
         foreach (var (name, count) in counts)
             keys[name] = new ConflictGroupKey(
@@ -461,10 +483,48 @@ public partial class OutputConflictPage : UserControl
     }
 
     /// <summary>「全部展开」：当前列出的每个分组头都展开。</summary>
-    private void ExpandAllGroups_Click(object sender, RoutedEventArgs e) => SetAllGroupsExpanded(true);
+    private void ExpandAllGroups_Click(object sender, RoutedEventArgs e) =>
+        BatchCollapse(keys =>
+        {
+            foreach (var key in keys)
+                key.IsExpanded = true;
+        });
 
     /// <summary>「全部折叠」：当前列出的每个分组头都收起。</summary>
-    private void CollapseAllGroups_Click(object sender, RoutedEventArgs e) => SetAllGroupsExpanded(false);
+    private void CollapseAllGroups_Click(object sender, RoutedEventArgs e) =>
+        BatchCollapse(keys =>
+        {
+            foreach (var key in keys)
+                key.IsExpanded = false;
+        });
+
+    /// <summary>把一批展开态变更收进一次落盘。见 <see cref="_pendingCollapsed"/>。</summary>
+    private void BatchCollapse(Action<IReadOnlyList<ConflictGroupKey>> apply)
+    {
+        _pendingCollapsed = new Dictionary<string, bool>(StringComparer.Ordinal);
+        try
+        {
+            apply(_groupKeys);
+        }
+        finally
+        {
+            var pending = _pendingCollapsed;
+            _pendingCollapsed = null;
+            if (pending.Count > 0)
+                _request?.SetGroupsCollapsed(pending);
+        }
+    }
+
+    /// <summary>分组键的回写通道：批量时先攒着，平时即时落盘。</summary>
+    private void PersistCollapsed(string name, bool collapsed)
+    {
+        if (_pendingCollapsed is { } pending)
+        {
+            pending[name] = collapsed;
+            return;
+        }
+        _request?.SetGroupCollapsed(name, collapsed);
+    }
 
     /// <summary>批量改展开态。写回设置是 <see cref="ConflictGroupKey.IsExpanded"/> 的 setter 干的，
     /// 所以批量动作与逐个点折叠条落盘的是同一样东西；「只看某组」那一屏的键拿到的是空回写通道，
@@ -480,10 +540,13 @@ public partial class OutputConflictPage : UserControl
     {
         if (MenuAnchor(sender) is not { } anchor)
             return;
-        foreach (var key in _groupKeys)
-            if (!ReferenceEquals(key, anchor))
-                key.IsExpanded = false;
-        anchor.IsExpanded = true;
+        BatchCollapse(keys =>
+        {
+            foreach (var key in keys)
+                if (!ReferenceEquals(key, anchor))
+                    key.IsExpanded = false;
+            anchor.IsExpanded = true;
+        });
     }
 
     /// <summary>重建「只看某组」的选项，并按值还原选中项（组名稳定、选项对象每次都换）。
@@ -623,6 +686,12 @@ public partial class OutputConflictPage : UserControl
     private readonly Dictionary<string, (NifPreviewModel? Model, string? Error, IReadOnlyList<ImageSource?>? Brushes)>
         _meshCache = new(StringComparer.Ordinal);
 
+    /// <summary>罩住 <see cref="_meshCache"/> 与 <see cref="_bodies"/>。两个字典都只在预览任务里
+    /// 读写，而预览任务**可以并发**：取消只能让上一份的续体不落地（见 ShowPreview 里的说明），
+    /// 已经开跑的解码停不掉，于是快速连点两行就是两条线程池线程同时 Add/Clear 同一个字典。
+    /// 里面的 <c>NifPreviewLoader.TryLoad</c> 在锁外，慢活不互相排队。</summary>
+    private readonly object _cacheGate = new();
+
     private PreviewTextureCache? _textures;
 
     private CancellationTokenSource? _previewCts;
@@ -693,18 +762,44 @@ public partial class OutputConflictPage : UserControl
         BodyChoice.SelectedIndex = (int)_body;
     }
 
-    NifPreviewModel? BodyFor(BodyOption option)
+    /// <param name="assets">调用方（UI 线程）抓好的数据视图快照：预览任务可能跑在
+    /// <see cref="ShowRequest"/> 换掉 <see cref="_request"/> 之后，任务里不许再去读那个字段。</param>
+    NifPreviewModel? BodyFor(BodyOption option, GameDataResolver? assets)
     {
-        if (option is BodyOption.None or BodyOption.Auto || _request?.Assets is not { } assets)
+        if (option is BodyOption.None or BodyOption.Auto || assets is null)
             return null;
-        if (_bodies.TryGetValue(option, out var cached))
-            return cached;
+        lock (_cacheGate)
+            if (_bodies.TryGetValue(option, out var cached))
+                return cached;
 
         NifPreviewModel? model = null;
         if (assets.TryRead(option == BodyOption.Female ? BodyFemaleNif : BodyMaleNif) is { } bytes)
             NifPreviewLoader.TryLoad(bytes, out model, out _);
-        _bodies[option] = model;
+        lock (_cacheGate)
+            _bodies[option] = model; // 两条预览线程同时解到同一具身体时，后写的覆盖前写的，值等价
         return model;
+    }
+
+    /// <summary>这件衣服本身（网格 + 已解好的贴图笔刷），连"读不出来"一起缓存。
+    /// 解码在锁外做：那是贵的一步，两份预览不该互相排队；只有动字典的那一下要互斥。</summary>
+    private (NifPreviewModel? Model, string? Error, IReadOnlyList<ImageSource?>? Brushes) OutfitOf(
+        string path, PreviewTextureCache? textures)
+    {
+        lock (_cacheGate)
+            if (_meshCache.TryGetValue(path, out var hit))
+                return hit;
+
+        var ok = NifPreviewLoader.TryLoad(path, out var model, out var error);
+        (NifPreviewModel? Model, string? Error, IReadOnlyList<ImageSource?>? Brushes) entry = ok
+            ? (model, null, model?.Shapes.Select(s => textures?.Get(s.TexturePath)).ToArray())
+            : (null, error, null);
+        lock (_cacheGate)
+        {
+            if (_meshCache.Count > 12)
+                _meshCache.Clear();
+            _meshCache[path] = entry;
+        }
+        return entry;
     }
 
     /// <summary>把界面上的选择折算成这一件实际要不要垫、垫哪具：自带身体的就不垫。</summary>
@@ -766,22 +861,19 @@ public partial class OutputConflictPage : UserControl
         try
         {
             // 缓存命中也照样走这条后台任务：身体要按界面上的选择重新配，而那两步都可能是文件 IO。
-            // 命中时省掉的是解析 nif 与解码贴图，这才是贵的那部分
+            // 命中时省掉的是解析 nif 与解码贴图，这才是贵的那部分。
+            // 两份快照都必须在 UI 线程上取：Task.Run 的令牌只能拦住"还没开跑"的任务，
+            // 已经开跑的解码停不下来，于是上一份预览的续体会活到下一轮的数据视图里。
+            var textures = _textures;
+            var assets = _request?.Assets;
             var loaded = await Task.Run(() =>
             {
-                if (!_meshCache.TryGetValue(path, out var outfit))
-                {
-                    var ok = NifPreviewLoader.TryLoad(path, out var model, out var error);
-                    outfit = ok
-                        ? (model, null, model?.Shapes.Select(s => _textures?.Get(s.TexturePath)).ToArray())
-                        : (null, error, null);
-                    if (_meshCache.Count > 12)
-                        _meshCache.Clear();
-                    _meshCache[path] = outfit;
-                }
-
-                var body = BodyFor(ResolveBody(wanted, outfit.Model));
-                var bodyBrushes = body?.Shapes.Select(s => _textures?.Get(s.TexturePath)).ToArray();
+                cts.Token.ThrowIfCancellationRequested();
+                var outfit = OutfitOf(path, textures);
+                // 整件网格解完之后再看有没有人等它：身体那一步也是 IO，没人等就别做
+                cts.Token.ThrowIfCancellationRequested();
+                var body = BodyFor(ResolveBody(wanted, outfit.Model), assets);
+                var bodyBrushes = body?.Shapes.Select(s => textures?.Get(s.TexturePath)).ToArray();
                 return (outfit.Model, outfit.Error, outfit.Brushes, body, bodyBrushes);
             }, cts.Token);
 
@@ -884,9 +976,12 @@ public partial class OutputConflictPage : UserControl
 
         group.Children.Add(new GeometryModel3D(geometry, material)
         {
-            // 背面永远同材质：实测一半形状开了 DoubleSided，而没开的也只是游戏里靠背面剔除
-            // 省开销，裙摆内侧、披风内衬在预览里画成纯黑只会让人以为模型坏了
-            BackMaterial = material,
+            // 只有网格自己声明了双面才补背面材质，否则 WPF 按绕序把背面整个剔掉——这正是 BodySlide
+            // 的口径（GLSurface.cpp:1439-1458：剔 GL_BACK，除非 shader 双面或 stencil DRAW_BOTH）。
+            // 实测本机 53% 的形状开了双面；剩下那些是游戏里的单面裙摆/披风，透过去看内衬另一侧
+            // 才是进游戏所见的样子。不设 BackMaterial 时 WPF 是"整面消失"（离屏回读覆盖 0 像素），
+            // 不是画成纯黑，所以这里不存在"怕它黑所以干脆画满"的取舍。
+            BackMaterial = shape.DoubleSided ? material : null,
         });
     }
 
@@ -913,16 +1008,11 @@ public partial class OutputConflictPage : UserControl
     }
 
     /// <summary>取景要连垫进去的身体一起算：身体通常比一片披风大得多，只按衣服的包围盒摆相机
-    /// 会把身体切得只剩一截。</summary>
+    /// 会把身体切得只剩一截；而离身体一大截的散落碎片（蒙皮件被留在绑定空间那一类）不参与取景，
+    /// 见 <see cref="NifPreviewModel.FramingBounds"/>。</summary>
     void Fit(NifPreviewModel model, NifPreviewModel? body)
     {
-        var min = model.BoundsMin;
-        var max = model.BoundsMax;
-        if (body is not null)
-        {
-            min = Vector3.Min(min, body.BoundsMin);
-            max = Vector3.Max(max, body.BoundsMax);
-        }
+        var (min, max) = NifPreviewModel.FramingBounds(model, body);
 
         _center = ToWpf((min + max) * 0.5f);
         _pan = new Vector3D();

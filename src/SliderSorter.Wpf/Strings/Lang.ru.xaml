@@ -6,7 +6,6 @@
 
     <!-- Menu -->
     <sys:String x:Key="L.Menu_ImportGroups">Импорт файлов групп…(_И)</sys:String>
-    <sys:String x:Key="L.Menu_Undo">Отменить(_О)</sys:String>
     <sys:String x:Key="L.Theme_Dark">Тёмная</sys:String>
     <sys:String x:Key="L.Theme_Light">Светлая</sys:String>
 
@@ -68,7 +67,6 @@
     <sys:String x:Key="L.Main_Rename">Переименовать</sys:String>
     <sys:String x:Key="L.Main_DeleteGroup">Удалить группу</sys:String>
     <sys:String x:Key="L.Main_ViewGroup">Состав группы</sys:String>
-    <sys:String x:Key="L.Main_RuleGrouping">Группировка по правилам</sys:String>
     <sys:String x:Key="L.Main_Save">Сохранить файлы групп</sys:String>
     <sys:String x:Key="L.Main_SaveDirtyTip">Есть несохранённые изменения групп</sys:String>
 
@@ -86,7 +84,6 @@
     <sys:String x:Key="L.Btn_Cancel">Отмена</sys:String>
     <sys:String x:Key="L.Btn_Close">Закрыть</sys:String>
     <sys:String x:Key="L.Banner_Dismiss">Скрыть это сообщение</sys:String>
-    <sys:String x:Key="L.Btn_Apply">Применить</sys:String>
     <sys:String x:Key="L.Btn_CopyAll">Копировать всё</sys:String>
     <sys:String x:Key="L.Word_Add">добавлено в группу</sys:String>
     <sys:String x:Key="L.Word_Remove">удалено из группы</sys:String>
@@ -175,6 +172,7 @@
     <sys:String x:Key="L.Log_NewModsFound">Найдено новых модов с комплектами: {0}: {1}{2}</sys:String>
     <sys:String x:Key="L.Log_NoGroupsForNew">Групп пока нет: сначала создайте группу; эти комплекты можно найти позже через «Только без группы».</sys:String>
     <sys:String x:Key="L.Log_NewModsApplied">Группировка новых модов: комплектов добавлено в группу «{1}» — {0}; не забудьте сохранить файлы групп.</sys:String>
+    <sys:String x:Key="L.Log_GroupMissing" xml:space="preserve">Целевая группа «{0}» не найдена, поэтому группировка ничего не изменила (возможно, группу только что переименовали или удалили).</sys:String>
     <sys:String x:Key="L.Log_RuleApplied">Группировка по правилам: {0} комплект(ов) {1} «{2}» (теперь участников: {3}).</sys:String>
     <sys:String x:Key="L.Log_PresetSaved">Шаблон правил «{0}» сохранён (целевая группа: {1}; всего шаблонов: {2}).</sys:String>
     <sys:String x:Key="L.Log_PresetsSkipped">Группировка по шаблонам: всего комплектов — {0}; пропущено отсутствующих групп: {1}</sys:String>
@@ -199,8 +197,6 @@
     <sys:String x:Key="L.Msg_SelectGroupFirst">Сначала выберите группу.</sys:String>
     <sys:String x:Key="L.Msg_SelectOutfitsFirst">Сначала отметьте комплекты для удаления (отметьте мод или разделитель, чтобы выбрать их все).</sys:String>
     <sys:String x:Key="L.Msg_ConfirmRemove">Убрать комплектов ({0}) из группы «{1}»?</sys:String>
-    <sys:String x:Key="L.Msg_NeedGroupFirst">Групп пока нет. Для группировки по правилам нужна целевая группа — сначала создайте её.</sys:String>
-    <sys:String x:Key="L.Msg_NoOutfits">Комплекты ещё не просканированы.</sys:String>
     <sys:String x:Key="L.Msg_ScanIncomplete">Сканирование не завершено или место записи неизвестно.</sys:String>
     <sys:String x:Key="L.Msg_NoGroupsYet">Групп пока нет. Создайте группу и отметьте комплекты.</sys:String>
     <sys:String x:Key="L.Msg_EmptyGroupName">У одной из групп пустое имя; сначала переименуйте её.</sys:String>
@@ -218,6 +214,7 @@
     <sys:String x:Key="L.Msg_AlreadyRunning">SliderSorter уже запущен.</sys:String>
     <sys:String x:Key="L.Msg_OutputDirUndetermined">Сканирование не завершено, поэтому папку вывода определить нельзя.</sys:String>
     <sys:String x:Key="L.Msg_CopiedToClipboard">Скопировано в буфер обмена.</sys:String>
+    <sys:String x:Key="L.Msg_ClipboardFailed" xml:space="preserve">Не удалось скопировать: буфер обмена занят другой программой. Повторите через мгновение.</sys:String>
     <sys:String x:Key="L.Msg_UnsavedOnExit" xml:space="preserve">Есть несохранённые изменения групп; выход сейчас приведёт к их потере.&#x0a;&#x0a;Да: сохранить и выйти&#x0a;Нет: выйти без сохранения&#x0a;Отмена: остаться в программе</sys:String>
 
     <!-- Crash log -->
@@ -238,7 +235,7 @@
     <sys:String x:Key="L.NewMods_FilterMods">Фильтр модов / разделителей…</sys:String>
     <sys:String x:Key="L.NewMods_FilterCount">Показано комплектов: {0} (ещё без группы: {1})</sys:String>
     <sys:String x:Key="L.NewMods_PresetsBtn">Применить шаблоны ({0})</sys:String>
-    <sys:String x:Key="L.NewMods_PresetsTip">Запустить все сохранённые шаблоны правил (по всем комплектам); обработанные элементы удаляются из списка. Управление шаблонами: «Инструменты → Шаблоны правил».</sys:String>
+    <sys:String x:Key="L.NewMods_PresetsTip">Запустить все сохранённые шаблоны правил (по всем комплектам); обработанные элементы удаляются из списка. Самими шаблонами управляют на вкладке «Группировка по правилам».</sys:String>
     <sys:String x:Key="L.NewMods_TopRemaining">Ещё без группы: комплектов — {0} (новых модов — {1}, комплектов в этом сканировании — {2}).</sys:String>
     <sys:String x:Key="L.NewMods_TopRemainingHint">Продолжайте отмечать → выберите целевую группу → «Добавить выбранные». Можно повторить с другими группами; «Закрыть» прервёт в любой момент.</sys:String>
     <sys:String x:Key="L.NewMods_TopFirst">В этом сканировании найдено новых модов с комплектами: {0} (всего комплектов: {1}).</sys:String>
@@ -306,7 +303,7 @@
     <sys:String x:Key="L.Msg_ConflictNothingToExport" xml:space="preserve">Ни в одной группе не выбран победитель — записывать нечего.</sys:String>
     <sys:String x:Key="L.Msg_ExportFail" xml:space="preserve">Не удалось записать BuildSelection.xml.</sys:String>
     <sys:String x:Key="L.Msg_BuildSelWritten" xml:space="preserve">Записано записей: {0}, удалено: {1} → {2}. Перезапустите BodySlide.</sys:String>
-    <sys:String x:Key="L.Log_OutputConflictsFound" xml:space="preserve">{0} групп пишутся разными модами в один выходной файл; всего {1} группа (включая наборы одного мода), без выбора: {2} — победителя можно выбрать: Инструменты → Конфликты вывода…</sys:String>
+    <sys:String x:Key="L.Log_OutputConflictsFound" xml:space="preserve">{0} групп пишутся разными модами в один выходной файл; всего {1} группа (включая наборы одного мода), без выбора: {2} — победителя можно выбрать на вкладке «Конфликты вывода»</sys:String>
     <sys:String x:Key="L.Log_BuildSelWritten" xml:space="preserve">Записан BuildSelection.xml: добавлено/изменено {0}, удалено {1} → {2}</sys:String>
     <sys:String x:Key="L.Vm_ConflictsInline" xml:space="preserve">конфликты вывода: {0} (без выбора {1})</sys:String>
     <sys:String x:Key="L.Diag_SecConflicts" xml:space="preserve">Конфликты вывода</sys:String>
@@ -314,9 +311,20 @@
     <sys:String x:Key="L.Diag_ConflictLine" xml:space="preserve">групп: {0} (между модами: {1}), с выбранным победителем: {2}</sys:String>
     <sys:String x:Key="L.Diag_ConflictMore" xml:space="preserve">(ещё {0} групп опущено)</sys:String>
 
-    <!-- Rule grouping -->
-    <sys:String x:Key="L.RuleGroup_Title">Группировка по правилам</sys:String>
-    <sys:String x:Key="L.RuleGroup_Explainer">Массовое добавление просканированных комплектов в выбранную выше группу и удаление из неё по ключевым словам: достаточно любого совпадения (разделяйте ;), предпросмотр ниже обновляется на лету. Для выполнения нажмите «Применить». Часто используемые условия можно сохранить как шаблон — он запускается автоматически при обнаружении новых установленных модов.</sys:String>
+    <!-- Rule grouping (presets and the rule editor share this section. It is not a tab:
+         it is a drawer at the bottom of the Grouping page, and L.Main_RuleGroup is its toggle button.) -->
+    <sys:String x:Key="L.Main_RuleGroup">Группировка по правилам</sys:String>
+    <sys:String x:Key="L.RuleGroup_Intro">Массовое добавление просканированных комплектов в группу и удаление из неё по ключевым словам: достаточно любого совпадения, несколько разделяйте ;, пусто = без ограничения. Сохранять заранее не нужно — предпросмотр совпадений справа показывает, что совпадёт, а «Применить это правило» выполняет сразу (Ctrl+Z отменяет). Правило, сохранённое как шаблон, также выполняется по «Применить шаблоны», когда сканирование находит новые установленные моды.</sys:String>
+    <sys:String x:Key="L.RuleGroup_DrawerTip">Развернуть или свернуть панель правил под этой страницей: массовый отбор по ключевым словам и сохранение частых условий как шаблонов.</sys:String>
+    <sys:String x:Key="L.RuleGroup_PresetsHeader">Сохранённые шаблоны</sys:String>
+    <sys:String x:Key="L.RuleGroup_ConditionsHeader">Условия правила</sys:String>
+    <sys:String x:Key="L.RuleGroup_PreviewHeader">Предпросмотр совпадений</sys:String>
+    <sys:String x:Key="L.RuleGroup_PresetCount">всего {0}</sys:String>
+    <sys:String x:Key="L.RuleGroup_HitCount">совпало комплектов: {0}</sys:String>
+    <sys:String x:Key="L.RuleGroup_DirtyMark">Не сохранено</sys:String>
+    <sys:String x:Key="L.RuleGroup_DirtyTip">Эти условия отличаются от сохранённого шаблона; нажмите «Сохранить шаблон», чтобы записать их.</sys:String>
+    <sys:String x:Key="L.RuleGroup_Name">Имя шаблона</sys:String>
+    <sys:String x:Key="L.RuleGroup_WmName">Назовите это правило</sys:String>
     <sys:String x:Key="L.RuleGroup_Target">Целевая группа</sys:String>
     <sys:String x:Key="L.RuleGroup_Direction">Действие</sys:String>
     <sys:String x:Key="L.RuleGroup_Add">Добавить в группу</sys:String>
@@ -329,26 +337,24 @@
     <sys:String x:Key="L.RuleGroup_WmMod">Фильтр по имени мода; разделяйте ; пусто = любой</sys:String>
     <sys:String x:Key="L.RuleGroup_WmOutfit">Разделяйте ; пусто = все комплекты</sys:String>
     <sys:String x:Key="L.RuleGroup_WmExclude">Совпадающие комплекты будут исключены</sys:String>
-    <sys:String x:Key="L.RuleGroup_SavePresetBtn">Сохранить как шаблон</sys:String>
-    <sys:String x:Key="L.RuleGroup_Preview">Совпадений: комплектов — {0}:</sys:String>
-    <sys:String x:Key="L.RuleGroup_NotInTree" xml:space="preserve">(совпадения не показаны в основном дереве ({0}))</sys:String>
-    <sys:String x:Key="L.RuleGroup_SavePresetTitle">Сохранить как шаблон правила</sys:String>
-    <sys:String x:Key="L.RuleGroup_SavePresetPrompt">Имя шаблона (целевая группа: {0})</sys:String>
-
-    <!-- Rule presets -->
-    <sys:String x:Key="L.RulePresets_Title">Шаблоны правил</sys:String>
-    <sys:String x:Key="L.RulePresets_Head">Шаблон = одно переиспользуемое правило авто-группировки.</sys:String>
-    <sys:String x:Key="L.RulePresets_Steps" xml:space="preserve">Шаблон — это набор условий группировки для повторного использования. Создавать, изменять и удалять их можно в любой момент; шаблоны независимы друг от друга.&#x0a;· Создать или изменить: нажмите «Новый шаблон…» либо выберите шаблон и нажмите «Изменить выбранный…» (или дважды щёлкните строку). Выберите целевую группу, заполните ключевые слова, проверьте предпросмотр. Имя подставляется, поэтому подтверждение перезапишет исходный.&#x0a;· Когда срабатывают: при обнаружении новых установленных модов нажмите «Применить шаблоны» во всплывающем окне; также можно запустить вручную на вкладке «Группировка» через «⋯ → Группировка по правилам».</sys:String>
-    <sys:String x:Key="L.RulePresets_New">Новый шаблон…</sys:String>
-    <sys:String x:Key="L.RulePresets_Edit">Изменить выбранный…</sys:String>
-    <sys:String x:Key="L.RulePresets_Delete">Удалить выбранные</sys:String>
-    <sys:String x:Key="L.RulePresets_Empty">Шаблонов пока нет. Нажмите «Новый шаблон…» ниже, чтобы создать первое правило авто-группировки.</sys:String>
-    <sys:String x:Key="L.RulePresets_NoSelection">Выберите шаблон слева, чтобы увидеть подробности.</sys:String>
-    <sys:String x:Key="L.RulePresets_RowTitle">{0} → {1} «{2}»</sys:String>
-    <sys:String x:Key="L.RulePresets_RowDetail">Ключевые слова модов: {0} · Ключевые слова комплектов: {1} · Исключено: {2}</sys:String>
-    <sys:String x:Key="L.RulePresets_UnassignedSuffix" xml:space="preserve"> · только без группы</sys:String>
-    <sys:String x:Key="L.RulePresets_SelectToDelete">Сначала выберите шаблон для удаления.</sys:String>
-    <sys:String x:Key="L.RulePresets_SelectToEdit">Сначала выберите шаблон для изменения.</sys:String>
+    <sys:String x:Key="L.RuleGroup_EmptyPresets">Шаблонов пока нет. Заполните условия справа и нажмите «Сохранить шаблон» внизу.</sys:String>
+    <sys:String x:Key="L.RuleGroup_NoHits">Ни один комплект не совпадает с этими условиями. Ослабьте ключевое слово или снимите «Только комплекты без группы».</sys:String>
+    <sys:String x:Key="L.RuleGroup_RowSummary">{0} - «{1}»</sys:String>
+    <sys:String x:Key="L.RuleGroup_RowKeywords" xml:space="preserve"> - моды {0} / комплекты {1} / исключено {2}</sys:String>
+    <sys:String x:Key="L.RuleGroup_UnassignedSuffix" xml:space="preserve"> - только без группы</sys:String>
+    <sys:String x:Key="L.RuleGroup_OutsideTree" xml:space="preserve">(совпадения вне дерева модов ({0}))</sys:String>
+    <sys:String x:Key="L.RuleGroup_New">Новый шаблон</sys:String>
+    <sys:String x:Key="L.RuleGroup_Save">Сохранить шаблон</sys:String>
+    <sys:String x:Key="L.RuleGroup_Delete">Удалить шаблон</sys:String>
+    <sys:String x:Key="L.RuleGroup_Apply">Применить это правило</sys:String>
+    <sys:String x:Key="L.RuleGroup_ApplyTip">Добавить совпавшие комплекты в целевую группу или убрать их оттуда по условиям слева (Ctrl+Z отменяет).</sys:String>
+    <sys:String x:Key="L.RuleGroup_ApplyAll">Применить все шаблоны</sys:String>
+    <sys:String x:Key="L.RuleGroup_ApplyAllTip">Выполнить по очереди все шаблоны слева на текущем сканировании.</sys:String>
+    <sys:String x:Key="L.RuleGroup_NameRequired">Дайте этому правилу имя, прежде чем сохранять его как шаблон.</sys:String>
+    <sys:String x:Key="L.RuleGroup_SelectToDelete">Сначала выберите шаблон для удаления.</sys:String>
+    <sys:String x:Key="L.RuleGroup_NoScanTip">Сканирования ещё не было — сначала просканируйте на вкладке «Группировка».</sys:String>
+    <sys:String x:Key="L.RuleGroup_NoGroupTip">Групп пока нет — создайте их на вкладке «Группировка».</sys:String>
+    <sys:String x:Key="L.RuleGroup_NoPresetsTip">Нечего выполнять — сначала «Сохраните шаблон».</sys:String>
 
     <!-- Save success -->
     <sys:String x:Key="L.SaveOk_Title">Готово</sys:String>
@@ -405,8 +411,8 @@
     <sys:String x:Key="L.Help_12">Отметка лишь помечает то, с чем вы хотите работать — запись происходит только после нажатия «Добавить в группу» / «Убрать из группы» посередине. Отметка мода или разделителя отмечает все его комплекты.</sys:String>
     <sys:String x:Key="L.Help_13">Значок перед именем комплекта означает, что он уже входит в выбранную группу; значок «в группе x/всего» справа от имени мода показывает, сколько его комплектов в этой группе.</sys:String>
     <sys:String x:Key="L.Help_S2_Groups">[Правая панель групп]</sys:String>
-    <sys:String x:Key="L.Help_14">Список групп: щелчок выбирает группу (отметки и значки слева обновляются, позиция прокрутки сохраняется), двойной щелчок открывает предпросмотр участников. Создание, переименование, просмотр, группировка по правилам и удаление собраны под «⋯» в заголовке, а также доступны по правому щелчку в списке.</sys:String>
-    <sys:String x:Key="L.Help_15">«⋯» → «Группировка по правилам»: пакетная работа по ключевым словам, см. раздел 5.</sys:String>
+    <sys:String x:Key="L.Help_14">Список групп: щелчок выбирает группу (отметки и значки слева обновляются, позиция прокрутки сохраняется), двойной щелчок открывает предпросмотр участников. Создание, переименование, просмотр, удаление и импорт собраны под «...» в заголовке, а также доступны по правому щелчку в списке; «Отменить» и «Группировка по правилам» — две кнопки рядом.</sys:String>
+    <sys:String x:Key="L.Help_15">Кнопка «Группировка по правилам» (рядом с «Отменить») разворачивает панель внизу этой страницы: пакетная работа по ключевым словам, см. раздел 5.</sys:String>
     <sys:String x:Key="L.Help_16">Отмена (Ctrl+Z или меню «Правка → Отменить»): откат последних 30 действий группировки, см. раздел 6.</sys:String>
     <sys:String x:Key="L.Help_17">Меню «Файл → Импорт файлов групп…»: объединить другие XML групп с текущим списком и продолжить правку.</sys:String>
     <sys:String x:Key="L.Help_18">Напоминание о новых модах: когда сканирование находит новые установленные моды с комплектами, всплывающее окно перечисляет их по схеме разделитель → мод → комплект (как в основном дереве, с раскрытием) — отметьте, выберите целевую группу, нажмите «Добавить выбранные» (отменяемо), и можно повторить с другими целевыми группами. Для длинных списков используйте два поля фильтра выше (левое — по названиям комплектов, правое — по названиям модов / разделителей); отметки при фильтрации сохраняются. Закрытие откладывает действие; эти комплекты можно позже найти через «Только без группы».</sys:String>
@@ -419,14 +425,15 @@
     <sys:String x:Key="L.Help_23">Примечание: если своя папка вывода не входит в места, которые читает BodySlide (SliderGroups действующего пути проекта или мода), BodySlide не загрузит эти группы.</sys:String>
     <sys:String x:Key="L.Help_H4">4. Сохранение и раскладка файлов</sys:String>
     <sys:String x:Key="L.Help_24">При большом числе комплектов используйте ключевые слова, чтобы обработать всю партию сразу:</sys:String>
-    <sys:String x:Key="L.Help_25">1. Сначала выберите целевую группу справа; «⋯» → «Группировка по правилам» (или правый щелчок в списке групп) откроет отдельное окно, главное окно остаётся доступным.</sys:String>
+    <sys:String x:Key="L.Help_25">1. Сначала выберите целевую группу справа; кнопка «Группировка по правилам» в заголовке «Группы» (или Ctrl+3) развернет панель правил внизу страницы — эта группа уже подставлена как целевая.</sys:String>
     <sys:String x:Key="L.Help_26">2. Три вида ключевых слов (несколько разделяйте ;, достаточно любого совпадения; сопоставление подстроки без учёта регистра):</sys:String>
     <sys:String x:Key="L.Help_27">Ключевые слова модов: сначала фильтруют подходящие моды по имени, затем ищут комплекты внутри них — одноимённые комплекты из других модов не затрагиваются; пусто = любой мод.</sys:String>
     <sys:String x:Key="L.Help_28">Ключевые слова комплектов: сопоставление по имени комплекта; пусто = все комплекты.</sys:String>
     <sys:String x:Key="L.Help_29">Исключающие слова: комплекты, чьё имя совпадает, отбрасываются.</sys:String>
     <sys:String x:Key="L.Help_30">3. «Только комплекты без группы» не трогает уже сгруппированные; действие — «добавить в» или «убрать из» группы.</sys:String>
-    <sys:String x:Key="L.Help_31">4. Предпросмотр показывает разделитель → мод → совпавшие комплекты (та же иерархия, что в основном дереве) с живым счётчиком «совпадений: комплектов — N»; нажмите «Применить» для выполнения — Ctrl+Z отменяет. Пример: ключевое слово мода ube, исключить localisation, только без группы → переносит все негруппированные комплекты UBE в целевую группу за один раз (имена комплектов не обязаны содержать ube).</sys:String>
-    <sys:String x:Key="L.Help_H5">5. Группировка по правилам</sys:String>
+    <sys:String x:Key="L.Help_31">4. Предпросмотр показывает разделитель → мод → совпавшие комплекты (та же иерархия, что в основном дереве) с живым счётчиком «совпало комплектов: N»; нажмите «Применить это правило» для выполнения — Ctrl+Z отменяет. Пример: ключевое слово мода ube, исключить localisation, только без группы → переносит все негруппированные комплекты UBE в целевую группу за один раз (имена комплектов не обязаны содержать ube).</sys:String>
+    <sys:String x:Key="L.Help_H5">5. Группировка по правилам: пакетная работа и шаблоны</sys:String>
+    <sys:String x:Key="L.Help_Presets">5. Нажмите «Сохранить шаблон» для частых условий и в следующий раз выберите их одним щелчком; «Применить все шаблоны» выполняет их по очереди (тот же путь, что и «Применить шаблоны» во всплывающем окне новых модов). Сохранение под другим именем оставляет исходный и создаёт второй шаблон.</sys:String>
     <sys:String x:Key="L.Help_32">«Отмена» (Ctrl+Z или меню «Правка → Отменить») пошагово откатывает последние 30 действий: добавление/удаление, группировку по правилам, создание/переименование/удаление группы, импорт и удаления в списке участников. Сохранение на диск не очищает историю отмены, а перезапуск программы — очищает.</sys:String>
     <sys:String x:Key="L.Help_33">Пять режимов вывода:</sys:String>
     <sys:String x:Key="L.Help_34">Авто (рекомендуется): запись в SliderGroups действующего пути проекта, если это реальная папка; если это CalienteTools\BodySlide в виртуальной Data MO2 (самый частый случай) — в отдельный мод MO2 «SliderSorter Output».</sys:String>
@@ -451,7 +458,7 @@
     <sys:String x:Key="L.Help_Toc">Содержание</sys:String>
     <sys:String x:Key="L.Help_TocHint">Нажмите заголовок, чтобы перейти к разделу.</sys:String>
     <sys:String x:Key="L.Help_Task1">Собрать комплекты одного мода в группу — отметьте этот мод слева (отметка имени мода выбирает все его комплекты) → выберите целевую группу справа → нажмите «Добавить в группу» посередине → нажмите «Сохранить файлы групп».</sys:String>
-    <sys:String x:Key="L.Help_Task2">Собрать похожие комплекты из разных модов — «⋯» справа → «Группировка по правилам», задайте ключевые слова и охватите их за один проход (см. раздел 5).</sys:String>
+    <sys:String x:Key="L.Help_Task2">Собрать похожие комплекты из разных модов — нажмите «Группировка по правилам» справа, задайте ключевые слова и охватите их за один проход (см. раздел 5).</sys:String>
     <sys:String x:Key="L.Help_Task3">Комплект попал не в ту группу — отметьте его слева → нажмите «Убрать из группы»; либо просто нажмите Ctrl+Z, чтобы отменить последний шаг.</sys:String>
     <sys:String x:Key="L.Help_Task4">Новые группы не видны в BodySlide — сначала перезапустите BodySlide (если запускаете через MO2 — и MO2); если их всё ещё нет, откройте «Инструменты → Диагностика» и сверьте «действующий путь проекта» с «каталогом вывода».</sys:String>
     <sys:String x:Key="L.Help_Task5">Посмотреть, что входит в группу — дважды щёлкните имя группы или «⋯» → «Просмотр группы», чтобы открыть список участников (с фильтром и пакетным удалением).</sys:String>
@@ -513,6 +520,9 @@
     <sys:String x:Key="L.Core_GroupNeedSelection">Сначала создайте или выберите группу справа.</sys:String>
     <sys:String x:Key="L.Core_GroupTargetMissing">Целевая группа не найдена.</sys:String>
     <sys:String x:Key="L.Core_GroupNothingToUndo">Нечего отменять.</sys:String>
+    <sys:String x:Key="L.Core_SettingsSaveFail" xml:space="preserve">Не удалось записать настройки на диск (изменение живёт только до конца сеанса). Причина: {0}</sys:String>
+    <sys:String x:Key="L.Core_SettingsBroken" xml:space="preserve">Не удалось прочитать файл настроек, поэтому сеанс начат со значений по умолчанию. Причина: {0}</sys:String>
+    <sys:String x:Key="L.Core_SettingsBrokenKept" xml:space="preserve">Не удалось прочитать файл настроек, поэтому сеанс начат со значений по умолчанию (оригинал сохранён как {0}, можно вернуть вручную). Причина: {1}</sys:String>
     <sys:String x:Key="L.Core_InstancePortable">портативный</sys:String>
     <sys:String x:Key="L.Core_InstanceGlobal">глобальный</sys:String>
     <sys:String x:Key="L.Core_InstanceManual">вручную</sys:String>

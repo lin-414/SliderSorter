@@ -88,4 +88,63 @@ public class AppSettingsTests
             Assert.Empty(reloaded.CollapsedConflictGroups);
         });
     }
+
+
+    /// <summary>设置文件读不动时不能悄悄回落到默认值：里面存着冲突页手选的赢家、实例与 Profile，
+    /// 静默丢弃的表现是"程序像忘了我配过什么"。坏文件要留一份档，并把话说清楚。</summary>
+    [Fact]
+    public void ABrokenSettingsFileIsKeptAsideAndReported()
+    {
+        using var temp = new TempDir();
+        try
+        {
+            AppSettings.DirectoryOverride = temp.Path;
+            var file = Path.Combine(temp.Path, "settings.json");
+            File.WriteAllText(file, "{ 这不是 JSON");
+            // 取词器实装成"键 + 实参"回显：LoadNote 是取词后才拼出来的，
+            // 不装的话 Core 只会返回键名，这里就看不到留档文件名到底有没有传进去
+            var savedLocalizer = CoreStrings.Localizer;
+            CoreStrings.Localizer = (key, args) => key + " " + string.Join(" ", args);
+
+            AppSettings loaded;
+            string? note;
+            try
+            {
+                loaded = AppSettings.Load();
+                // 在这句话还没被撤掉之前读：LoadNote 是**取词时**才拼的（见 AppSettings 里的说明），
+                // 撤了取词器再读就只剩键名
+                note = AppSettings.LoadNote;
+            }
+            finally
+            {
+                CoreStrings.Localizer = savedLocalizer;
+            }
+
+            Assert.False(File.Exists(file), "坏文件原样留着，下次启动还会被同一个错误绊住");
+            Assert.Contains("L.Core_SettingsBrokenKept", note);
+            Assert.Contains("settings.broken-", note);
+            Assert.Single(Directory.GetFiles(temp.Path, "settings.broken-*.json"));
+            Assert.Empty(loaded.CollapsedConflictGroups); // 内容仍是默认值，只是不再无声
+        }
+        finally
+        {
+            AppSettings.DirectoryOverride = null;
+        }
+    }
+
+    /// <summary>写设置要"临时文件 + 替换"：<c>WriteAllText</c> 直接截断原文件，写一半被打断
+    /// 就留下半份 JSON，下次启动整份设置作废。这里钉住的是不留残余、且原文件仍在。</summary>
+    [Fact]
+    public void SaveLeavesNoTemporaryFileBehind()
+    {
+        WithTempSettings(settings =>
+        {
+            settings.UiTheme = "light";
+            settings.Save();
+
+            var dir = AppSettings.DirectoryOverride!;
+            Assert.Empty(Directory.GetFiles(dir, "*.tmp"));
+            Assert.True(File.Exists(Path.Combine(dir, "settings.json")));
+        });
+    }
 }

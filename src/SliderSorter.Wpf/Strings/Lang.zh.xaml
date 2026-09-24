@@ -6,14 +6,13 @@
 
     <!-- 菜单 -->
     <sys:String x:Key="L.Menu_ImportGroups">导入组文件…(_I)</sys:String>
-    <sys:String x:Key="L.Menu_Undo">撤销(_U)</sys:String>
     <sys:String x:Key="L.Theme_Dark">暗色</sys:String>
     <sys:String x:Key="L.Theme_Light">亮色</sys:String>
 
     <!-- 标签页与设置页。刻意不用 L.Menu_ 前缀：门禁要求每个 L.Menu_* 都带 (_X) 访问键，
          而那套约定用在标签页标题/小节标题上会渲染出字面下划线。 -->
     <sys:String x:Key="L.Tab_Generate">分组生成</sys:String>
-    <sys:String x:Key="L.Tab_Conflicts" xml:space="preserve">输出冲突与选择</sys:String>
+    <sys:String x:Key="L.Tab_Conflicts" xml:space="preserve">输出归属</sys:String>
     <sys:String x:Key="L.Tab_Settings">设置</sys:String>
     <sys:String x:Key="L.Settings_Workspace">工作环境</sys:String>
     <sys:String x:Key="L.Settings_Output">输出设置</sys:String>
@@ -53,7 +52,7 @@
     <sys:String x:Key="L.Empty_GroupsFiltered">没有匹配该过滤条件的组。</sys:String>
     <sys:String x:Key="L.Main_Undo">撤销</sys:String>
     <sys:String x:Key="L.Main_UndoTip">回退最近一步分组操作（Ctrl+Z）</sys:String>
-    <sys:String x:Key="L.Main_GroupManage">组操作（新建 / 重命名 / 查看 / 规则归组 / 删除）</sys:String>
+    <sys:String x:Key="L.Main_GroupManage">组操作（新建 / 重命名 / 查看 / 规则分组 / 删除）</sys:String>
     <sys:String x:Key="L.Transfer_Add">加入组 →</sys:String>
     <sys:String x:Key="L.Transfer_AddCount">加入组（{0}）→</sys:String>
     <sys:String x:Key="L.Transfer_Remove">← 移出组</sys:String>
@@ -68,7 +67,6 @@
     <sys:String x:Key="L.Main_Rename">重命名</sys:String>
     <sys:String x:Key="L.Main_DeleteGroup">删除组</sys:String>
     <sys:String x:Key="L.Main_ViewGroup">查看组</sys:String>
-    <sys:String x:Key="L.Main_RuleGrouping">规则归组</sys:String>
     <sys:String x:Key="L.Main_Save">保存分组文件</sys:String>
     <sys:String x:Key="L.Main_SaveDirtyTip">有未保存的分组修改</sys:String>
 
@@ -86,7 +84,6 @@
     <sys:String x:Key="L.Btn_Cancel">取消</sys:String>
     <sys:String x:Key="L.Btn_Close">关闭</sys:String>
     <sys:String x:Key="L.Banner_Dismiss">收起这条提示</sys:String>
-    <sys:String x:Key="L.Btn_Apply">应用</sys:String>
     <sys:String x:Key="L.Btn_CopyAll">复制全部</sys:String>
     <sys:String x:Key="L.Word_Add">加入</sys:String>
     <sys:String x:Key="L.Word_Remove">移出</sys:String>
@@ -175,7 +172,8 @@
     <sys:String x:Key="L.Log_NewModsFound">发现 {0} 个新服装模组：{1}{2}</sys:String>
     <sys:String x:Key="L.Log_NoGroupsForNew">还没有分组：先「新建组」，之后也可用「仅看未分配」查看这些服装。</sys:String>
     <sys:String x:Key="L.Log_NewModsApplied">新模组归组：{0} 个服装已加入组 "{1}"，记得「保存分组文件」。</sys:String>
-    <sys:String x:Key="L.Log_RuleApplied">规则归组：{0} 个服装{1}组 "{2}"（现成员 {3} 个）。</sys:String>
+    <sys:String x:Key="L.Log_GroupMissing" xml:space="preserve">找不到目标组「{0}」，这次归组没有生效（组可能刚被改名或删掉）。</sys:String>
+    <sys:String x:Key="L.Log_RuleApplied">规则分组：{0} 个服装{1}组 "{2}"（现成员 {3} 个）。</sys:String>
     <sys:String x:Key="L.Log_PresetSaved">已保存规则预设「{0}」（目标组：{1}，共 {2} 个预设）。</sys:String>
     <sys:String x:Key="L.Log_PresetsSkipped">按预设归组：共 {0} 个服装；下列组不存在已跳过：{1}</sys:String>
     <sys:String x:Key="L.Log_PresetsDone">按预设归组：共 {0} 个服装加入目标组，记得「保存分组文件」。</sys:String>
@@ -200,8 +198,6 @@
     <sys:String x:Key="L.Msg_SelectGroupFirst">请先选中一个组。</sys:String>
     <sys:String x:Key="L.Msg_SelectOutfitsFirst">请先勾选要移出的服装（可勾选模组或分隔符批量全选）。</sys:String>
     <sys:String x:Key="L.Msg_ConfirmRemove">确定把 {0} 个服装移出组「{1}」？</sys:String>
-    <sys:String x:Key="L.Msg_NeedGroupFirst">还没有任何组。规则归组需要一个目标组，请先「新建组」。</sys:String>
-    <sys:String x:Key="L.Msg_NoOutfits">尚未扫描到任何服装。</sys:String>
     <sys:String x:Key="L.Msg_ScanIncomplete">尚未完成扫描或无法确定写入位置。</sys:String>
     <sys:String x:Key="L.Msg_NoGroupsYet">当前没有任何组。请先新建组并勾选服装。</sys:String>
     <sys:String x:Key="L.Msg_EmptyGroupName">存在空名称的组，请先重命名。</sys:String>
@@ -223,6 +219,7 @@
     <sys:String x:Key="L.Msg_AlreadyRunning">SliderSorter 已经在运行。</sys:String>
     <sys:String x:Key="L.Msg_OutputDirUndetermined">尚未完成扫描，无法确定输出目录。</sys:String>
     <sys:String x:Key="L.Msg_CopiedToClipboard">已复制到剪贴板。</sys:String>
+    <sys:String x:Key="L.Msg_ClipboardFailed" xml:space="preserve">复制失败：另一个程序正占着剪贴板。稍等片刻再试一次。</sys:String>
     <sys:String x:Key="L.Msg_UnsavedOnExit" xml:space="preserve">当前有未保存的分组修改，直接退出会丢失。&#x0a;&#x0a;是：保存并退出&#x0a;否：不保存，直接退出&#x0a;取消：留在程序</sys:String>
 
     <!-- 崩溃日志 -->
@@ -243,7 +240,7 @@
     <sys:String x:Key="L.NewMods_FilterMods">过滤模组 / 分隔符…</sys:String>
     <sys:String x:Key="L.NewMods_FilterCount">当前显示 {0} 个服装（还有 {1} 个待归组）</sys:String>
     <sys:String x:Key="L.NewMods_PresetsBtn">按预设分组（{0} 条）</sys:String>
-    <sys:String x:Key="L.NewMods_PresetsTip">依次执行已保存的规则预设（作用于全部服装），已归组的项会从列表移除；预设可在「工具 → 规则预设」管理</sys:String>
+    <sys:String x:Key="L.NewMods_PresetsTip">依次执行已保存的规则预设（作用于全部服装），已归组的项会从列表移除；预设本身在「规则分组」标签页管理</sys:String>
     <sys:String x:Key="L.NewMods_TopRemaining">还剩 {0} 个服装未归组（本次新模组 {1} 个、共 {2} 个服装）。</sys:String>
     <sys:String x:Key="L.NewMods_TopRemainingHint">继续勾选 → 选目标组 → 「加入所选组」，可换不同目标组分多批处理；点「关闭」随时结束。</sys:String>
     <sys:String x:Key="L.NewMods_TopFirst">本次扫描发现 {0} 个新服装模组（共 {1} 个服装）。</sys:String>
@@ -311,7 +308,7 @@
     <sys:String x:Key="L.Msg_ConflictNothingToExport" xml:space="preserve">还没有为任何冲突组选定赢家，无需写入。</sys:String>
     <sys:String x:Key="L.Msg_ExportFail" xml:space="preserve">写入 BuildSelection.xml 失败。</sys:String>
     <sys:String x:Key="L.Msg_BuildSelWritten" xml:space="preserve">已写入 {0} 条、删除 {1} 条 → {2}。重启 BodySlide 后生效。</sys:String>
-    <sys:String x:Key="L.Log_OutputConflictsFound" xml:space="preserve">发现 {0} 组服装被不同模组写入同一个输出文件；连同一模组内部共用的算上一共 {1} 组，其中 {2} 组还没指定由谁生成——可在「工具 → 输出冲突与选择…」里选定</sys:String>
+    <sys:String x:Key="L.Log_OutputConflictsFound" xml:space="preserve">发现 {0} 组服装被不同模组写入同一个输出文件；连同一模组内部共用的算上一共 {1} 组，其中 {2} 组还没指定由谁生成——可在「输出归属」标签页里选定</sys:String>
     <sys:String x:Key="L.Log_BuildSelWritten" xml:space="preserve">已写出 BuildSelection.xml：新增/改动 {0} 条，删除 {1} 条 → {2}</sys:String>
     <sys:String x:Key="L.Vm_ConflictsInline" xml:space="preserve">输出冲突 {0} 组（未指定 {1}）</sys:String>
     <sys:String x:Key="L.Diag_SecConflicts" xml:space="preserve">输出文件冲突</sys:String>
@@ -319,9 +316,20 @@
     <sys:String x:Key="L.Diag_ConflictLine" xml:space="preserve">{0} 组（其中 {1} 组跨模组），已指定赢家 {2} 组</sys:String>
     <sys:String x:Key="L.Diag_ConflictMore" xml:space="preserve">（其余 {0} 组省略）</sys:String>
 
-    <!-- 规则归组 -->
-    <sys:String x:Key="L.RuleGroup_Title">规则归组</sys:String>
-    <sys:String x:Key="L.RuleGroup_Explainer">按关键字把扫描到的服装批量加入/移出上方所选的组：任一关键字命中即算（分号分隔多个），条件变化时下方预览实时刷新；确认后点「应用」，常用条件可「存为预设」，扫描发现新装模组时会自动套用。</sys:String>
+    <!-- 规则分组（预设与规则编辑器合并后共用这一段；它不是标签页，
+         而是「分组生成」页底部的一条抽屉，L.Main_RuleGroup 就是那颗开关按钮的字）。 -->
+    <sys:String x:Key="L.Main_RuleGroup">规则分组</sys:String>
+    <sys:String x:Key="L.RuleGroup_Intro">按关键字把扫描到的服装批量加入或移出某个组：任一关键字命中即算，分号分隔多个，留空＝不限。条件不必先存下来——右边的「命中预览」实时显示会命中哪些服装，点「应用此规则」立即生效（Ctrl+Z 撤销）。存成预设的那条规则，会在扫描发现新装模组时被「按预设分组」依次执行。</sys:String>
+    <sys:String x:Key="L.RuleGroup_DrawerTip">在本页下方展开或收起「规则分组」：按关键字批量圈服装，并把常用条件存成预设。</sys:String>
+    <sys:String x:Key="L.RuleGroup_PresetsHeader">已存预设</sys:String>
+    <sys:String x:Key="L.RuleGroup_ConditionsHeader">规则条件</sys:String>
+    <sys:String x:Key="L.RuleGroup_PreviewHeader">命中预览</sys:String>
+    <sys:String x:Key="L.RuleGroup_PresetCount">{0} 条</sys:String>
+    <sys:String x:Key="L.RuleGroup_HitCount">命中 {0} 件</sys:String>
+    <sys:String x:Key="L.RuleGroup_DirtyMark">● 未保存</sys:String>
+    <sys:String x:Key="L.RuleGroup_DirtyTip">这里的条件与已存的那条预设不一致，点「保存预设」才会写下来。</sys:String>
+    <sys:String x:Key="L.RuleGroup_Name">预设名称</sys:String>
+    <sys:String x:Key="L.RuleGroup_WmName">给这条规则起个名字</sys:String>
     <sys:String x:Key="L.RuleGroup_Target">目标组</sys:String>
     <sys:String x:Key="L.RuleGroup_Direction">方向</sys:String>
     <sys:String x:Key="L.RuleGroup_Add">加入组</sys:String>
@@ -334,28 +342,24 @@
     <sys:String x:Key="L.RuleGroup_WmMod">按模组名筛选；分号分隔多个，留空 = 不限</sys:String>
     <sys:String x:Key="L.RuleGroup_WmOutfit">分号分隔多个，留空 = 全部服装</sys:String>
     <sys:String x:Key="L.RuleGroup_WmExclude">命中的服装将被排除</sys:String>
-    <sys:String x:Key="L.RuleGroup_SavePresetBtn">存为预设</sys:String>
-    <sys:String x:Key="L.RuleGroup_Preview">将命中 {0} 个服装：</sys:String>
-    <sys:String x:Key="L.RuleGroup_NotInTree" xml:space="preserve">（不在左侧树中的命中　({0})）</sys:String>
-    <sys:String x:Key="L.RuleGroup_SavePresetTitle">保存为规则预设</sys:String>
-    <sys:String x:Key="L.RuleGroup_SavePresetPrompt">预设名称（目标组：{0}）</sys:String>
-
-    <!-- 规则预设 -->
-    <sys:String x:Key="L.RulePresets_Title">规则预设</sys:String>
-    <sys:String x:Key="L.RulePresets_Head">预设 = 一条可复用的自动归组规则。</sys:String>
-    <sys:String x:Key="L.RulePresets_Steps" xml:space="preserve">预设是一组可复用的归组条件，随时可新建、修改或删除，几条预设互相独立。
-· 新建/修改：点「新建预设…」，或选中一条后点「编辑所选…」（双击该行也行）。选目标组、填关键字，预览确认后保存。名称会预填原名，直接确定即覆盖更新。
-· 何时生效：再次扫描发现新装模组时，弹窗里点「按预设分组」会依次执行全部预设；也可以随时在「分组生成」页用「⋯ → 规则归组」手动跑一次。</sys:String>
-    <sys:String x:Key="L.RulePresets_New">新建预设…</sys:String>
-    <sys:String x:Key="L.RulePresets_Edit">编辑所选…</sys:String>
-    <sys:String x:Key="L.RulePresets_Delete">删除所选</sys:String>
-    <sys:String x:Key="L.RulePresets_Empty">还没有预设。点下方「新建预设…」创建第一条自动归组规则。</sys:String>
-    <sys:String x:Key="L.RulePresets_NoSelection">选中左侧一条预设查看详情。</sys:String>
-    <sys:String x:Key="L.RulePresets_RowTitle">{0}　→ {1}组「{2}」</sys:String>
-    <sys:String x:Key="L.RulePresets_RowDetail">模组关键字：{0}　·　服装关键字：{1}　·　排除：{2}</sys:String>
-    <sys:String x:Key="L.RulePresets_UnassignedSuffix" xml:space="preserve">　·　仅未分配</sys:String>
-    <sys:String x:Key="L.RulePresets_SelectToDelete">请先选中要删除的预设。</sys:String>
-    <sys:String x:Key="L.RulePresets_SelectToEdit">请先选中要编辑的预设。</sys:String>
+    <sys:String x:Key="L.RuleGroup_EmptyPresets">还没有预设。在右边填好条件，点下方「保存预设」存下第一条。</sys:String>
+    <sys:String x:Key="L.RuleGroup_NoHits">没有服装命中当前条件。把关键字放宽一档，或去掉「仅未分配服装」试试。</sys:String>
+    <sys:String x:Key="L.RuleGroup_RowSummary">{0} → 「{1}」</sys:String>
+    <sys:String x:Key="L.RuleGroup_RowKeywords" xml:space="preserve">　·　模组 {0} / 服装 {1} / 排除 {2}</sys:String>
+    <sys:String x:Key="L.RuleGroup_UnassignedSuffix" xml:space="preserve">　·　仅未分配</sys:String>
+    <sys:String x:Key="L.RuleGroup_OutsideTree" xml:space="preserve">（模组树之外的命中　({0})）</sys:String>
+    <sys:String x:Key="L.RuleGroup_New">新建预设</sys:String>
+    <sys:String x:Key="L.RuleGroup_Save">保存预设</sys:String>
+    <sys:String x:Key="L.RuleGroup_Delete">删除预设</sys:String>
+    <sys:String x:Key="L.RuleGroup_Apply">应用此规则</sys:String>
+    <sys:String x:Key="L.RuleGroup_ApplyTip">按左边的条件把命中的服装加入或移出目标组（Ctrl+Z 撤销）。</sys:String>
+    <sys:String x:Key="L.RuleGroup_ApplyAll">按预设全部应用</sys:String>
+    <sys:String x:Key="L.RuleGroup_ApplyAllTip">依次执行左侧全部预设，作用于当前扫描到的服装。</sys:String>
+    <sys:String x:Key="L.RuleGroup_NameRequired">先给这条规则起个名字，才能存成预设。</sys:String>
+    <sys:String x:Key="L.RuleGroup_SelectToDelete">请先选中要删除的预设。</sys:String>
+    <sys:String x:Key="L.RuleGroup_NoScanTip">还没有扫描到服装，先在「分组生成」页扫描。</sys:String>
+    <sys:String x:Key="L.RuleGroup_NoGroupTip">还没有任何组，先回「分组生成」页新建一个组。</sys:String>
+    <sys:String x:Key="L.RuleGroup_NoPresetsTip">还没有预设可跑，先把一条条件「保存预设」。</sys:String>
 
     <!-- 保存成功 -->
     <sys:String x:Key="L.SaveOk_Title">完成</sys:String>
@@ -412,8 +416,8 @@
     <sys:String x:Key="L.Help_12">勾选框只是「选中」待操作的内容——点中间的「加入组」/「移出组」才写入。勾选模组或分隔符会自动勾选其下所有服装。</sys:String>
     <sys:String x:Key="L.Help_13">服装名前的标记 = 该服装已在当前选中的组里；模组标题右侧的「组内 x/总数」徽标表示该模组已有几个服装进组。</sys:String>
     <sys:String x:Key="L.Help_S2_Groups">【右侧组面板】</sys:String>
-    <sys:String x:Key="L.Help_14">组列表：单击选中（左侧勾选状态与标注随之切换且不打断浏览位置），双击打开成员预览。新建/重命名/查看/规则归组/删除都收在标题栏右侧的「⋯」里，也可以直接右键组列表。</sys:String>
-    <sys:String x:Key="L.Help_15">「⋯」→「规则归组」：按关键字批量操作，详见第五章。</sys:String>
+    <sys:String x:Key="L.Help_14">组列表：单击选中（左侧勾选状态与标注随之切换且不打断浏览位置），双击打开成员预览。新建/重命名/查看/删除与导入都收在标题栏右侧的「⋯」里，也可以直接右键组列表；「撤销」与「规则分组」是那颗「⋯」旁边的两颗常驻按钮。</sys:String>
+    <sys:String x:Key="L.Help_15">「规则分组」按钮（就在「撤销」旁边）把本页下方摊开：按关键字批量操作，详见第五章。</sys:String>
     <sys:String x:Key="L.Help_16">撤销（Ctrl+Z 或菜单「编辑 → 撤销」）：回退最近 30 步分组操作，详见第六章。</sys:String>
     <sys:String x:Key="L.Help_17">菜单「文件 → 导入组文件…」：把其他分组 XML 合并进当前列表继续编辑。</sys:String>
     <sys:String x:Key="L.Help_18">新装模组提醒：扫描发现新装的服装模组时自动弹窗，按 分隔符 → 模组 → 服装 分层列出（与主界面一致，可展开看具体服装）——勾选、选目标组、点「加入所选组」即可归组（可撤销），可分多批换目标组；列表长时用上方两个过滤框定位（左框筛服装名、右框筛模组 / 分隔符名，勾选状态不会因过滤丢失）。关闭则暂不处理，之后仍可用「仅看未分配」找到这些服装。</sys:String>
@@ -426,15 +430,16 @@
     <sys:String x:Key="L.Help_23">注意：自定义输出目录如果不在 BodySlide 能读取的范围内（有效项目路径的 SliderGroups 或模组的 SliderGroups），BodySlide 不会加载这些组。</sys:String>
     <sys:String x:Key="L.Help_H4">四、保存与文件布局</sys:String>
     <sys:String x:Key="L.Help_24">服装数量大时，用关键字一次圈定一批：</sys:String>
-    <sys:String x:Key="L.Help_25">1. 右侧先选中目标组；点「⋯」→「规则归组」（或右键组列表）会弹出独立窗口（主窗口仍可操作）。</sys:String>
+    <sys:String x:Key="L.Help_25">1. 右侧先选中目标组；点「分组」标题右侧的「规则分组」（或按 Ctrl+3）会把本页下方的规则抽屉摊开，该组已经填成目标组。</sys:String>
     <sys:String x:Key="L.Help_26">2. 三类关键字（分号分隔多个，任一命中即命中；不区分大小写，连续子串匹配）：</sys:String>
     <sys:String x:Key="L.Help_27">模组关键字：先按模组名筛出候选模组，再在这些模组里找服装——不会把其他模组里的同名服装混进来；留空 = 不限模组。</sys:String>
     <sys:String x:Key="L.Help_28">服装关键字：按服装名匹配；留空 = 全部服装。</sys:String>
     <sys:String x:Key="L.Help_29">排除关键字：服装名命中的会被剔除。</sys:String>
     <sys:String x:Key="L.Help_30">3. 勾选"仅未分配服装"则已入组的不动；方向选"加入组"或"移出组"。</sys:String>
-    <sys:String x:Key="L.Help_31">4. 预览按 分隔符 → 模组 → 命中服装 树形展示（与主界面同层级），实时显示"将命中 N 个服装"；确认后点「应用」，结果可用 Ctrl+Z 撤销。例：模组关键字填 ube、排除 汉化、仅未分配 → 一键把 UBE 模组下未分组的服装收入目标组（服装名不必含 ube）。</sys:String>
-    <sys:String x:Key="L.Help_H5">五、规则归组（批量分组）</sys:String>
-    <sys:String x:Key="L.Help_32">「撤销」（Ctrl+Z 或菜单「编辑 → 撤销」）可逐步回退最近 30 步分组操作：加入/移出、规则归组、新建/重命名/删除组、导入、查看组中的移出都可撤销。保存到文件不会清空撤销记录，但重启程序会。</sys:String>
+    <sys:String x:Key="L.Help_31">4. 预览按 分隔符 → 模组 → 命中服装 树形展示（与主界面同层级），实时显示「命中 N 件」；确认后点「应用此规则」，结果可用 Ctrl+Z 撤销。例：模组关键字填 ube、排除 汉化、仅未分配 → 一键把 UBE 模组下未分组的服装收入目标组（服装名不必含 ube）。</sys:String>
+    <sys:String x:Key="L.Help_H5">五、规则分组（批量归组与预设）</sys:String>
+    <sys:String x:Key="L.Help_Presets">5. 常用的条件点「保存预设」存下来，下次回来点一下就能接着用；「按预设全部应用」会依次执行全部预设（与新模组弹窗里的「按预设分组」是同一条路径）。改名字再保存＝另存一条新预设。</sys:String>
+    <sys:String x:Key="L.Help_32">「撤销」（Ctrl+Z 或菜单「编辑 → 撤销」）可逐步回退最近 30 步分组操作：加入/移出、规则分组、新建/重命名/删除组、导入、查看组中的移出都可撤销。保存到文件不会清空撤销记录，但重启程序会。</sys:String>
     <sys:String x:Key="L.Help_33">输出位置五种模式：</sys:String>
     <sys:String x:Key="L.Help_34">自动（推荐）：BodySlide 有效项目路径是真实目录时写它的 SliderGroups；是 MO2 虚拟 Data 下的 CalienteTools\BodySlide（最常见）时，写入 MO2 专用模组"SliderSorter Output"。</sys:String>
     <sys:String x:Key="L.Help_35">MO2 专用模组：mods\SliderSorter Output\CalienteTools\BodySlide\SliderGroups\ —— 在 MO2 里可见、可按 Profile 开关、重装 BodySlide 不丢。</sys:String>
@@ -458,13 +463,13 @@
     <sys:String x:Key="L.Help_H8">八、两份独立成果</sys:String>
     <sys:String x:Key="L.Help_Conflict_Intro">扫描一次会产生两份互不依赖的成果，分别落在两个标签页里。可以直接做其中任意一件，不必先完成另一件。</sys:String>
     <sys:String x:Key="L.Help_Conflict_A">① 分组（「分组生成」页）——把服装划进组，点「保存分组文件」写出 SliderGroups\*.xml，供 BodySlide 读取滑块组。</sys:String>
-    <sys:String x:Key="L.Help_Conflict_B">② 输出冲突选择（「输出冲突与选择」页）——多件服装写出同一个身体网格文件时，选定由哪个模组生成，点「写入 BodySlide…」写进 BuildSelection.xml。选择结果只存在本工具里，写入前原文件会备份为 .bak。它永远写到 BodySlide 程序目录（Config.xml 旁边）——BodySlide 只从那里读这个文件，所以它不跟随设置里的输出位置。</sys:String>
+    <sys:String x:Key="L.Help_Conflict_B">② 输出归属（「输出归属」页）——多件服装写出同一个身体网格文件时，选定由哪个模组生成，点「写入 BodySlide…」写进 BuildSelection.xml。选择结果只存在本工具里，写入前原文件会备份为 .bak。它永远写到 BodySlide 程序目录（Config.xml 旁边）——BodySlide 只从那里读这个文件，所以它不跟随设置里的输出位置。</sys:String>
     <sys:String x:Key="L.Help_Conflict_C">两者各写各的文件，互不覆盖：只要扫描过一次，两份成果就都可用，顺序随意，之后也都能重新进入单独修改。</sys:String>
     <sys:String x:Key="L.Help_Conflict_D">「同一模组内部共用输出文件」（一件衣服的几百个配色）是常态，默认不算需要处理的冲突；勾「只看跨模组冲突」可把它们滤掉。</sys:String>
     <sys:String x:Key="L.Help_Toc">目录</sys:String>
     <sys:String x:Key="L.Help_TocHint">点标题可跳到对应章节。</sys:String>
     <sys:String x:Key="L.Help_Task1">把某个模组的服装归到一组 —— 左侧勾选该模组（勾模组名 = 全选其下服装）→ 右侧选中目标组 → 点中间的「加入组」→ 点「保存分组文件」。</sys:String>
-    <sys:String x:Key="L.Help_Task2">把散落在多个模组里的同类服装归到一组 —— 右侧「⋯」→「规则归组」，用关键字一次圈定（见第五章）。</sys:String>
+    <sys:String x:Key="L.Help_Task2">把散落在多个模组里的同类服装归到一组 —— 点右侧那颗「规则分组」，用关键字一次圈定（见第五章）。</sys:String>
     <sys:String x:Key="L.Help_Task3">某个服装归错了组 —— 左侧勾选它 → 点「移出组」；也可以直接 Ctrl+Z 撤销上一步。</sys:String>
     <sys:String x:Key="L.Help_Task4">BodySlide 里看不到新生成的组 —— 先重启 BodySlide（经 MO2 启动的连 MO2 一起重启）；仍看不到就打开「工具 → 诊断信息」，核对「有效项目路径」与「输出目录」是否一致。</sys:String>
     <sys:String x:Key="L.Help_Task5">想确认某个组里都有什么 —— 双击组名，或右侧「⋯」→「查看组」，打开成员列表（可过滤、可勾选批量移出）。</sys:String>
@@ -525,6 +530,9 @@
     <sys:String x:Key="L.Core_GroupNeedSelection">请先在右侧新建或选中一个组。</sys:String>
     <sys:String x:Key="L.Core_GroupTargetMissing">找不到目标组。</sys:String>
     <sys:String x:Key="L.Core_GroupNothingToUndo">没有可撤销的操作。</sys:String>
+    <sys:String x:Key="L.Core_SettingsSaveFail" xml:space="preserve">设置没能写进磁盘（这次的改动只留在本次运行里）。原因：{0}</sys:String>
+    <sys:String x:Key="L.Core_SettingsBroken" xml:space="preserve">设置文件没能读出来，本次从默认设置开始。原因：{0}</sys:String>
+    <sys:String x:Key="L.Core_SettingsBrokenKept" xml:space="preserve">设置文件没能读出来，本次从默认设置开始（原文件留作 {0}，可手工改回）。原因：{1}</sys:String>
     <sys:String x:Key="L.Core_InstancePortable">便携</sys:String>
     <sys:String x:Key="L.Core_InstanceGlobal">全局</sys:String>
     <sys:String x:Key="L.Core_InstanceManual">手动</sys:String>

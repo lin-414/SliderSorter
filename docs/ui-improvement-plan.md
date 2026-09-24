@@ -14,8 +14,8 @@
 | 视图内零硬编码颜色 | `grep 'Foreground="#\|Background="#\|Fill="#'` 在 `Views/` 与 `Themes/` 下无命中 |
 | 配色有机器验证 | `tools/verify_contrast.py` 按 WCAG 2.1 逐对断言，26 个色板键 |
 | 主题覆盖有机器验证 | `tools/verify_theme.py` 检查窗口是否显式套 `AppWindow`、两套色板键集合一致 |
-| 四语言键一致 | `tools/verify_l10n.py`，436 键 × 4 语言 |
-| 多语言多尺寸不溢出 | `tools/layout-probe` 按 4 语言 × 2 主题 × 3 档尺寸（1000×720 / 1240×820 / 1440×900）离屏排布断言 |
+| 五语言键一致 | `tools/verify_l10n.py`，477 键 × 5 语言 |
+| 多语言多尺寸不溢出 | `tools/layout-probe` 按 5 语言 × 2 主题 × 3 档尺寸（1000×720 / 1240×820 / 1440×900）离屏排布断言 |
 | 空状态、禁用原因都有交代 | `EmptyStateText` 样式族；搬运按钮 `ToolTipService.ShowOnDisabled` + 动态原因文案 |
 | 色盲友好第二通道 | 未保存态 = `B.Warn` 底色 + 圆点徽标 + 文案后缀（`SaveButtonLabel`） |
 | 取消菜单栏后键盘路径完整 | `Ctrl+1..4` / `Ctrl+S` / `Ctrl+Z` / `Ctrl+,` / `F1` |
@@ -40,7 +40,7 @@
 - 冲突清单源自"哪些服装写同一个 `.nif`"，与"有没有建组"无关——**可以在完全没有分组的情况下先处理冲突**。
 - 两份成果分别落盘、分别 dirty，互不依赖对方的完成状态。
 
-这条模型决定了：**「输出冲突与选择」必须保持独立页面，不得合入「分组生成」。** 详细论证见 §2。
+这条模型决定了：**「输出归属」（2026-09-24 前叫「输出冲突与选择」）必须保持独立页面，不得合入「分组生成」。** 详细论证见 §2。
 
 ### 1.2 问题清单
 
@@ -53,7 +53,7 @@
 | P-5 | 高频非破坏性提示走模态框（`L.Msg_SelectGroupFirstSide` 等） | 每次都要点"确定"，机械打断 | 中 |
 | P-6 | 组列表无计数、无过滤（左栏树却有两个过滤框） | 组一多只能滚动找，左右不对称 | 中 |
 | P-7 | 「⋯」菜单 7 项 3 分隔符，撤销（唯一后悔药）藏在最顶 | 关键动作可达性差 | 中 |
-| P-8 | 三份树模板重复实现（`NewModsWindow` / `GroupMembersWindow` / `RuleGroupWindow`） | 改一处须改三处，易漂移 | 中 |
+| P-8 | 三份树模板重复实现（`NewModsWindow` / `GroupMembersWindow` / `RuleGroupWindow`）——2026-09-23：`RuleGroupWindow` 已并入 `Views/Pages/RuleGroupPage.xaml`，那份模板变成页内的只读模板，仍是各写一份 | 改一处须改三处，易漂移 | 中 |
 | P-9 | 分隔符/冲突/占位行着色触发器在 4 个文件各写一遍 | 同上 | 中 |
 | P-10 | `DisclosureToggle` 箭头旋转手搓三处 | 同上 | 低 |
 | P-11 | `GroupMembersWindow` 过滤框 `Width="240"` 定宽 | 踩了 README 第 100 行自立的规矩 | 低 |
@@ -67,7 +67,7 @@
 | `Views/Pages/GroupGenerationPage.xaml` | 10 | **26** | 378 |
 | `Views/Pages/OutputConflictPage.xaml` | 5 | 8 | 361 |
 | `Views/Pages/SettingsPage.xaml` | 11 | 4 | 310 |
-| `Views/Pages/RulePresetsPage.xaml` | 3 | 0 | 53 |
+| `Views/Pages/RuleGroupPage.xaml`（2026-09-23 由「规则预设」页 + `RuleGroupWindow` 合并而来） | 5 | 0 | 304 |
 | `Themes/Controls.xaml` | — | **43** | ~990 |
 
 `GroupGenerationPage` 的 26 个触发器中有相当比例是同一种模式（分隔符变暗加粗、占位行变暗、冲突色），这正是收敛的抓手。
@@ -265,7 +265,7 @@
 python tools/verify_l10n.py src/SliderSorter.Wpf   # 语言键一致性 / Core 层不得出现中文字面量 / 菜单访问键
 python tools/verify_contrast.py                        # 两套色板 WCAG 2.1 对比度
 python tools/verify_theme.py                           # 窗口显式套主题 / 两套色板键集合一致
-dotnet run --project tools/layout-probe -c Release     # 4 语言 × 2 主题 × 全部窗口与页面 × 各档尺寸，断言 0 处溢出/裁切
+dotnet run --project tools/layout-probe -c Release     # 5 语言 × 2 主题 × 全部窗口与页面 × 各档尺寸，断言 0 处溢出/裁切
 dotnet build src/SliderSorter.Wpf/SliderSorter.Wpf.csproj
 dotnet test tests/SliderSorter.Tests/SliderSorter.Tests.csproj
 dotnet test tests/SliderSorter.Wpf.Tests/SliderSorter.Wpf.Tests.csproj

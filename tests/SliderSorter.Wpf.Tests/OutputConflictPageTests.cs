@@ -11,7 +11,7 @@ using Xunit;
 namespace SliderSorter.Wpf.Tests;
 
 /// <summary>
-/// 「输出冲突与选择」页的行渲染与勾选回写。
+/// 「输出归属」页的行渲染与勾选回写。
 /// <para>
 /// 这里钉住的是**模板绑定真的取到了值**：绑定路径写错时 WPF 只静默渲染成空文本——布局探针不喂数据上下文
 /// 看不到，纯逻辑单测不看视觉树也漏过。实机截图里"候选服装名整列空白"就是这么来的。
@@ -38,6 +38,16 @@ public class OutputConflictPageTests
             .ToList(),
     };
 
+    private static void ApplyCollapsed(HashSet<string>? collapsed, string name, bool isCollapsed)
+    {
+        if (collapsed is null)
+            return;
+        if (isCollapsed)
+            collapsed.Add(name);
+        else
+            collapsed.Remove(name);
+    }
+
     private static ConflictRequest Request(IReadOnlyList<OutputConflictGroup> groups,
         Action<IReadOnlyDictionary<string, string>>? save = null,
         IReadOnlyList<SliderGroup>? userGroups = null,
@@ -51,14 +61,12 @@ public class OutputConflictPageTests
         // 折叠状态照真实设置那样给一个可变集合：传 null 时"点了什么都不会发生"，
         // 与真实设置的默认值（空列表 = 全展开）同义
         IsGroupCollapsed = name => collapsed?.Contains(name) == true,
-        SetGroupCollapsed = (name, isCollapsed) =>
+        SetGroupCollapsed = (name, isCollapsed) => ApplyCollapsed(collapsed, name, isCollapsed),
+        // 「全部展开/折叠」走批量回写：测试里与逐条同一份语义（真实实现差的只是落盘次数）
+        SetGroupsCollapsed = batch =>
         {
-            if (collapsed is null)
-                return;
-            if (isCollapsed)
-                collapsed.Add(name);
-            else
-                collapsed.Remove(name);
+            foreach (var (name, isCollapsed) in batch)
+                ApplyCollapsed(collapsed, name, isCollapsed);
         },
         SourceNifOf = _ => null,
         Save = save ?? (_ => { }),

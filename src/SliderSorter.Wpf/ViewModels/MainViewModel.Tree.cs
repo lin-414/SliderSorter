@@ -20,9 +20,12 @@ public partial class MainViewModel
 
     private CancellationTokenSource? _filterDebounce;
 
+    // 过滤这三条路都保留勾选：用户是"先勾一批、再打字找剩下的"，打字不该把刚勾的清掉
+    //（弹窗那边早就这么做了，见 NewModsWindow._checked 的说明）。其它重建路径（应用勾选、
+    // 重新扫描、撤销）仍按新扫描结果重算，勾选是那一轮的一次性选择，不该跨扫描留着。
     partial void OnFilterTextChanged(string value) => DebounceRebuild();
     partial void OnModFilterTextChanged(string value) => DebounceRebuild();
-    partial void OnUnassignedOnlyChanged(bool value) => RebuildTree();
+    partial void OnUnassignedOnlyChanged(bool value) => RebuildTree(preserveChecks: true);
 
     private void DebounceRebuild()
     {
@@ -35,7 +38,7 @@ public partial class MainViewModel
         _ = Task.Delay(350, cts.Token).ContinueWith(_ =>
         {
             if (!cts.IsCancellationRequested)
-                RebuildTree();
+                RebuildTree(preserveChecks: true);
         }, cts.Token, TaskContinuationOptions.OnlyOnRanToCompletion, scheduler);
     }
 
@@ -67,13 +70,16 @@ public partial class MainViewModel
         return true;
     }
 
-    public void RebuildTree()
+    /// <param name="preserveChecks">把当前勾选回灌到重建后的树上（过滤词变化时走 true）。
+    /// 勾选状态原本只长在节点上，而重建是全换新技术节点，不接这一手就是"打个字，勾全灭"。</param>
+    public void RebuildTree(bool preserveChecks = false)
     {
         if (_closed)
             return;
 
         // 记录展开状态，重建后恢复（键的算法见 TreeExpandState）
         var expanded = TreeExpandState.Capture(TreeRoots);
+        var checks = preserveChecks ? CaptureChecks() : default;
 
         var filter = FilterText.Trim();
         var modFilter = ModFilterText.Trim();
@@ -105,11 +111,59 @@ public partial class MainViewModel
             root.Roots = newRoots;
         }
         TreeExpandState.Restore(newRoots, expanded);
+        if (preserveChecks)
+            RestoreChecks(newRoots, checks); // 要在上面那一步之后：展开才会物化出服装行，回灌才有对象可改
 
         UpdateCounts();
         UpdateTitle();
         RefreshTransferState();
         OnPropertyChanged(nameof(ShowTreeEmptyState));
+        // 状态行那句"上次扫描：… · 模组 N"里的 N 数的是这棵树（StatusCountsShort 走 WalkRoots），
+        // 而 LastScanAt 是在扫描收尾时先设的——那时树上还是旧一轮的模组。树换完必须重算一次，
+        // 否则首扫恒显示「模组 0」、之后每次都慢一轮。
+        OnPropertyChanged(nameof(ScanSummaryText));
+    }
+
+    /// <summary>勾过了什么的快照：模组级一个（整组勾上，含还没物化的服装），服装级按 (模组, 服装名)。
+    /// 按身份记而不是按位置，重建后才对得回来。</summary>
+    private (HashSet<string> Mods, HashSet<(string Owner, string Outfit)> Outfits) CaptureChecks()
+    {
+        var mods = new HashSet<string>(StringComparer.Ordinal);
+        // 值组的默认相等就是逐字段 string.Equals（Ordinal），与 Store 判定成员同一口径
+        var outfits = new HashSet<(string, string)>();
+        foreach (var node in WalkRoots())
+        {
+            switch (node)
+            {
+                case OutfitNodeVM outfit when outfit.IsChecked == true && outfit.Parent is ModNodeVM parent:
+                    outfits.Add((parent.Owner, outfit.OutfitName));
+                    break;
+                case ModNodeVM mod when mod.IsChecked == true:
+                    mods.Add(mod.Owner);
+                    break;
+            }
+        }
+        return (mods, outfits);
+    }
+
+    private static void RestoreChecks(ObservableCollection<NodeVM> roots,
+        (HashSet<string> Mods, HashSet<(string Owner, string Outfit)> Outfits) saved)
+    {
+        foreach (var root in roots)
+            foreach (var node in root.WalkSelfAndDescendants())
+            {
+                switch (node)
+                {
+                    case ModNodeVM mod when saved.Mods.Contains(mod.Owner):
+                        mod.IsChecked = true; // 向下级联到已物化的服装行
+                        break;
+                    case OutfitNodeVM outfit when outfit.IsChecked != true
+                        && outfit.Parent is ModNodeVM parent
+                        && saved.Outfits.Contains((parent.Owner, outfit.OutfitName)):
+                        outfit.IsChecked = true;
+                        break;
+                }
+            }
     }
 
     /// <summary>树完全为空（还没扫描）时给一句空状态文案。
@@ -408,32 +462,36 @@ public partial class MainViewModel
         foreach (var group in Store.Groups)
             Groups.Add(new GroupItem(group.Name, group.Members.Count));
 
-        // 先落 -1 再落目标：Clear() 会让 ListBox 丢掉选中项，而"丢了选中项"是视图侧的事，
-        // VM 的 SelectedGroupIndex 不一定跟着变。若新旧值恰好相同（例如原地刷新同一个组），
-        // 直接赋目标值不会触发通知，列表就会停在"没有任何一行高亮"而 GroupInfo 却说着某一组。
-        // 两次赋值把这个中间态抹平——第二赋只要目标不是 -1 就必定发出通知。
-        SelectedGroupIndex = -1;
-        var index = Store.Groups.ToList().FindIndex(g => g.Name == selectedName);
-        SelectedGroupIndex = index >= 0 ? index : (Store.Count > 0 ? 0 : -1);
+        // 先落 null 再落目标：Clear() 之后 ListBox 那一侧的选中项是视图侧的事，VM 里可能还留着
+        // 一个与新实例逐字段相等的旧记录；[ObservableProperty] 按值比较会判定"没变"而不发通知，
+        // 列表就会停在一个已经不在集合里的实例上（看着像没有任何一行高亮）。
+        SelectedGroup = null;
+        // 选中行按组名回挂到**新**的 GroupItem 实例上（Clear 之后旧实例已经不在列表里了）。
+        // 当前组被过滤掉时就是 null：列表没有高亮，但 Store.Current 保持原样——绝不为"总得有
+        // 一行高亮"去选第一行，那等于把用户没点过的组悄悄变成当前组。
+        SelectedGroup = selectedName is null
+            ? null
+            : Groups.FirstOrDefault(g => string.Equals(g.Name, selectedName, StringComparison.OrdinalIgnoreCase));
         UpdateGroupInfo();
         OnPropertyChanged(nameof(IsGroupsEmpty));
         CanUndo = Store.CanUndo;
         RefreshTransferState();
+        UpdateTitle(); // 新建/重命名/删除组都是脏变更：不补这一下，标题栏与保存按钮还停在旧状态
     }
 
     /// <summary>应用勾选后调用：不清空选中位置。</summary>
     private void RefreshGroupsListPreserveSelection() => RefreshGroupsList();
 
-    partial void OnSelectedGroupIndexChanged(int value)
+    partial void OnSelectedGroupChanged(GroupItem? value)
     {
         RefreshTransferState(); // 目标组变了，搬运按钮的可用性与提示随之变
-        if (value < 0 || value >= Store.Count)
-            return;
+        if (value is null)
+            return; // 列表就地重建期间的空选中不是用户意图，别动 Store.Current
         // 选中了组 → "先选一个组"这条提示的前提已经不成立，主动收掉。
         // 提示条不该靠用户点 × 才消失：条件一满足就走，才是"就近反馈"而不是"又一个要清理的窗口"。
         if (Banner is { Kind: BannerKind.Info })
             Banner = null;
-        Store.SelectGroup(Store.Groups[value].Name);
+        Store.SelectGroup(value.Name);
         UpdateGroupInfo();
         UpdateMembershipMarks();
     }
@@ -491,7 +549,8 @@ public partial class MainViewModel
         // 快照由 DeleteGroup 内部负责（同重命名，避免一次操作占两步撤销）
         Store.DeleteGroup(group.Name);
         Log(L10n.TrF("L.Log_DeletedGroup", group.Name));
-        SelectedGroupIndex = -1;
+        // 删完哪一行算选中不由这里指定：DeleteGroup 已把 CurrentGroupName 挪到剩下的第一个组，
+        // RefreshGroupsList 按那个名字回挂，列表与 GroupInfo 自然对上。
         RefreshGroupsList();
         RefreshTree();
     }

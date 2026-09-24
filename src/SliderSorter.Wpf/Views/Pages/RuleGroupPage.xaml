@@ -1,0 +1,328 @@
+<UserControl x:Class="SliderSorter.Wpf.Views.Pages.RuleGroupPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ui="clr-namespace:SliderSorter.Wpf.Services">
+    <!-- 规则分组：一条自动归组规则的「条件 → 命中 → 存成预设 → 再跑一遍」全在这一屏里完成。
+         它不是顶栏的一个标签页，而是「分组生成」页底部的一条抽屉，由组面板标题右侧那颗
+         「规则分组」按钮开合（`Ctrl+3` 同样拉开）。
+
+         ── 为什么并成这一屏、又为什么搬进分组页（2026-09-23 两步）──
+         原先预设自己占一个标签页，编辑器是另一个非模态窗口：预设页只做"看列表 + 起窗口"，
+         一个动作要跨两个界面才做得完，而那个标签页九成时间是两块空面板。预设本来就是
+         这条规则的另一种状态（同一组字段，一个落盘、一个在跑），分家之后用户得自己在两边
+         对齐"我现在改的是哪一条"。合到一处之后：左边挑，中间改，右边立刻看见命中了什么，
+         底下决定是"存下来"还是"跑一次"。
+         再往下一层：规则服务的是"给这个组圈服装"这件事，把它留在顶栏就等于每次写规则都要
+         离开组列表，回来还得重新认一遍目标组。搬进分组页之后，目标组直接跟着列表的当前选中走。
+
+         ── 版式：三张卡，一套表面 ──
+         ① 三张卡共用同一份边框/圆角/头部带高（34）/内距，所以并排看时
+            顶边、头部分隔线、底边三条线各自齐平——这是"布局整齐"的全部来源，
+            不是靠把元素摆得像，而是它们由同一个样式画出来。
+         ② 三张卡一律横排、同占一行。抽屉给的高度就一条（按内容取，约 340），
+            竖排的话表单那张自己就要 320，底下再挂预览必然把抽屉顶开或把预览压没。
+         ③ 表单一行一字段、七行等高（控件 30 + 上下各 4），标签走一条
+            SharedSizeGroup 轨并右对齐——标签右缘与字段左缘之间因此恒为 10px，
+            不随语言变宽变窄（定死像素会在法/德语下压窄标签，探针按五语量这个）。
+         ④ 动作只有一条底行：左半是预设的存删，右半是执行。所有按钮同一基线；
+            原先「存为预设」在窗口底部、「新建预设」在预设页底部，
+            同一类动作散在两个界面上的两条线上。
+
+         这一屏没有页标题：开关按钮上写的就是它的名字，抽屉里再复述一遍等于占掉一条卡高。 -->
+    <UserControl.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVis" />
+
+        <!-- 三张卡共用的表面。⚠️ 页面内的样式一律不写 BasedOn：内嵌 Style 里的 BasedOn 是
+             解析期求值的 StaticResource，离屏加载本页（探针/设计器/单测）时会炸
+             XamlParseException（SettingsPage 里记着踩过的坑）。所以这里把 setter 写全。
+             底色取 B.Panel 而不是 B.Card：这一页的卡片里装的是列表与表单（要被操作的东西），
+             B.Card 是设置页那种"一节说明"的表面；两者混在一页上会出现两种深浅。 -->
+        <Style x:Key="PaneCard" TargetType="Border">
+            <Setter Property="Background" Value="{DynamicResource B.Panel}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource B.Border}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="4" />
+        </Style>
+
+        <!-- 卡的头：恒 34 高、左右各 10 内距、底部一条分隔线。
+             线用 B.BorderSoft 而不是 B.Border：卡的外框已经是 B.Border，
+             头再画一道同色线，三张卡看着像被切成了两段。 -->
+        <Style x:Key="PaneHead" TargetType="Border">
+            <Setter Property="Height" Value="34" />
+            <Setter Property="Padding" Value="10,0" />
+            <Setter Property="BorderBrush" Value="{DynamicResource B.BorderSoft}" />
+            <Setter Property="BorderThickness" Value="0,0,0,1" />
+        </Style>
+    </UserControl.Resources>
+
+    <!-- 根不留 Margin：这一屏住在「分组生成」页的抽屉里，外层页根已经给了 12 的留白，
+         再叠一层会让三张卡比上面的工作区多缩进一圈，左右边界就对不齐了。 -->
+    <Grid Grid.IsSharedSizeScope="True">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" MinHeight="260" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <!-- ── 行 0：一句话说明 ── -->
+        <TextBlock Grid.Row="0" Margin="0,0,0,8" TextWrapping="Wrap" LineHeight="19"
+                   Foreground="{DynamicResource B.TextDim}"
+                   Text="{DynamicResource L.RuleGroup_Intro}" />
+
+        <!-- ── 行 1：三张卡并排（预设 | 条件 | 预览），同一行、同一高 ──
+             这一屏住在「分组生成」页底部的抽屉里（不在顶栏），可用高度就是抽屉给的那一条，
+             所以三张卡一律横排、谁也不叠在谁上面：竖排时表单那张要 320 高，
+             底下再挂预览就必然把抽屉顶开或把预览压没。
+             宽度上预设栏封顶 260（预设名两行都带省略号，再宽也只是多留白），剩下的给表单与预览平分；
+             表单是这里最硬的一块：标签轨与那条俄语复选框加起来要 430（见下面的算式），
+             预览的下限 200 —— 窄到极限时是预览让。
+             （外层那一列的 MinWidth 642 = 430 + 12 + 200，就是里层两张卡的下限之和。） -->
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" MinWidth="200" MaxWidth="260" />
+                <ColumnDefinition Width="12" />
+                <ColumnDefinition Width="2.2*" MinWidth="642" />
+            </Grid.ColumnDefinitions>
+
+            <!-- ══ 左：已存预设 ══ -->
+            <Border Grid.Column="0" Style="{StaticResource PaneCard}">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" MinHeight="0" />
+                    </Grid.RowDefinitions>
+                    <Border Grid.Row="0" Style="{StaticResource PaneHead}">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Style="{StaticResource SectionHeader}"
+                                       Text="{DynamicResource L.RuleGroup_PresetsHeader}" />
+                            <TextBlock x:Name="PresetCountLabel" Margin="6,0,0,0"
+                                       VerticalAlignment="Center" Style="{StaticResource CaptionText}"
+                                       Foreground="{DynamicResource B.TextDim}"
+                                       TextTrimming="CharacterEllipsis" />
+                        </StackPanel>
+                    </Border>
+                    <Grid Grid.Row="1">
+                        <ListBox x:Name="PresetList" BorderThickness="0" Background="Transparent"
+                                 Padding="4,2" Margin="1"
+                                 SelectionChanged="PresetList_SelectionChanged"
+                                 MouseDoubleClick="PresetList_DoubleClick"
+                                 ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                            <ListBox.ItemTemplate>
+                                <!-- 两行：主行是预设名（要挑的就是它），次行是"这条规则干什么"。
+                                     与冲突页左栏同一套行版式；次行 11 号而不是正文 13——
+                                     它是对比用的摘要，且 fr/ru 的译名比中文长得多。
+                                     截断策略：名字与摘要各自单行省略，完整内容进 ToolTip。 -->
+                                <DataTemplate>
+                                    <Grid Margin="2,5" ToolTip="{Binding Tooltip}">
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto" />
+                                            <RowDefinition Height="Auto" />
+                                        </Grid.RowDefinitions>
+                                        <TextBlock Grid.Row="0" Text="{Binding Name}" FontWeight="Bold"
+                                                   Foreground="{DynamicResource B.Text}"
+                                                   TextTrimming="CharacterEllipsis" />
+                                        <TextBlock Grid.Row="1" Text="{Binding Summary}" Margin="0,3,0,0"
+                                                   Style="{StaticResource CaptionText}"
+                                                   TextTrimming="CharacterEllipsis" />
+                                    </Grid>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                        <TextBlock x:Name="EmptyHint" Style="{StaticResource EmptyStateText}"
+                                   Text="{DynamicResource L.RuleGroup_EmptyPresets}" />
+                    </Grid>
+                </Grid>
+            </Border>
+
+            <!-- ══ 中＋右：规则条件 ｜ 命中预览 ══
+                 这两张卡放在一层 Grid 里只是为了共用一对列宽，与左卡之间仍是并列关系。 -->
+            <Grid Grid.Column="2">
+                <Grid.ColumnDefinitions>
+                    <!-- 430 不是估的：俄语那条复选框（«Только комплекты без группы»）要 196，
+                         标签轨（最长的是「Ключевые слова комплектов」）要 190，再加卡片左右内距 24。
+                         探针在 1000 宽下量到 330 / 360 都会把它挤出列宽。 -->
+                    <ColumnDefinition Width="1.5*" MinWidth="430" />
+                    <ColumnDefinition Width="12" />
+                    <ColumnDefinition Width="*" MinWidth="200" />
+                </Grid.ColumnDefinitions>
+
+                <Border Grid.Column="0" Style="{StaticResource PaneCard}">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <Border Grid.Row="0" Style="{StaticResource PaneHead}">
+                            <Grid>
+                                <TextBlock Style="{StaticResource SectionHeader}" HorizontalAlignment="Left"
+                                           Text="{DynamicResource L.RuleGroup_ConditionsHeader}"
+                                           TextTrimming="CharacterEllipsis" />
+                                <!-- 「未保存」：表单与已存的那条预设不一致时才出现。
+                                     合并之前不存在这个状态（编辑在另一个窗口里，存不存一眼分得清），
+                                     现在表单常驻、切走再回来还是这一屏，"改了没存"必须有地方说。
+                                     除颜色外还带一个圆点与文字，不单靠颜色表意。 -->
+                                <TextBlock x:Name="DirtyMark" HorizontalAlignment="Right"
+                                           Visibility="Collapsed"
+                                           Foreground="{DynamicResource B.WarnText}"
+                                           Text="{DynamicResource L.RuleGroup_DirtyMark}"
+                                           ToolTip="{DynamicResource L.RuleGroup_DirtyTip}"
+                                           TextTrimming="CharacterEllipsis" />
+                            </Grid>
+                        </Border>
+
+                        <!-- 七行一字段：行高恒 42（控件 34 + 上下各 4）。
+                             标签右对齐 + 共享轨：轨宽取本页最宽的标签，五语下字段左缘各自齐平。
+                             目标组与方向都是下拉框，Height 由 FieldCombo 给 30，
+                             但它的 Margin 是 0,3、Height 是 30（设置页那种紧凑行距），这里都覆写过来与文本框同高。 -->
+                        <Grid Grid.Row="1" Margin="12,10,12,10">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" SharedSizeGroup="RuleRail" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+
+                            <TextBlock Grid.Row="0" Grid.Column="0" Style="{StaticResource FieldLabel}"
+                                       TextAlignment="Right" Text="{DynamicResource L.RuleGroup_Name}" />
+                            <TextBox x:Name="NameBox" Grid.Row="0" Grid.Column="1"
+                                     Style="{StaticResource FieldBox}"
+                                     ui:Watermark.Text="{DynamicResource L.RuleGroup_WmName}" />
+
+                            <TextBlock Grid.Row="1" Grid.Column="0" Style="{StaticResource FieldLabel}"
+                                       TextAlignment="Right" Text="{DynamicResource L.RuleGroup_Target}" />
+                            <ComboBox x:Name="GroupCombo" Grid.Row="1" Grid.Column="1"
+                                      Style="{StaticResource FieldCombo}" Height="34" Margin="0,4"
+                                      DisplayMemberPath="Name" />
+
+                            <TextBlock Grid.Row="2" Grid.Column="0" Style="{StaticResource FieldLabel}"
+                                       TextAlignment="Right" Text="{DynamicResource L.RuleGroup_Direction}" />
+                            <ComboBox x:Name="DirectionCombo" Grid.Row="2" Grid.Column="1"
+                                      Style="{StaticResource FieldCombo}" Height="34" Margin="0,4" SelectedIndex="0">
+                                <ComboBoxItem Content="{DynamicResource L.RuleGroup_Add}" />
+                                <ComboBoxItem Content="{DynamicResource L.RuleGroup_Remove}" />
+                            </ComboBox>
+
+                            <TextBlock Grid.Row="3" Grid.Column="0" Style="{StaticResource FieldLabel}"
+                                       TextAlignment="Right" Text="{DynamicResource L.RuleGroup_ModKeywords}" />
+                            <TextBox x:Name="ModIncludeBox" Grid.Row="3" Grid.Column="1"
+                                     Style="{StaticResource FieldBox}"
+                                     ui:Watermark.Text="{DynamicResource L.RuleGroup_WmMod}" />
+
+                            <TextBlock Grid.Row="4" Grid.Column="0" Style="{StaticResource FieldLabel}"
+                                       TextAlignment="Right" Text="{DynamicResource L.RuleGroup_OutfitKeywords}" />
+                            <TextBox x:Name="OutfitIncludeBox" Grid.Row="4" Grid.Column="1"
+                                     Style="{StaticResource FieldBox}"
+                                     ui:Watermark.Text="{DynamicResource L.RuleGroup_WmOutfit}" />
+
+                            <TextBlock Grid.Row="5" Grid.Column="0" Style="{StaticResource FieldLabel}"
+                                       TextAlignment="Right" Text="{DynamicResource L.RuleGroup_ExcludeKeywords}" />
+                            <TextBox x:Name="OutfitExcludeBox" Grid.Row="5" Grid.Column="1"
+                                     Style="{StaticResource FieldBox}"
+                                     ui:Watermark.Text="{DynamicResource L.RuleGroup_WmExclude}" />
+
+                            <TextBlock Grid.Row="6" Grid.Column="0" Style="{StaticResource FieldLabel}"
+                                       TextAlignment="Right" Text="{DynamicResource L.RuleGroup_Scope}" />
+                            <!-- Height=30 让它和上面六行的字段同占一行高，复选框在框内垂直居中；
+                                 不写的话这一行会比别行矮 8px，七行的节奏就断了。 -->
+                            <CheckBox x:Name="UnassignedCheck" Grid.Row="6" Grid.Column="1" Height="34" Margin="0,4"
+                                      Content="{DynamicResource L.RuleGroup_UnassignedOnly}" IsChecked="True"
+                                      VerticalContentAlignment="Center" HorizontalAlignment="Left" />
+                        </Grid>
+                    </Grid>
+                </Border>
+
+                <Border Grid.Column="2" Style="{StaticResource PaneCard}">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" MinHeight="0" />
+                        </Grid.RowDefinitions>
+                        <Border Grid.Row="0" Style="{StaticResource PaneHead}">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Style="{StaticResource SectionHeader}"
+                                           Text="{DynamicResource L.RuleGroup_PreviewHeader}" />
+                                <TextBlock x:Name="PreviewCountLabel" Margin="6,0,0,0"
+                                           VerticalAlignment="Center" Style="{StaticResource CaptionText}"
+                                           Foreground="{DynamicResource B.TextDim}"
+                                           TextTrimming="CharacterEllipsis" />
+                            </StackPanel>
+                        </Border>
+                        <Grid Grid.Row="1">
+                            <TreeView x:Name="PreviewTree" BorderThickness="0" Background="Transparent"
+                                      Padding="4,2" Margin="1"
+                                      ItemContainerStyle="{StaticResource NodeTreeItemStyle}">
+                                <TreeView.ItemTemplate>
+                                    <HierarchicalDataTemplate ItemsSource="{Binding Children}">
+                                        <!-- 预览只读（没有勾选框），所以不走共用的 NodeRowTemplate，
+                                             只借它的行文本样式：分隔符/冲突/成员那几种语义色仍要一致。 -->
+                                        <TextBlock Text="{Binding Text}" ToolTip="{Binding Text}"
+                                                   Style="{StaticResource NodeRowText}" />
+                                    </HierarchicalDataTemplate>
+                                </TreeView.ItemTemplate>
+                            </TreeView>
+                            <!-- 零命中是这一页最常见的状态（关键字打了一半），所以这句提示
+                                 不能只在"什么都没扫出来"时才有：条件写窄了同样要说一声。 -->
+                            <TextBlock x:Name="NoHitsHint" Style="{StaticResource EmptyStateText}"
+                                       Text="{DynamicResource L.RuleGroup_NoHits}" Visibility="Collapsed" />
+                        </Grid>
+                    </Grid>
+                </Border>
+            </Grid>
+        </Grid>
+
+        <!-- ── 行 2：内联提示条（仅在有内容时占高）──
+             ContentTemplate 必须用 DynamicResource 取（InlineBannerTemplate 在 app 级字典里，
+             离屏加载本页时资源链上没有它，StaticResource 会在解析期就炸）。
+             这一页也要挂一份：Banner 是 VM 上的全页共享状态，而「名字没填」「先选一条预设」
+             这类提示说的正是这一页的事，只在分组页挂一份的话用户在这儿点了什么也看不到。 -->
+        <ContentControl Grid.Row="2" Content="{Binding Banner}"
+                        ContentTemplate="{DynamicResource InlineBannerTemplate}"
+                        Visibility="{Binding HasBanner, Converter={StaticResource BoolToVis}}"
+                        Margin="0,8,0,0" />
+
+        <!-- ── 行 3：操作行。一条基线上两组动作，左＝预设的存删，右＝执行 ──
+             「应用此规则」跑的是中间那张卡上的条件（不必先存）；
+             「按预设全部应用」依次跑左边列表里的全部预设——这条批量路径原先只藏在
+             新模组弹窗里，用户不重扫就找不到它。
+
+             ⚠️ 行底的 4 DIP 外边距不是留白，是描边的活动空间。
+             原先这行紧贴本页底边，五颗按钮的 1px 下描边正好落在页面被排到的范围外，
+             125% 缩放下实测：按钮布局高 28.8 DIP = 36 设备像素，屏上只画出 34，
+             上/左/右三边都在、底边没有（同页的输入框四边齐全，因为它们的下边距够）。
+             试过且无效的九种改法（都只动按钮或它的容器，没动这一行的下边界）：
+             显式 Height=32、VerticalAlignment=Center、StackPanel→Auto 列 Grid、
+             行 MinHeight=32、SnapsToDevicePixels=False、页根与操作行 UseLayoutRounding、
+             抽屉下内边距 0→8、模板 Border 加 RenderOptions.EdgeMode=Aliased
+             （EdgeMode 不沿视觉树继承，挂在行上时模板里的 Border 读到的仍是 Unspecified）。
+             -->
+        <Grid Grid.Row="3" Margin="0,10,0,4">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
+                <Button Content="{DynamicResource L.RuleGroup_New}" Click="New_Click"
+                        MinWidth="96" MinHeight="28" Margin="0,0,8,0" />
+                <Button x:Name="SaveButton" Content="{DynamicResource L.RuleGroup_Save}" Click="Save_Click"
+                        MinWidth="96" MinHeight="28" Margin="0,0,8,0"
+                        ToolTipService.ShowOnDisabled="True" />
+                <Button x:Name="DeleteButton" Content="{DynamicResource L.RuleGroup_Delete}" Click="Delete_Click"
+                        Style="{StaticResource DangerButton}" MinWidth="96" MinHeight="28"
+                        ToolTipService.ShowOnDisabled="True" />
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button x:Name="ApplyAllButton" Content="{DynamicResource L.RuleGroup_ApplyAll}"
+                        Click="ApplyAll_Click" MinWidth="130" MinHeight="28" Margin="0,0,8,0"
+                        ToolTipService.ShowOnDisabled="True" />
+                <Button x:Name="ApplyButton" Content="{DynamicResource L.RuleGroup_Apply}"
+                        Style="{StaticResource PrimaryButton}" Click="Apply_Click"
+                        MinWidth="130" MinHeight="28"
+                        ToolTipService.ShowOnDisabled="True" />
+            </StackPanel>
+        </Grid>
+    </Grid>
+</UserControl>

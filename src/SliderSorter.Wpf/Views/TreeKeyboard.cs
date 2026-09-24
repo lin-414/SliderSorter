@@ -51,9 +51,13 @@ public static class TreeKeyboard
         switch (e.Key)
         {
             case Key.Space:
+                // 没有可勾选的行时放行：Left/Right 都是"处理不了就不吞"，空格若一律 Handled，
+                // 树持焦而没选中行时（右键点在空白处、刚 Focus() 完）连翻页都做不到
                 if (row?.DataContext is NodeVM node)
+                {
                     Toggle(node);
-                e.Handled = true;
+                    e.Handled = true;
+                }
                 break;
 
             case Key.Left:

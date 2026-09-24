@@ -26,8 +26,8 @@ public static class Mo2Discovery
                 foreach (var dir in Directory.EnumerateDirectories(GlobalRoot))
                 {
                     var ini = Path.Combine(dir, "ModOrganizer.ini");
-                    if (File.Exists(ini) && seen.Add(dir))
-                        found.Add(new Mo2Instance(dir, ini, Mo2InstanceKind.Global));
+                    if (File.Exists(ini) && seen.Add(NormalizeOrRaw(dir)))
+                        TryAdd(found, dir, ini, Mo2InstanceKind.Global);
                 }
             }
             catch (Exception ex) when (ex is UnauthorizedAccessException or IOException)
@@ -49,6 +49,12 @@ public static class Mo2Discovery
 
         return found;
     }
+
+    /// <summary>去重键：与 <see cref="Mo2Instance.InstanceDir"/> 同一种归一化。
+    /// 用原始字符串去重的话，用户在设置里手工加的 <c>E:\MO2\Inst\</c>（带尾分隔符）
+    /// 与自动发现给的 <c>E:\MO2\Inst</c> 会被当成两个实例，列表里出现两行，
+    /// 选中哪一行决定了 <c>LastInstanceDir</c> 能不能在下次启动时对回去。</summary>
+    private static string Normalize(string dir) => Path.GetFullPath(dir).TrimEnd('\\', '/');
 
     /// <summary>把用户浏览的目录转为实例（实例目录或便携安装根目录皆可）。</summary>
     public static Mo2Instance? CreateFromDirectory(string dir)
@@ -82,8 +88,38 @@ public static class Mo2Discovery
         // 判据只有 ModOrganizer.ini。便携安装的 ini 就写在 exe 同级，与上面这条是**同一个路径**，
         // 所以"只有 ModOrganizer.exe 没有 ini"的目录不登记（MO2 自己也不认这种目录为实例）。
         var ini = Path.Combine(dir, "ModOrganizer.ini");
-        if (File.Exists(ini) && seen.Add(dir))
+        if (!File.Exists(ini) || !seen.Add(NormalizeOrRaw(dir)))
+            return;
+        TryAdd(list, dir, ini, kind);
+    }
+
+    private static void TryAdd(List<Mo2Instance> list, string dir, string ini, Mo2InstanceKind kind)
+    {
+        try
+        {
             list.Add(new Mo2Instance(dir, ini, kind));
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException
+                                   or System.Security.SecurityException or PathTooLongException)
+        {
+            // 构造一个实例要读它的 ini、并把目录规范成全路径，两件都可能失败（ini 正被 MO2 占着、
+            // 盘被拔掉、目录名里有非法字符）。Discover 是在 ViewModel 的构造链上调的，
+            // 一个坏目录不该让整张实例列表列不出来——那等于启动即崩。
+        }
+    }
+
+    /// <summary>归一化目录名，同时兜住 <c>Path.GetFullPath</c> 对非法字符的抛：
+    /// 这个键既用于去重，也在坏路径时退回原始字符串（最坏结果是多列一行，不是崩）。</summary>
+    private static string NormalizeOrRaw(string dir)
+    {
+        try
+        {
+            return Normalize(dir);
+        }
+        catch (Exception ex) when (ex is IOException or ArgumentException)
+        {
+            return dir;
+        }
     }
 
     private static IEnumerable<string> CommonPortableLocations()

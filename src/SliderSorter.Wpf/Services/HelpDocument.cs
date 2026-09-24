@@ -149,6 +149,7 @@ public static class HelpDocument
         doc.Blocks.Add(B(L10n.Tr("L.Help_29")));
         doc.Blocks.Add(P(L10n.Tr("L.Help_30")));
         doc.Blocks.Add(P(L10n.Tr("L.Help_31")));
+        doc.Blocks.Add(P(L10n.Tr("L.Help_Presets")));
 
         // 六、撤销与输出位置
         doc.Blocks.Add(H("L.Help_H6", "sec6"));

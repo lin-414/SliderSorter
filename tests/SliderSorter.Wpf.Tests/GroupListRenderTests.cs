@@ -101,13 +101,63 @@ public class GroupListRenderTests
             var list = (ListBox)page.FindName("GroupList")!;
             WpfHost.Pump();
             list.UpdateLayout();
-            return (vm.SelectedGroupIndex, vm.Store.Current?.Name,
+            return (VmRow: vm.SelectedGroup?.Name, Current: vm.Store.Current?.Name,
                 Selected: (list.SelectedItem as SliderSorter.Wpf.ViewModels.GroupItem)?.Name);
         });
 
-        Assert.Equal(2, result.SelectedGroupIndex);
-        Assert.Equal(Names[2], result.Name);
+        Assert.Equal(Names[2], result.VmRow);
+        Assert.Equal(Names[2], result.Current);
         Assert.Equal(Names[2], result.Selected);
+    }
+
+    /// <summary>过滤组列表不许把「当前组」换人，点某一行选中的也必须是看得见的那一行。
+    /// <para>
+    /// 钉住的是真实故障：ListBox 绑的是过滤投影 <see cref="MainViewModel.GroupsView"/>，
+    /// 而旧写法把 <c>SelectedIndex</c>（视图内下标）当成 <c>Store.Groups</c> 的下标用。
+    /// 三组 A-3BA/A-CBBE/A-UBE，选中第三行后在过滤框打 <c>UBE</c>，视图只剩一行、下标变成 0，
+    /// 于是 <c>Store.Current</c> 悄悄跳到 A-3BA —— 之后的重命名/删除/「添加勾选」全落在
+    /// 用户没点过的那个组上，而用户以为自己在编辑 A-UBE。
+    /// </para>
+    /// </summary>
+    [Fact]
+    public void FilteredGroupListKeepsAndSelectsTheVisibleRow()
+    {
+        using var scope = IsolatedUserState.Enter();
+
+        var result = WpfHost.WithWindow(() =>
+        {
+            var vm = new MainViewModel();
+            vm.Store.Load(Groups(Names));
+            vm.RefreshGroupsList();
+            vm.Store.SelectGroup(Names[2]); // 用户点中第三行
+            vm.RefreshGroupsList();
+            return new GroupGenerationPage { DataContext = vm };
+        }, host =>
+        {
+            var page = (GroupGenerationPage)host;
+            var vm = (MainViewModel)page.DataContext;
+            var list = (ListBox)page.FindName("GroupList")!;
+            WpfHost.Pump();
+            list.UpdateLayout();
+
+            vm.GroupFilterText = "UBE";     // 只打字，不点任何一行：三组里只有 A-UBE 留着
+            WpfHost.Pump();
+            list.UpdateLayout();
+            var visible = list.Items.Cast<object>().Cast<SliderSorter.Wpf.ViewModels.GroupItem>()
+                .Select(g => g.Name).ToList();
+            var currentAfterTyping = vm.Store.Current?.Name;
+
+            // 在过滤结果里点那一行（视图内下标 0）
+            list.SelectedItem = list.Items[0];
+            WpfHost.Pump();
+            return (Visible: visible, AfterTyping: currentAfterTyping,
+                Chosen: vm.Store.Current?.Name, VmRow: vm.SelectedGroup?.Name);
+        });
+
+        Assert.Equal([Names[2]], result.Visible);
+        Assert.Equal(Names[2], result.AfterTyping);  // 打字不该换当前组
+        Assert.Equal(Names[2], result.Chosen);       // 点可见那一行选中的就是它
+        Assert.Equal(Names[2], result.VmRow);
     }
 
     private static List<SliderGroup> Groups(IEnumerable<string> names) =>

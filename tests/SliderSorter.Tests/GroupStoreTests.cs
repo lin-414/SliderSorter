@@ -169,4 +169,31 @@ public class GroupStoreTests
         Assert.True(store.Undo().Ok);
         Assert.False(store.Undo().Ok);
     }
+
+
+    /// <summary>组名查找必须一个口径。原先 <c>GetGroup</c>/<c>GroupNameExists</c> 忽略大小写，
+    /// 而 <c>ApplyToGroup</c>/<c>DeleteGroup</c>/<c>RenameGroup</c> 按 Ordinal —— 于是把组
+    /// <c>Armor</c> 重命名成 <c>ARMOR</c>（允许，因为重名检查排除了自身）之后，预设里那句
+    /// <c>Group="Armor"</c> 一声不响地一条都不动，而界面还按 GetGroup 打出成员数，看着像执行过了。</summary>
+    [Fact]
+    public void ApplyToGroupFollowsTheSameCaseRuleAsLookup()
+    {
+        var store = new GroupStore();
+        store.NewGroup("Armor");
+        Assert.True(store.RenameGroup("Armor", "ARMOR").Ok);
+
+        var applied = store.ApplyToGroup("Armor", new[] { "Bikini" }, add: true);
+
+        Assert.Equal(1, applied);
+        Assert.Equal(["Bikini"], store.GetGroup("armor")!.Members);
+    }
+
+    [Fact]
+    public void DeleteAndRenameFindTheGroupRegardlessOfCase()
+    {
+        var store = new GroupStore();
+        store.NewGroup("3BA");
+        Assert.True(store.DeleteGroup("3ba"));
+        Assert.Equal(0, store.Count);
+    }
 }

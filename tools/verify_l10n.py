@@ -16,7 +16,7 @@
        （不配对的花括号会让 string.Format 抛 FormatException；某语言多出占位符
         而调用点没传对应实参时同样会抛）
     7. Core 层（无 UI 依赖的类库）的字符串字面量里不得出现中文
-       （Core 经 CoreStrings.Localizer 取词；留中文字面量 = en/ru/fr 下日志与诊断报告混中文）
+       （Core 经 CoreStrings.Localizer 取词；留中文字面量 = en/de/ru/fr 下日志与诊断报告混中文）
     8. 每个 L.Menu_* 的值都必须带访问键 `(_X)`，且同一层菜单内不重复
        （只有中文有访问键 = 键盘用户在其他三种语言下无法用 Alt 序列操作）
 
@@ -383,8 +383,11 @@ def main():
         "L.Help_Title": r"L\.Help_Title\b",
         "L.About_Title": r"L\.About_Title\b",
         # 2026-09-22 菜单栏整条取消：剩下的每一项要么与页内控件重复（保存＝右下角那颗、
-        # 退出＝关窗口），要么本身就该是个页面（输出冲突、规则预设、设置）。
-        # L.Menu_ImportGroups 与 L.Menu_Undo 活着——它们搬进了组管理的右键菜单，仍是菜单项。
+        # 退出＝关窗口），要么本身就该是个页面（输出冲突、设置）。
+        # L.Menu_ImportGroups 活着——它搬进了组管理的右键菜单，仍是菜单项。
+        # L.Menu_Undo 于 2026-09-23 退休：组面板标题右侧那颗常驻「撤销」按钮是它唯一的入口，
+        # 菜单里再留一份等于同一屏放两颗撤销，其中一颗还得点开才看得见。
+        "L.Menu_Undo": r"L\.Menu_Undo\b",
         "L.Menu_File": r"L\.Menu_File\b",
         "L.Menu_Save": r"L\.Menu_Save\b",
         "L.Menu_Edit": r"L\.Menu_Edit\b",
@@ -402,6 +405,23 @@ def main():
         # 2026-09-23 改名：这颗按钮要的是「实例目录」，不是「MO2 目录」。登记判据只有
         # ModOrganizer.ini，MO2 的程序目录（只有 exe）从来不被接受，旧名会把人引到程序目录去。
         "L.Main_AddMo2Dir": r"L\.Main_AddMo2Dir\b",
+        # 2026-09-23 规则预设并入「规则分组」页：那一页整套键退休（页名/说明/按钮/行文案）。
+        # 用族匹配而不是逐条列，因为这一族有 14 个键，逐条登记只会把这张表撑肥。
+        "L.RulePresets_*": r"L\.RulePresets_\w+\b",
+        # 规则编辑器从浮动窗口变成标签页、又于同日变成抽屉：窗口标题、"存为预设"的弹窗文案、
+        # 以及那句把预览说成"下方"的说明段都没有主人了（现在改叫「命中预览」）。
+        "L.RuleGroup_（窗口时代那几个）":
+            r"L\.RuleGroup_(Title|Explainer|SavePresetBtn|SavePresetTitle|SavePresetPrompt|Preview|NotInTree)\b",
+        # 组管理菜单那颗与标签页曾是同一个去处、合成一个键；等它从标签页降级成分组页的
+        # 开关按钮之后，"Tab_" 这个前缀就开始骗人，于是改名成 L.Main_RuleGroup。
+        "L.Main_RuleGrouping": r"L\.Main_RuleGrouping\b",
+        "L.Tab_RuleGroup": r"L\.Tab_RuleGroup\b",
+        # 打不开编辑器时的两句模态提示：页面常驻之后没有"打不开"这回事，
+        # 进不去的原因改挂在禁用按钮的提示上（L.RuleGroup_NoScanTip / NoGroupTip）。
+        "L.Msg_NeedGroupFirst": r"L\.Msg_NeedGroupFirst\b",
+        "L.Msg_NoOutfits": r"L\.Msg_NoOutfits\b",
+        # 「应用」跟着规则窗口一起没了，页面上那颗叫「应用此规则」。
+        "L.Btn_Apply": r"L\.Btn_Apply\b",
     }
     found = False
     for scan_root in scan_roots:

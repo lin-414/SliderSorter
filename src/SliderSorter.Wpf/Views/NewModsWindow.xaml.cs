@@ -151,6 +151,11 @@ public partial class NewModsWindow : Window
 
         Tree.ItemsSource = roots;
         RefreshAggregates(roots);
+        // 勾选变化要立刻反映到摘要那一句：容器的回调只挂在根上（见 NodeVM.CheckedChanged 的接线说明），
+        // 挂上之前只有 Rebuild 末尾那一次 UpdateSummary，于是勾完一行读数还停在初始值，
+        // 要等用户动过滤框或点「添加所选」才变——按钮上写的数和摘要说的数能对不上。
+        foreach (var root in roots)
+            root.CheckedChanged = UpdateSummary;
 
         TopLabel.Text = TopText();
         FilterCountLabel.Text = filtering ? L10n.TrF("L.NewMods_FilterCount", shown, RemainingTotal) : "";

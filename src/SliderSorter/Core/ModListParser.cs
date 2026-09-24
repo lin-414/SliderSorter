@@ -13,13 +13,22 @@ public record ModEntry(string Name, bool Enabled, bool IsForeign, bool IsSeparat
 /// </summary>
 public static class ModListParser
 {
+    /// <summary>MO2 里"备份"模组的写法是名字**结尾**跟一段 backup（可带序号、可带括号），
+    /// 例如 <c>Foo backup</c>、<c>Foo (Backup 1)</c>。锚在结尾是为了不把只是含这个词的正经模组吃掉：
+    /// <c>MCM设置备份与恢复 MCM Memory - Settings Backup and Restore</c> 这类必须留着。
+    /// backup 前面得有个分隔符（空格/括号/连字符/下划线），否则 <c>MyBackup</c> 也会被当成备份。</summary>
     private static readonly Regex BackupRegex =
-        new(@"^.*backup[0-9]*$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+        new(@"^(?:.*[\s(\[-])?backup[ _-]?[0-9]*\)?$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
 
     public static List<ModEntry> Parse(string modListPath)
     {
-        var content = File.ReadAllText(modListPath, new System.Text.UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
-        return ParseContent(content);
+        // 与 IniParser 同一口径：MO2 运行中就会持有 modlist.txt，FileShare.Read 会在它写文件的
+        // 那个瞬间把这里顶成 IOException（README 承诺 MO2 开着也能用，这一步是唯一的入口）。
+        using var stream = new FileStream(modListPath, FileMode.Open, FileAccess.Read,
+            FileShare.ReadWrite, bufferSize: 4096, FileOptions.SequentialScan);
+        using var reader = new StreamReader(stream, new System.Text.UTF8Encoding(encoderShouldEmitUTF8Identifier: false),
+            detectEncodingFromByteOrderMarks: true);
+        return ParseContent(reader.ReadToEnd());
     }
 
     public static List<ModEntry> ParseContent(string content)
