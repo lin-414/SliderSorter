@@ -50,11 +50,49 @@ public partial class OutputConflictPage : UserControl
     /// 前者让 WPF 把这一行归到某个分组头下面，后者决定要不要挂「组内互撞」徽标。
     /// 一条冲突可能同时挂在多个分组下，那时它是**多个** <see cref="GroupRow"/>（各一份），
     /// 所以"当前列出了几组冲突"必须按 <see cref="Group"/> 去重算，不能数行。
+    /// </para>
+    /// <para>
+    /// 它是可观察的，因为改一组的归属只换 <see cref="Status"/> 与 <see cref="Resolved"/> 这两个值：
+    /// 就地通知，左栏就不必为了几行文字整列重造容器（见 <see cref="SaveAndRefresh"/>）。
+    /// 其余字段是这一行的身份，从构造起不变。
     /// </para></summary>
-    private sealed record GroupRow(OutputConflictGroup Group, string Name, string Status, bool Resolved,
-        string Path, ConflictGroupKey? GroupKey = null, bool IntraCollision = false)
+    private sealed class GroupRow : ObservableObject
     {
+        private string _status;
+        private bool _resolved;
+
+        public GroupRow(OutputConflictGroup group, string name, string status, bool resolved, string path,
+            ConflictGroupKey? groupKey = null, bool intraCollision = false)
+        {
+            Group = group;
+            Name = name;
+            Path = path;
+            GroupKey = groupKey;
+            IntraCollision = intraCollision;
+            _status = status;
+            _resolved = resolved;
+        }
+
+        public OutputConflictGroup Group { get; }
+        public string Name { get; }
+        public string Path { get; }
+        public ConflictGroupKey? GroupKey { get; }
+        public bool IntraCollision { get; }
         public Visibility IntraVisibility => IntraCollision ? Visibility.Visible : Visibility.Collapsed;
+
+        /// <summary>第二行那句「已选：某模组」/「未指定」。</summary>
+        public string Status
+        {
+            get => _status;
+            set => SetProperty(ref _status, value);
+        }
+
+        /// <summary>有没有定下来。模板里那条 DataTrigger 认它：没定的用警示色。</summary>
+        public bool Resolved
+        {
+            get => _resolved;
+            set => SetProperty(ref _resolved, value);
+        }
     }
 
     /// <summary>左栏分组头的键，同时是 <c>CollectionViewGroup.Name</c>——分组头模板的 DataContext
@@ -292,6 +330,16 @@ public partial class OutputConflictPage : UserControl
             ? name
             : null;
 
+    /// <summary>左栏那一行第二行的文案，连同"定没定下来"（模板里的 DataTrigger 认后者：没定的是警示色）。
+    /// 建行与就地刷新都走这里，两条路才不会把措辞算成两样。</summary>
+    private (string Status, bool Resolved) StatusOf(OutputConflictGroup group)
+    {
+        var chosen = ChosenOf(group);
+        return chosen is null
+            ? (L10n.Tr("L.Conflict_StatusUnresolved"), false)
+            : (L10n.TrF("L.Conflict_StatusChosen", chosen), true);
+    }
+
     /// <summary>这一组要不要留下：输出路径、任一候选的服装名、任一候选的模组名，
     /// 命中<b>任一</b>关键字即算留下（切词见 <see cref="GroupRules.SplitKeywords"/>）。
     /// 走 <see cref="TextFilter.MatchesAny"/> 而不是 <see cref="TextFilter.Matches"/>：后者是别的
@@ -332,7 +380,12 @@ public partial class OutputConflictPage : UserControl
         UnresolvedLabel.Visibility = rest > 0 ? Visibility.Visible : Visibility.Collapsed;
     }
 
-    /// <summary>左栏列表的滚动宿主：ListBox 模板里那块固定叫 <c>PART_ScrollViewer</c>。</summary>
+    /// <summary>左栏列表的滚动宿主。<b>这条现在是空转的</b>：Controls.xaml 里 ListBox 模板那块
+    /// ScrollViewer 没有名字，按 <c>PART_ScrollViewer</c> 找只能拿到 null，于是
+    /// <see cref="RebuildGroups"/> 里"记下偏移再放回"从未生效——偏移恒为 0，重建完就是顶部。
+    /// 实机量到的症状是改一次赢家左栏整列弹回顶部（那时每次改动都走重建）。改归属现在不重建了
+    /// （见 <see cref="SaveAndRefresh"/>），剩下的触发者是打字过滤。要修从这里改：
+    /// 走视觉树取第一个 ScrollViewer。</summary>
     private ScrollViewer? GroupScroller =>
         GroupList.Template?.FindName("PART_ScrollViewer", GroupList) as ScrollViewer;
 
@@ -378,21 +431,14 @@ public partial class OutputConflictPage : UserControl
         var rows = new List<GroupRow>(kept.Count);
         foreach (var (group, groupName, intra) in kept)
         {
-            var chosen = ChosenOf(group);
-            rows.Add(new GroupRow(
-                group,
-                SplitTarget(group.TargetDisplay).Name,
-                chosen is null
-                    ? L10n.Tr("L.Conflict_StatusUnresolved")
-                    : L10n.TrF("L.Conflict_StatusChosen", chosen),
-                chosen is not null,
-                group.TargetDisplay,
-                keys[groupName],
-                intra));
+            var (status, resolved) = StatusOf(group);
+            rows.Add(new GroupRow(group, SplitTarget(group.TargetDisplay).Name, status, resolved,
+                group.TargetDisplay, keys[groupName], intra));
         }
 
-        // 换 ItemsSource 会把左栏的滚动位置归零：改一个赢家要整表重建（行是不可变记录），
-        // 但用户正在翻的那一屏不该被弹回顶部。记下偏移，重建后原样放回。
+        // 换 ItemsSource 会把左栏的滚动位置归零：过滤与分组变了要整表重造（分组头里的计数按筛完的
+        // 行算，键对象也得换一批），所以这里记下偏移、重建后放回——究竟放不放得回另说，见 GroupScroller。
+        // 改一组归属不走这条路，见 SaveAndRefresh。
         var offset = GroupScroller?.VerticalOffset ?? 0;
         _rebuilding = true;
         GroupList.ItemsSource = BuildGroupedView(rows, grouping);
@@ -498,16 +544,16 @@ public partial class OutputConflictPage : UserControl
     /// 为"用户会遇到"准备的——菜单只挂在分组头上，PlacementTarget 必然是其中一个；它挡的是
     /// 模板被改坏之后"右键哪一组都把别的全折了"这种更难查的错法。
     /// </para></summary>
-    private static ConflictGroupKey? MenuAnchor(object sender)
-    {
-        if (sender is not MenuItem item)
-            return null;
-        var menu = ItemsControl.ItemsControlFromItemContainer(item) as ContextMenu
-                   ?? item.Parent as ContextMenu;
-        return menu?.PlacementTarget is FrameworkElement { DataContext: CollectionViewGroup group }
+    private static ConflictGroupKey? MenuAnchor(object sender) =>
+        MenuOf(sender)?.PlacementTarget is FrameworkElement { DataContext: CollectionViewGroup group }
             ? group.Name as ConflictGroupKey
             : null;
-    }
+
+    /// <summary>被右键的那一项所在的菜单。共享实例不在逻辑树上，只能从容器或 Parent 找回来。</summary>
+    private static ContextMenu? MenuOf(object sender) =>
+        sender is not MenuItem item
+            ? null
+            : ItemsControl.ItemsControlFromItemContainer(item) as ContextMenu ?? item.Parent as ContextMenu;
 
     /// <summary>「全部展开」：当前列出的每个分组头都展开。</summary>
     private void ExpandAllGroups_Click(object sender, RoutedEventArgs e) =>
@@ -1308,28 +1354,39 @@ public partial class OutputConflictPage : UserControl
         menu.PlacementTarget = source;
         // 这颗在窗口最底下的操作行上：往下方开就会被屏幕边缘切掉，菜单得朝上长
         menu.Placement = PlacementMode.Top;
-        BuildOwnerMenu();
+        BuildOwnerMenu(VisibleGroups());
         menu.IsOpen = true;
     }
 
-    /// <summary>「按模组指定」的项 = 当前列出的那些冲突里出过候选的模组，按"能定几组"降序。
-    /// 每次弹出前整份重建：模组是数据，过滤词一改范围就跟着变，预建好的菜单必然过期。</summary>
-    private void BuildOwnerMenu()
+    /// <summary>「按模组指定」的项 = <paramref name="scope"/> 里出过候选的模组，按"能定几组"降序。
+    /// 每次弹出前整份重建：模组是数据，过滤词与所选分组一改范围就跟着变，预建好的菜单必然过期。
+    /// <para>
+    /// <paramref name="groupLabel"/> 非空 = 这一次是从某个分组头进来的，范围只有该组卷入的那些冲突。
+    /// 那就必须把"现在圈的是哪一组、共几组"写在菜单第一行：同一颗菜单在"全部 581 组"和
+    /// "本组 286 组"之间长得一模一样，靠记忆区分迟早指错。
+    /// </para></summary>
+    private void BuildOwnerMenu(IReadOnlyList<OutputConflictGroup> scope, string? groupLabel = null)
     {
         if (_ownerMenu is not { } menu)
             return;
         menu.Items.Clear();
-        var tally = OutputConflicts.OwnerTally(VisibleGroups());
+        if (groupLabel is not null)
+            menu.Items.Add(new MenuItem
+            {
+                Header = L10n.TrF("L.Conflict_PickOwnerGroupHeader", groupLabel, scope.Count),
+                IsEnabled = false,
+            });
+        var tally = OutputConflicts.OwnerTally(scope);
         if (tally.Count == 0)
         {
             menu.Items.Add(new MenuItem { Header = L10n.Tr("L.Conflict_PickOwnerEmpty"), IsEnabled = false });
             return;
         }
         foreach (var (owner, count) in tally)
-            menu.Items.Add(OwnerItem(owner, count));
+            menu.Items.Add(OwnerItem(owner, count, scope));
     }
 
-    private MenuItem OwnerItem(string owner, int count)
+    private MenuItem OwnerItem(string owner, int count, IReadOnlyList<OutputConflictGroup> scope)
     {
         var text = L10n.TrF("L.Conflict_PickOwnerItem", owner, count);
         var item = new MenuItem
@@ -1348,7 +1405,7 @@ public partial class OutputConflictPage : UserControl
             },
             Tag = owner,
         };
-        item.Click += (_, _) => ApplyOwner(owner);
+        item.Click += (_, _) => ApplyOwner(owner, scope);
         return item;
     }
 
@@ -1368,22 +1425,84 @@ public partial class OutputConflictPage : UserControl
         if (row.OwnerLabel is not { } owner)
             return;
         menu.Items.Add(new Separator());
-        var count = VisibleGroups().Count(g => g.Candidates.Any(c => c.OwnerLabel == owner));
-        menu.Items.Add(OwnerItem(owner, count));
+        var scope = VisibleGroups();
+        var count = scope.Count(g => g.Candidates.Any(c => c.OwnerLabel == owner));
+        menu.Items.Add(OwnerItem(owner, count, scope));
     }
 
-    private void ApplyOwner(string owner)
+    /// <summary>把 <paramref name="owner"/> 定给 <paramref name="scope"/> 里它有候选的那些组。
+    /// 范围是建菜单那一刻算好递进来的，不是再查一次"当前列出的"：用户在菜单开着的时候改了过滤词，
+    /// 指的还得是他在项上看到的那个 N。</summary>
+    private void ApplyOwner(string owner, IReadOnlyList<OutputConflictGroup> scope)
     {
         if (_request is null)
             return;
-        _working = OutputConflicts.PickOwner(VisibleGroups(), owner, _working);
+        _working = OutputConflicts.PickOwner(scope, owner, _working);
         SaveAndRefresh();
     }
 
+    /// <summary>某个分组卷入的那些冲突（= 左栏该分组头下面列着的行）。一条冲突可能同时挂在
+    /// 几个分组下，按 <see cref="OutputConflictGroup"/> 去重；分组键是引用相等的类，所以认键就认引用。</summary>
+    private List<OutputConflictGroup> GroupConflicts(ConflictGroupKey key) =>
+        GroupList.ItemsSource is not IEnumerable source
+            ? []
+            : source.OfType<GroupRow>()
+                .Where(r => ReferenceEquals(r.GroupKey, key))
+                .Select(r => r.Group).Distinct().ToList();
+
+    /// <summary>分组头右键菜单里的「本组按模组指定…」：把该组卷入的冲突圈出来，弹同一颗模组菜单。
+    /// <para>
+    /// 它是「只看某组」+ 底部那颗的合体，但不是同一件事：走那条路要先改掉左栏的过滤，
+    /// 用完还得改回去；而"给这一组定个归属"本来就不该以换一屏内容为代价。
+    /// </para>
+    /// <para>
+    /// 菜单在父菜单的 Click 里直接开会被父菜单收尾时的焦点恢复关掉（与候选行那颗同一类时序问题），
+    /// 所以推一拍再开。
+    /// </para></summary>
+    private void PickOwnerForGroup_Click(object sender, RoutedEventArgs e)
+    {
+        if (_ownerMenu is not { } menu)
+            return;
+        // 锚点与被右键的那个分组头都挂在**分组菜单**上，不是模组菜单：从 _ownerMenu 身上取
+        // PlacementTarget 只会拿到它上一次被谁弹开时留下的东西（首用是 null），
+        // 于是 PlacementTarget 为空、MousePoint 无处可依，表现是"点了那一项什么都没发生"。
+        if (MenuOf(sender)?.PlacementTarget is not FrameworkElement { DataContext: CollectionViewGroup grp } target)
+            return;
+        if (grp.Name is not ConflictGroupKey anchor)
+            return;
+        var scope = GroupConflicts(anchor);
+        var label = anchor.Name.Length == 0 ? L10n.Tr("L.Conflict_Ungrouped") : anchor.Name;
+        Dispatcher.BeginInvoke(() =>
+        {
+            menu.PlacementTarget = target;
+            menu.Placement = PlacementMode.MousePoint;
+            BuildOwnerMenu(scope, label);
+            menu.IsOpen = true;
+        }, System.Windows.Threading.DispatcherPriority.Input);
+    }
+
+    /// <summary>存盘 + 刷新，但<b>不重建左栏</b>。
+    /// <para>
+    /// 定一组归属真正变的只有那一两行的状态文字，而换 ItemsSource 等于让 WPF 把整列容器丢掉重造。
+    /// 实机量出来的症状：581 行的清单上每点一次赢家，左栏整列弹回顶部（重建之后没有偏移可谈，
+    /// 见 <see cref="GroupScroller"/>）。行是可观察的（见 <see cref="GroupRow"/>），
+    /// 就地改属性就够了——不重造，也就没有会弹回的位置。
+    /// </para>
+    /// <para>
+    /// 批量那三颗同理——它们一次改掉几百组，改的仍然只是状态：列表成员只看过滤词/是否跨模组/「只看某组」
+    /// 那三道筛子（<see cref="RebuildGroups"/> 里没有一个看归属），分组头计数与页顶那句说明同样与归属无关，
+    /// 所以都不必重造。要重建的是过滤、换语言、分组本身变了，那些直接走 <see cref="RebuildGroups"/>。
+    /// </para></summary>
     private void SaveAndRefresh()
     {
-        _request?.Save(_working);
-        RebuildGroups();
+        if (_request is null)
+            return;
+        _request.Save(_working);
+        if (GroupList.ItemsSource is IEnumerable source)
+            foreach (var row in source.OfType<GroupRow>())
+                (row.Status, row.Resolved) = StatusOf(row.Group);
+        UpdateProgress();
+        RebuildCandidates();
     }
 
     private void Export_Click(object sender, RoutedEventArgs e)

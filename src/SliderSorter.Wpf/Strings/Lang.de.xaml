@@ -283,6 +283,8 @@ Die Release-Seite zum Herunterladen öffnen?</sys:String>
     <sys:String x:Key="L.Conflict_PickOwnerAllTip" xml:space="preserve">Öffnet ein Menü der Mods: Jede gelistete Gruppe mit einem Kandidaten dieses Mods geht an ihn; Gruppen ohne diesen Mod bleiben unangetastet. Die automatische Wahl nach Mod-Priorität nimmt immer die stärkste Schicht — hier benennen Sie das Mod selbst.</sys:String>
     <sys:String x:Key="L.Conflict_PickOwnerItem" xml:space="preserve">{0} · {1} Gruppen</sys:String>
     <sys:String x:Key="L.Conflict_PickOwnerEmpty" xml:space="preserve">Kein Mod in der aktuellen Liste zum Zuweisen</sys:String>
+    <sys:String x:Key="L.Conflict_PickOwnerGroup" xml:space="preserve">Diese Gruppe einem Mod zuweisen…</sys:String>
+    <sys:String x:Key="L.Conflict_PickOwnerGroupHeader" xml:space="preserve">Gruppe: {0} · {1} Gruppen</sys:String>
     <sys:String x:Key="L.Conflict_SetWinner" xml:space="preserve">Als Gewinner dieser Gruppe setzen</sys:String>
     <sys:String x:Key="L.Conflict_Export" xml:space="preserve">In BodySlide schreiben…</sys:String>
     <sys:String x:Key="L.Conflict_ExportTip" xml:space="preserve">Schreibt die Wahl in die BuildSelection.xml im aktuellen Ausgabeziel — derselbe BodySlide-Ordner wie die Gruppendateien (im Modus "Eigener Ordner" dieser Ordner selbst; unter MO2 die Datei, die BodySlide tatsächlich liest); der Bestätigungsdialog zeigt zuerst den vollständigen Pfad, die bisherige Datei bleibt als .bak erhalten</sys:String>

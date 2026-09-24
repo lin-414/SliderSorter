@@ -281,6 +281,8 @@ Open the release page to download?</sys:String>
     <sys:String x:Key="L.Conflict_PickOwnerAllTip" xml:space="preserve">Opens a menu of mods: every listed group the chosen mod has a candidate in goes to it; groups it is not part of stay as they are. Unlike 'Follow mod priority', which always hands the group to the strongest layer, here you name the mod.</sys:String>
     <sys:String x:Key="L.Conflict_PickOwnerItem" xml:space="preserve">{0} · {1} groups</sys:String>
     <sys:String x:Key="L.Conflict_PickOwnerEmpty" xml:space="preserve">No mod in the current list to assign</sys:String>
+    <sys:String x:Key="L.Conflict_PickOwnerGroup" xml:space="preserve">Assign this group to a mod…</sys:String>
+    <sys:String x:Key="L.Conflict_PickOwnerGroupHeader" xml:space="preserve">Group: {0} · {1} groups</sys:String>
     <sys:String x:Key="L.Conflict_SetWinner" xml:space="preserve">Make it the winner of this group</sys:String>
     <sys:String x:Key="L.Conflict_Export" xml:space="preserve">Write to BodySlide…</sys:String>
     <sys:String x:Key="L.Conflict_ExportTip" xml:space="preserve">Writes the choices into BuildSelection.xml inside the current output location — the same BodySlide folder as the group files (in Custom mode the chosen folder itself; under MO2 the copy BodySlide actually reads); the confirm box lists the full path first, and the previous file is kept as .bak</sys:String>

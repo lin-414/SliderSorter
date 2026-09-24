@@ -281,6 +281,8 @@
     <sys:String x:Key="L.Conflict_PickOwnerAllTip" xml:space="preserve">弹菜单挑一个模组：当前列出的每一组里，只要它有候选就都交给它；它没候选的组不动。与「全部按模组优先级」的分别是那颗交给最强层，这颗由你点名。</sys:String>
     <sys:String x:Key="L.Conflict_PickOwnerItem" xml:space="preserve">{0} · {1} 组</sys:String>
     <sys:String x:Key="L.Conflict_PickOwnerEmpty" xml:space="preserve">当前列表里没有可指定的模组</sys:String>
+    <sys:String x:Key="L.Conflict_PickOwnerGroup" xml:space="preserve">本组按模组指定…</sys:String>
+    <sys:String x:Key="L.Conflict_PickOwnerGroupHeader" xml:space="preserve">分组：{0} · 共 {1} 组</sys:String>
     <sys:String x:Key="L.Conflict_SetWinner" xml:space="preserve">设为这一组的赢家</sys:String>
     <sys:String x:Key="L.Conflict_Export" xml:space="preserve">写入 BodySlide…</sys:String>
     <sys:String x:Key="L.Conflict_ExportTip" xml:space="preserve">把选定结果写进 BuildSelection.xml，落点在当前输出位置里——与分组文件同一个 BodySlide 目录（「自定义」模式下就是所选目录本身；MO2 下正是 BodySlide 实际读取它的那一份）；写之前的确认框会列出全路径，原文件先备份成 .bak</sys:String>

@@ -188,6 +188,55 @@ public class OutputConflictPageTests
         Assert.Equal(new[] { false, true, false }, outcome.Checked);
     }
 
+    /// <summary>点一次赢家只该换掉左栏那一行的状态文字，<b>不许把整列重造</b>
+    /// （用户报障：在中间选一件服装，左边 581 行整列闪一下）。
+    /// <para>
+    /// 换 ItemsSource 会让 WPF 把左栏所有容器丢掉重造，滚动位置还得事后补回去。这条钉住
+    /// "ItemsSource 与行对象还是原来那批"，同时要求状态文字确实跟着变了——否则就成了"点了没反应"。
+    /// </para>
+    /// <para>
+    /// 只比文本是照不出重造的：整表重建之后每一行的字一模一样。必须比引用。
+    /// </para></summary>
+    [Fact]
+    public void ChoosingAWinnerUpdatesTheLeftRowInPlace()
+    {
+        var groups = new[]
+        {
+            Group(OutPath, ("Alpha Suit", "ModA", 0), ("Beta Suit", "ModB", 1)),
+            Group(OutPath + "2", ("Gamma Suit", "ModC", 0), ("Delta Suit", "ModD", 1)),
+        };
+
+        var outcome = WithPage(Request(groups), page =>
+        {
+            var list = Box(page, "GroupList");
+            var source = list.ItemsSource;
+            var rows = list.Items.Cast<object>().ToList();
+            var before = string.Join("|", TextsOf(list));
+
+            var radios = Descendants<RadioButton>(Box(page, "CandidateList"));
+            radios[1].IsChecked = true;
+            radios[1].RaiseEvent(new RoutedEventArgs(ButtonBase.ClickEvent));
+            WpfHost.Pump();
+            page.UpdateLayout();
+
+            return new
+            {
+                Source = source,
+                StillThere = ReferenceEquals(source, list.ItemsSource),
+                Rows = rows,
+                After = list.Items.Cast<object>().ToList(),
+                TextsBefore = before,
+                TextsAfter = string.Join("|", TextsOf(list)),
+            };
+        });
+
+        Assert.True(outcome.StillThere, "左栏换了 ItemsSource：整列容器会被重造，用户看到的就是那一下闪烁");
+        Assert.Equal(outcome.Rows.Count, outcome.After.Count);
+        for (var i = 0; i < outcome.Rows.Count; i++)
+            Assert.Same(outcome.Rows[i], outcome.After[i]);
+        Assert.NotEqual(outcome.TextsBefore, outcome.TextsAfter);
+    }
+
     /// <summary>模拟"右键某一行"：在挂了处理器的那个 Grid 上 raise 一条<b>隧道</b>事件
     /// （<c>PreviewMouseRightButtonUp</c>）。
     /// <para>
@@ -239,6 +288,51 @@ public class OutputConflictPageTests
         Assert.Equal(0, outcome.Clicks);
         Assert.Equal("Beta Suit", outcome.Title); // 预览跟着选中的行走，这一半手势没有变
         Assert.Equal(2, outcome.Items);
+    }
+
+    [Fact]
+    public void TheGroupHeaderMenuAssignsOnlyThatGroupsConflicts()
+    {
+        // 泳装组的冲突里有 ModA/ModB，护甲组的冲突里有 ModB/ModD。
+        // 从「泳装」的分组头进去，菜单里就不该出现 ModD，点下去也不该碰护甲那条冲突。
+        var bikini = Group(OutPath, ("Bikini Red", "ModA", 0), ("Bikini Blue", "ModB", 1));
+        var armor = Group(OutPath + "2", ("Armor Steel", "ModB", 0), ("Armor Iron", "ModD", 1));
+        var saved = new List<IReadOnlyDictionary<string, string>>();
+        var request = Request([bikini, armor], dict => saved.Add(dict),
+            userGroups: [UserGroup("泳装", "Bikini Red"), UserGroup("护甲", "Armor Steel")]);
+
+        var outcome = WithPage(request, page =>
+        {
+            InvokeGroupMenu(page, "泳装", "本组按模组指定…");
+            var menu = (ContextMenu)page.Resources["PickOwnerMenu"];
+            var items = menu.Items.OfType<MenuItem>().ToList();
+            var result = new
+            {
+                Open = menu.IsOpen,
+                // 光断言 IsOpen 不够：PlacementTarget 为空时离屏宿主照样"开着"，真实窗口里
+                // 却什么都不画（这条就是这么在实机翻车的）。锚点必须是被右键的那个分组头。
+                Anchored = ReferenceEquals(menu.PlacementTarget, GroupHeader(page, "泳装")),
+                // 第一行是"现在圈的是哪一组、共几组"：同一颗菜单在"全部"和"本组"之间长得一样，
+                // 不写清楚迟早指错。它只是说明，不该被点
+                Header = items[0].Header as string,
+                HeaderEnabled = items[0].IsEnabled,
+                Tags = items.Skip(1).Select(i => i.Tag as string).ToList(),
+            };
+            Click(items.First(i => (string?)i.Tag == "ModB"));
+            WpfHost.Pump();
+            menu.IsOpen = false;
+            return (result, Picked: saved[^1].ToDictionary(e => e.Key, e => e.Value, StringComparer.Ordinal));
+        });
+
+        Assert.True(outcome.result.Open);
+        Assert.True(outcome.result.Anchored);
+        Assert.Equal("L.Conflict_PickOwnerGroupHeader", outcome.result.Header);
+        Assert.False(outcome.result.HeaderEnabled);
+        // ModD 只出现在另一个组的冲突里：它连进菜单的资格都没有
+        Assert.Equal(["ModA", "ModB"], outcome.result.Tags);
+        // 只有泳装那条冲突被改，护甲那条原样不动
+        Assert.Equal(new[] { OutPath }, outcome.Picked.Keys);
+        Assert.Equal("Bikini Blue", outcome.Picked[OutPath]);
     }
 
     [Fact]
@@ -943,7 +1037,9 @@ public class OutputConflictPageTests
                 AfterExpand: collapsed.ToList());
         });
 
-        Assert.Equal(["全部展开", "全部折叠", "折叠其他"], outcome.Items);
+        // 前三项是整列的展开/折叠，第四项改归属，隔了一道分隔符（Separator 不是 MenuItem，
+        // 所以这里只有四条）
+        Assert.Equal(["全部展开", "全部折叠", "折叠其他", "本组按模组指定…"], outcome.Items);
         // 两个分组各一行，全收起后一行都不该剩下（头本身还在，否则没法再展开）
         Assert.Equal(0, outcome.Folded.Rows);
         Assert.Equal(new bool?[] { false, false }, outcome.Folded.Checked);

@@ -276,6 +276,8 @@
     <sys:String x:Key="L.Conflict_PickOwnerAllTip" xml:space="preserve">Открывает список модов: каждая показанная группа, где у выбранного мода есть кандидат, достаётся ему; группы без него остаются как были. Автоматический выбор по приоритету модов всегда берёт самый сильный слой — здесь мод указываете вы.</sys:String>
     <sys:String x:Key="L.Conflict_PickOwnerItem" xml:space="preserve">{0} · {1} гр.</sys:String>
     <sys:String x:Key="L.Conflict_PickOwnerEmpty" xml:space="preserve">В текущем списке нет модов для назначения</sys:String>
+    <sys:String x:Key="L.Conflict_PickOwnerGroup" xml:space="preserve">Назначить этой группе мод…</sys:String>
+    <sys:String x:Key="L.Conflict_PickOwnerGroupHeader" xml:space="preserve">Группа: {0} · {1} гр.</sys:String>
     <sys:String x:Key="L.Conflict_SetWinner" xml:space="preserve">Сделать её победителем этой группы</sys:String>
     <sys:String x:Key="L.Conflict_Export" xml:space="preserve">Записать в BodySlide…</sys:String>
     <sys:String x:Key="L.Conflict_ExportTip" xml:space="preserve">Сохраняет выбор в BuildSelection.xml внутри текущего места вывода — та же папка BodySlide, что и у файлов групп (в режиме «Своя папка» — сам выбранный каталог; под MO2 именно её читает BodySlide); перед записью показывается полный путь, прежний файл сохраняется как .bak</sys:String>

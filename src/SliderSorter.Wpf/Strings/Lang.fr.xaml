@@ -276,6 +276,8 @@
     <sys:String x:Key="L.Conflict_PickOwnerAllTip" xml:space="preserve">Ouvre la liste des mods : chaque groupe affiché où le mod choisi a un candidat lui est attribué ; les groupes sans lui restent tels quels. Le choix automatique par priorité de mod prend toujours la couche la plus forte — ici, c'est vous qui nommez le mod.</sys:String>
     <sys:String x:Key="L.Conflict_PickOwnerItem" xml:space="preserve">{0} · {1} groupes</sys:String>
     <sys:String x:Key="L.Conflict_PickOwnerEmpty" xml:space="preserve">Aucun mod à attribuer dans la liste actuelle</sys:String>
+    <sys:String x:Key="L.Conflict_PickOwnerGroup" xml:space="preserve">Attribuer ce groupe à un mod…</sys:String>
+    <sys:String x:Key="L.Conflict_PickOwnerGroupHeader" xml:space="preserve">Groupe : {0} · {1} groupes</sys:String>
     <sys:String x:Key="L.Conflict_SetWinner" xml:space="preserve">En faire le gagnant de ce groupe</sys:String>
     <sys:String x:Key="L.Conflict_Export" xml:space="preserve">Écrire pour BodySlide…</sys:String>
     <sys:String x:Key="L.Conflict_ExportTip" xml:space="preserve">Écrit les choix dans BuildSelection.xml au sein du répertoire de sortie actuel — le même dossier BodySlide que les fichiers de groupes (en mode « Personnalisé », le dossier choisi lui-même ; sous MO2, celui que BodySlide lit réellement) ; la boîte de confirmation affiche le chemin complet, l'ancien fichier est sauvegardé en .bak</sys:String>

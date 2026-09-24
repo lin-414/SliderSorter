@@ -48,6 +48,10 @@
             <MenuItem Header="{DynamicResource L.Tree_ExpandAll}" Click="ExpandAllGroups_Click" />
             <MenuItem Header="{DynamicResource L.Tree_CollapseAll}" Click="CollapseAllGroups_Click" />
             <MenuItem Header="{DynamicResource L.Tree_CollapseOthers}" Click="CollapseOtherGroups_Click" />
+            <!-- 前三项是整列的展开/折叠，这一项改的是归属，所以隔开一档。它按被右键的那一组圈范围，
+                 弹的是底部那颗「按模组指定…」的同一份菜单（限高、限宽、可滚都在那边）。 -->
+            <Separator />
+            <MenuItem Header="{DynamicResource L.Conflict_PickOwnerGroup}" Click="PickOwnerForGroup_Click" />
         </ContextMenu>
 
         <!-- ── 「按模组指定」与候选行的右键菜单：都是空壳，项在弹出前由代码现建 ──
