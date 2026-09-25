@@ -12,7 +12,7 @@
     <RootNamespace>SliderSorter.Wpf</RootNamespace>
     <AssemblyName>SliderSorter</AssemblyName>
     <ApplicationIcon>app.ico</ApplicationIcon>
-    <Version>1.0.0</Version>
+    <Version>1.0.1</Version>
     <Product>SliderSorter</Product>
     <Authors>lin-414</Authors>
     <RepositoryUrl>https://github.com/lin-414/SliderSorter</RepositoryUrl>
