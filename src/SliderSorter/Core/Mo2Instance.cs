@@ -43,7 +43,8 @@ public class Mo2Instance
                 _ => CoreStrings.Get("L.Core_InstanceManual"),
             };
             var game = string.IsNullOrEmpty(GameName) ? CoreStrings.Get("L.Core_InstanceNoGame") : GameName;
-            return $"{Name}（{kind} · {game}）";
+            // 括号与间隔符也在资源里：全角括号是中文排版的形状，en/de/ru/fr 必须用半角
+            return CoreStrings.Format("L.Core_InstanceDisplay", Name, kind, game);
         }
     }
 

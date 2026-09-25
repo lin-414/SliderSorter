@@ -7,7 +7,7 @@ namespace SliderSorter.Core;
 public static class GroupRules
 {
     public static List<string> SplitKeywords(string input) =>
-        (input ?? "").Split([';', '；', ',', '，'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+        (input ?? "").Split([';', '；', ',', '，'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries) // i18n-ok：全角分号/逗号是解析用的输入分隔符（中文输入法），不是文案
             .ToList();
 
     /// <summary>

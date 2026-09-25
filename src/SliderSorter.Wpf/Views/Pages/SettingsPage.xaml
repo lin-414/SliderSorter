@@ -66,8 +66,8 @@
                             <TextBlock Grid.Row="0" Grid.Column="0" Text="{DynamicResource L.Main_Instance}"
                                        Style="{StaticResource FieldLabel}" />
                             <ComboBox Grid.Row="0" Grid.Column="1" Grid.ColumnSpan="2" Style="{StaticResource FieldCombo}"
-                                      ItemsSource="{Binding Instances}" SelectedItem="{Binding SelectedInstance}"
-                                      DisplayMemberPath="DisplayName" />
+                                      ItemsSource="{Binding InstanceItems}" SelectedValuePath="Instance"
+                                      SelectedValue="{Binding SelectedInstance}" DisplayMemberPath="DisplayName" />
 
                             <TextBlock Grid.Row="1" Grid.Column="0" Text="{DynamicResource L.Main_Profile}"
                                        Style="{StaticResource FieldLabel}" />

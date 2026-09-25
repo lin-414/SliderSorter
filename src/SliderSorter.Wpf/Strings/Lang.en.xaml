@@ -555,6 +555,7 @@ One file per group, named after the group: {1}{2} ({3}).
     <sys:String x:Key="L.Core_InstanceGlobal">global</sys:String>
     <sys:String x:Key="L.Core_InstanceManual">manual</sys:String>
     <sys:String x:Key="L.Core_InstanceNoGame">no game configured</sys:String>
+    <sys:String x:Key="L.Core_InstanceDisplay" xml:space="preserve">{0} ({1} · {2})</sys:String>
     <sys:String x:Key="L.Core_FileUnnamedGroup">Unnamed group</sys:String>
     <sys:String x:Key="L.Core_FileEmpty">empty file</sys:String>
     <sys:String x:Key="L.Core_FileNotSliderGroups">missing the &lt;SliderGroups&gt; root element — not a BodySlide group file</sys:String>

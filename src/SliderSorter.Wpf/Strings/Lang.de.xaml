@@ -557,6 +557,7 @@ Insgesamt {4} Mitglied(er).</sys:String>
     <sys:String x:Key="L.Core_InstanceGlobal">global</sys:String>
     <sys:String x:Key="L.Core_InstanceManual">manuell</sys:String>
     <sys:String x:Key="L.Core_InstanceNoGame">kein Spiel eingerichtet</sys:String>
+    <sys:String x:Key="L.Core_InstanceDisplay" xml:space="preserve">{0} ({1} · {2})</sys:String>
     <sys:String x:Key="L.Core_FileUnnamedGroup">Unbenannte Gruppe</sys:String>
     <sys:String x:Key="L.Core_FileEmpty">leere Datei</sys:String>
     <sys:String x:Key="L.Core_FileNotSliderGroups">das Wurzelelement &lt;SliderGroups&gt; fehlt — keine BodySlide-Gruppendatei</sys:String>

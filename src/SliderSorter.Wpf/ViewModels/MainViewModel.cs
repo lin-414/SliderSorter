@@ -128,6 +128,9 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty] private string _windowTitle = AppTitle;
     [ObservableProperty] private bool _isDirty;
     [ObservableProperty] private ObservableCollection<Mo2Instance> _instances = [];
+    // 实例下拉的条目：Mo2Instance 包一层 INPC（见 InstanceItem）——DisplayName 是现拼串，
+    // 不包一层的话换语言后这格文字定死在旧语言
+    [ObservableProperty] private ObservableCollection<InstanceItem> _instanceItems = [];
     [ObservableProperty] private Mo2Instance? _selectedInstance;
     [ObservableProperty] private ObservableCollection<string> _profiles = [];
     [ObservableProperty] private string? _selectedProfile;
@@ -549,6 +552,11 @@ public partial class MainViewModel : ObservableObject
         SelectedLanguageOption = LanguageOptions.FirstOrDefault(o => o.Value == currentLang);
         _localizing = false;
 
+        // 实例下拉的显示串跟着换语言走：逐项发通知让绑定重读 DisplayName（机制见 InstanceItem）。
+        // 换集合外壳、回填同引用都试过——WPF 认为"内容没变"，选中框的文本不会重建。
+        foreach (var item in InstanceItems)
+            item.RefreshDisplay();
+
         if (Resolution is not null)
         {
             var game = string.IsNullOrEmpty(SelectedInstance?.GameName) ? L10n.Tr("L.Word_Unknown") : SelectedInstance!.GameName;
@@ -619,6 +627,8 @@ public partial class MainViewModel : ObservableObject
     {
         var found = Mo2Discovery.Discover(Settings.ExtraMo2Dirs);
         Instances = new ObservableCollection<Mo2Instance>(found);
+        // 条目集合先于 SelectedInstance：SelectedValue 回填时下拉要能在条目里按 Instance 找到它
+        InstanceItems = new ObservableCollection<InstanceItem>(found.Select(i => new InstanceItem(i)));
         var selected = found.FirstOrDefault(i => i.InstanceDir == Settings.LastInstanceDir) ?? found.FirstOrDefault();
         SelectedInstance = selected;
         Log(L10n.TrF("L.Log_InstancesFound", found.Count));

@@ -548,6 +548,7 @@
     <sys:String x:Key="L.Core_InstanceGlobal">глобальный</sys:String>
     <sys:String x:Key="L.Core_InstanceManual">вручную</sys:String>
     <sys:String x:Key="L.Core_InstanceNoGame">игра не настроена</sys:String>
+    <sys:String x:Key="L.Core_InstanceDisplay" xml:space="preserve">{0} ({1} · {2})</sys:String>
     <sys:String x:Key="L.Core_FileUnnamedGroup">Группа без имени</sys:String>
     <sys:String x:Key="L.Core_FileEmpty">пустой файл</sys:String>
     <sys:String x:Key="L.Core_FileNotSliderGroups">отсутствует корневой элемент &lt;SliderGroups&gt; — это не файл групп BodySlide</sys:String>

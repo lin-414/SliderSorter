@@ -95,4 +95,33 @@ public class Mo2InstanceTests
         Assert.Equal(new[] { "modded", "vanilla" }, profiles);
         Assert.Equal("vanilla", instance.SelectedProfile);
     }
+
+    /// <summary>DisplayName 的整串格式在语言文件里（括号与间隔符是排版形状，zh 全角、其余半角），
+    /// 这里钉的是取词契约：格式键是 L.Core_InstanceDisplay，实参顺序固定为 名字、种类、游戏名。
+    /// 实参顺序错了不会抛异常，只会静默把字段对调——与 CoreStringsTests 钉的是同一条规则。</summary>
+    [Fact]
+    public void DisplayNameBuildsFromResourceWithArgumentsInOrder()
+    {
+        var saved = CoreStrings.Localizer;
+        try
+        {
+            object?[]? displayArgs = null;
+            CoreStrings.Localizer = (key, args) =>
+            {
+                if (key == "L.Core_InstanceDisplay")
+                    displayArgs = args;
+                return "kind";
+            };
+            var instance = Create("[General]\ngameName=Skyrim Special Edition\n", out var temp);
+            temp.Dispose();
+
+            // 格式键本身也交给取词器：返回值没有占位符时 string.Format 原样吐回，即整串
+            Assert.Equal("kind", instance.DisplayName);
+            Assert.Equal(new object?[] { "MyInstance", "kind", "Skyrim Special Edition" }, displayArgs);
+        }
+        finally
+        {
+            CoreStrings.Localizer = saved;
+        }
+    }
 }

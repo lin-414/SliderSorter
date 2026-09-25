@@ -556,6 +556,7 @@
     <sys:String x:Key="L.Core_InstanceGlobal">全局</sys:String>
     <sys:String x:Key="L.Core_InstanceManual">手动</sys:String>
     <sys:String x:Key="L.Core_InstanceNoGame">未配置游戏</sys:String>
+    <sys:String x:Key="L.Core_InstanceDisplay" xml:space="preserve">{0}（{1} · {2}）</sys:String>
     <sys:String x:Key="L.Core_FileUnnamedGroup">未命名组</sys:String>
     <sys:String x:Key="L.Core_FileEmpty">空文件</sys:String>
     <sys:String x:Key="L.Core_FileNotSliderGroups">缺少 &lt;SliderGroups&gt; 根元素，不是 BodySlide 分组文件</sys:String>

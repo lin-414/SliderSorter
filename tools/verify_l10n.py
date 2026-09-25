@@ -15,8 +15,9 @@
     6. 资源值里的格式化占位符是否合法、且各语言索引一致
        （不配对的花括号会让 string.Format 抛 FormatException；某语言多出占位符
         而调用点没传对应实参时同样会抛）
-    7. Core 层（无 UI 依赖的类库）的字符串字面量里不得出现中文
-       （Core 经 CoreStrings.Localizer 取词；留中文字面量 = en/de/ru/fr 下日志与诊断报告混中文）
+    7. Core 层（无 UI 依赖的类库）的字符串字面量里不得出现中文或全角标点
+       （Core 经 CoreStrings.Localizer 取词；留中文字面量 = en/de/ru/fr 下日志与诊断报告混中文。
+        解析用的全角分隔符这类「不显示、只当输入吃进来」的字面量，在报告的那一行行尾标 `// i18n-ok` 豁免）
     8. 每个 L.Menu_* 的值都必须带访问键 `(_X)`，且同一层菜单内不重复
        （只有中文有访问键 = 键盘用户在其他三种语言下无法用 Alt 序列操作）
 
@@ -55,7 +56,12 @@ MENU_ITEM = re.compile(r"<(/?)MenuItem\b([^>]*?)(/?)>", re.DOTALL)
 MENU_HEADER = re.compile(r'Header="\{DynamicResource\s+(L\.Menu_[A-Za-z0-9_]+)\}"')
 MENU_OPEN = re.compile(r"<Menu[\s>]")
 
-CJK = re.compile(r"[\u3400-\u9fff\uf900-\ufaff\U00020000-\U0002ffff]")
+# 除汉字外，全角标点（U+FF00-FFEF：（）！：，）与 CJK 符号（U+3000-303F：。「」…）同样
+# 不许进 Core 的字符串字面量——它们是中文排版的形状，en/de/ru/fr 下会原样漏出去。
+# 曾有实例：DisplayName 硬编码全角括号「（…）」，只查汉字的版本拦不住它。
+CJK = re.compile(r"[\u3000-\u303f\u3400-\u9fff\uf900-\ufaff\uff00-\uffef\U00020000-\U0002ffff]")
+# 第 7 节的行内豁免标记：标在报告的那一行行尾，表示这处字面量不是文案（如解析用分隔符）
+I18N_OK = "// i18n-ok"
 
 # Core 项目名（与 WPF 项目同级）；找不到就跳过第 7 节
 CORE_PROJECT_NAME = "SliderSorter"
@@ -491,10 +497,15 @@ def main():
                 if not f.endswith(".cs"):
                     continue
                 path = os.path.join(dirpath, f)
-                for line, lit in csharp_string_literals(read(path)):
-                    if CJK.search(lit):
-                        core_leaks.append(
-                            f"{os.path.relpath(path, root)}:{line}: {lit.strip()[:90]}")
+                text = read(path)
+                src_lines = text.splitlines()
+                for line, lit in csharp_string_literals(text):
+                    if not CJK.search(lit):
+                        continue
+                    if 0 < line <= len(src_lines) and I18N_OK in src_lines[line - 1]:
+                        continue
+                    core_leaks.append(
+                        f"{os.path.relpath(path, root)}:{line}: {lit.strip()[:90]}")
         if core_leaks:
             for e in core_leaks:
                 print(f"  [中文] {e}")

@@ -548,6 +548,7 @@ Un fichier par groupe, nommé d'après le groupe : {1}{2} ({3}).
     <sys:String x:Key="L.Core_InstanceGlobal">globale</sys:String>
     <sys:String x:Key="L.Core_InstanceManual">manuelle</sys:String>
     <sys:String x:Key="L.Core_InstanceNoGame">jeu non configuré</sys:String>
+    <sys:String x:Key="L.Core_InstanceDisplay" xml:space="preserve">{0} ({1} · {2})</sys:String>
     <sys:String x:Key="L.Core_FileUnnamedGroup">Groupe sans nom</sys:String>
     <sys:String x:Key="L.Core_FileEmpty">fichier vide</sys:String>
     <sys:String x:Key="L.Core_FileNotSliderGroups">élément racine &lt;SliderGroups&gt; manquant — ce n'est pas un fichier de groupes BodySlide</sys:String>
