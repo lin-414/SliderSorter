@@ -80,8 +80,8 @@ public class SettingsPageLayoutTests
             },
             ProbeWidth, ProbeHeight);
 
-        // 五节就是五张卡片：工作环境 / 输出设置 / 外观 / 维护 / 帮助与关于。
-        // 数错说明有人把某节拆成了两张卡、或塞了别的卡片级 Border 进来。
+        // 五节就是五张卡片：工作环境 / 输出设置 / 外观 / 维护 / 帮助。
+        // 数错说明有人把两节并回了一张卡、或塞了别的卡片级 Border 进来。
         // 加了新节就改这个数——它是"节与卡一一对应"这条不变式的锚点。
         Assert.Equal(5, cardWidths.Length);
         Assert.All(cardWidths, width => Assert.Equal(panelWidth, width, precision: 1));

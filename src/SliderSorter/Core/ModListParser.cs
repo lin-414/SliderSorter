@@ -18,7 +18,7 @@ public static class ModListParser
     /// <c>MCM设置备份与恢复 MCM Memory - Settings Backup and Restore</c> 这类必须留着。
     /// backup 前面得有个分隔符（空格/括号/连字符/下划线），否则 <c>MyBackup</c> 也会被当成备份。</summary>
     private static readonly Regex BackupRegex =
-        new(@"^(?:.*[\s(\[-])?backup[ _-]?[0-9]*\)?$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+        new(@"^(?:.*[\s(\[\-_])?backup[ _-]?[0-9]*\)?$", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
 
     public static List<ModEntry> Parse(string modListPath)
     {

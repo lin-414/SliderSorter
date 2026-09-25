@@ -32,7 +32,8 @@ namespace SliderSorter.Wpf.Views.Pages;
 /// 左侧列表随过滤重建，所以"哪一组被选中"记在 <see cref="_selectedPath"/> 上而不是列表项对象上。
 /// <para>
 /// 左栏还会按用户自己的分组（「分组生成」页那批）分类：每个分组头下面是"有该组成员卷入"的冲突，
-/// 组内互撞的另挂一枚徽标。分类规则在 <see cref="OutputConflicts.CategorizeByUserGroup"/>，
+/// 组内互撞的另挂一枚徽标，还剩几处没指定的在头右下角跟着每次指定增减（见 <see cref="SaveAndRefresh"/>）。
+/// 分类规则在 <see cref="OutputConflicts.CategorizeByUserGroup"/>，
 /// 这里只负责把它渲染成两级列表（<see cref="ListCollectionView"/> + <c>GroupStyle</c>）。
 /// </para>
 /// <para>
@@ -104,22 +105,27 @@ public partial class OutputConflictPage : UserControl
     /// 同一个分组必须共用**一个实例**，否则会被拆成两个头。
     /// </para>
     /// <para>
-    /// 它还是个可观察对象，因为折叠条的 <c>IsChecked</c> 双向绑在 <see cref="IsExpanded"/> 上：
-    /// 展开态是"这个分组头"自己的状态，挂在键上最自然——挂到页面上就得按组名查表，
-    /// 而每次重建都会换一批键，查表还得自己清理。
+    /// 它还是个可观察对象，原因有二：折叠条的 <c>IsChecked</c> 双向绑在 <see cref="IsExpanded"/> 上
+    /// （展开态是"这个分组头"自己的状态，挂在键上最自然——挂到页面上就得按组名查表，
+    /// 而每次重建都会换一批键，查表还得自己清理）；
+    /// <see cref="UnresolvedText"/> 随归属变、由 <see cref="SaveAndRefresh"/> 就地改写，
+    /// 模板按 <see cref="HasUnresolved"/> 决定那格收不收，两者必须一起通知。
+    /// 其余文案从扫描出来就是死的，不必观察。
     /// </para></summary>
     private sealed class ConflictGroupKey : ObservableObject
     {
         private readonly Action<string, bool> _persist;
         private bool _isExpanded;
+        private string _unresolvedText;
 
         public ConflictGroupKey(string name, string label, string countText, string intraText,
-            bool expanded, Action<string, bool> persist)
+            string unresolvedText, bool expanded, Action<string, bool> persist)
         {
             Name = name;
             Label = label;
             CountText = countText;
             IntraText = intraText;
+            _unresolvedText = unresolvedText;
             _persist = persist;
             // 直接赋字段而不是走属性：构造期设的是初始状态，不该被当成用户动作写回设置
             _isExpanded = expanded;
@@ -130,6 +136,20 @@ public partial class OutputConflictPage : UserControl
         public string CountText { get; }
         public string IntraText { get; }
         public bool HasIntra => IntraText.Length > 0;
+
+        /// <summary>这一分组名下还没指定赢家的冲突，拼好的那句「其中 N 处未指定」；
+        /// 清零后是空串、整格收起。改值时连 <see cref="HasUnresolved"/> 一起报。</summary>
+        public string UnresolvedText
+        {
+            get => _unresolvedText;
+            set
+            {
+                if (SetProperty(ref _unresolvedText, value))
+                    OnPropertyChanged(nameof(HasUnresolved));
+            }
+        }
+
+        public bool HasUnresolved => _unresolvedText.Length > 0;
 
         /// <summary>这一组是否展开。写回设置的是**收起**，所以这里取反——
         /// 设置里存的是"收起的那些分组"，空 = 全展开。</summary>
@@ -195,6 +215,17 @@ public partial class OutputConflictPage : UserControl
     private ContextMenu? _ownerMenu;
     private ContextMenu? _candidateMenu;
 
+    /// <summary>「本组按服装关键字指定…」收关键字的那一步。null = 默认弹 <see cref="InputWindow"/>
+    /// （见 <see cref="PromptKeywordsViaDialog"/>）。抽成可换的字段是因为默认那步是模态框——
+    /// 离屏测试宿主里真弹 ShowDialog 会把测试进程挂死，测试反射换成桩，
+    /// 好让 Click 到存盘的整条链路照常走到。</summary>
+    private Func<string, string, string?>? _keywordPrompt = null;
+
+    private Func<string, string, string?> KeywordPrompt => _keywordPrompt ?? PromptKeywordsViaDialog;
+
+    /// <summary>收关键字对话框的默认实现：宿主是壳窗口，没壳（启动早期/测试）就不挂宿主。</summary>
+    private string? PromptKeywordsViaDialog(string title, string label) => InputWindow.Show(Shell, title, label);
+
     /// <summary>对话框的宿主：页面自己没有窗口身份，取所在的壳窗口。</summary>
     private Window? Shell => Window.GetWindow(this);
 
@@ -202,7 +233,8 @@ public partial class OutputConflictPage : UserControl
     {
         InitializeComponent();
         AddLights();
-        FilterBox.TextChanged += (_, _) => RebuildGroups();
+        OutfitFilterBox.TextChanged += (_, _) => RebuildGroups();
+        ModFilterBox.TextChanged += (_, _) => RebuildGroups();
         _ownerMenu = (ContextMenu)Resources["PickOwnerMenu"];
         _candidateMenu = (ContextMenu)Resources["CandidateMenu"];
         IsVisibleChanged += (_, _) => OnTabVisibilityChanged();
@@ -276,8 +308,9 @@ public partial class OutputConflictPage : UserControl
             request.Groups.Count(g => g.CrossMod), request.Groups.Count);
         OnlyCrossCheck.ToolTip = L10n.TrF("L.Conflict_OnlyCrossModTip",
             request.Groups.Count(g => g.CrossMod), request.Groups.Count);
-        // 分隔符那套规则没处说：水印那颗框最小宽度下只有一百四十像素，塞不下"分号分多词、任一命中"
-        FilterBox.ToolTip = L10n.Tr("L.Conflict_FilterTip");
+        // 分隔符那套规则没处说：过滤框最小宽度下只有一百二十像素，塞不下"分号分多词、两框交集"
+        OutfitFilterBox.ToolTip = L10n.Tr("L.Conflict_FilterTip");
+        ModFilterBox.ToolTip = L10n.Tr("L.Conflict_FilterTip");
         RescanButton.ToolTip = L10n.Tr("L.Conflict_RescanTip");
         AutoButton.ToolTip = L10n.Tr("L.Conflict_AutoAllTip");
         ClearButton.ToolTip = L10n.Tr("L.Conflict_ClearAllTip");
@@ -340,14 +373,18 @@ public partial class OutputConflictPage : UserControl
             : (L10n.TrF("L.Conflict_StatusChosen", chosen), true);
     }
 
-    /// <summary>这一组要不要留下：输出路径、任一候选的服装名、任一候选的模组名，
-    /// 命中<b>任一</b>关键字即算留下（切词见 <see cref="GroupRules.SplitKeywords"/>）。
-    /// 走 <see cref="TextFilter.MatchesAny"/> 而不是 <see cref="TextFilter.Matches"/>：后者是别的
-    /// 页面依赖的单子串语义，这里要的恰好相反——用户圈一批衣服时脑子里是"这类或那类"。</summary>
-    private static bool MatchesFilter(OutputConflictGroup group, IReadOnlyList<string> keywords) =>
-        TextFilter.MatchesAny(group.OutputFilePath, keywords) ||
-        group.Candidates.Any(c =>
-            TextFilter.MatchesAny(c.Name, keywords) || TextFilter.MatchesAny(c.OwnerLabel, keywords));
+    /// <summary>这一组在服装侧要不要留下：任一候选的服装名命中<b>任一</b>关键字即算留下
+    /// （切词见 <see cref="GroupRules.SplitKeywords"/>）。输出路径有意不参与筛选——路径是文件
+    /// 的存放位置，不是服装的名字；左栏行上虽然看得见文件名，但把它混进搜索词只会带来
+    /// 意外的命中与漏配。走 <see cref="TextFilter.MatchesAny"/> 而不是 <see cref="TextFilter.Matches"/>：
+    /// 后者是别的页面依赖的单子串语义，这里要的恰好相反——用户圈一批衣服时脑子里是"这类或那类"。</summary>
+    private static bool MatchesOutfit(OutputConflictGroup group, IReadOnlyList<string> keywords) =>
+        group.Candidates.Any(c => TextFilter.MatchesAny(c.Name, keywords));
+
+    /// <summary>模组侧与服装侧各归各的框（见 <see cref="MatchesOutfit"/>）：一颗框同时糊两种名字，
+    /// "筛模组"会混进同名服装，反之亦然。这里只认任一候选的模组名。</summary>
+    private static bool MatchesMod(OutputConflictGroup group, IReadOnlyList<string> keywords) =>
+        group.Candidates.Any(c => TextFilter.MatchesAny(c.OwnerLabel, keywords));
 
     /// <summary>把 <see cref="OutputConflictGroup.TargetDisplay"/> 拆成目录与文件名。
     /// 它是"&lt;完整输出路径&gt;_0.nif（以及 _1.nif）"：末段分隔符之前是目录、之后是文件名，
@@ -380,14 +417,26 @@ public partial class OutputConflictPage : UserControl
         UnresolvedLabel.Visibility = rest > 0 ? Visibility.Visible : Visibility.Collapsed;
     }
 
-    /// <summary>左栏列表的滚动宿主。<b>这条现在是空转的</b>：Controls.xaml 里 ListBox 模板那块
-    /// ScrollViewer 没有名字，按 <c>PART_ScrollViewer</c> 找只能拿到 null，于是
-    /// <see cref="RebuildGroups"/> 里"记下偏移再放回"从未生效——偏移恒为 0，重建完就是顶部。
-    /// 实机量到的症状是改一次赢家左栏整列弹回顶部（那时每次改动都走重建）。改归属现在不重建了
-    /// （见 <see cref="SaveAndRefresh"/>），剩下的触发者是打字过滤。要修从这里改：
-    /// 走视觉树取第一个 ScrollViewer。</summary>
-    private ScrollViewer? GroupScroller =>
-        GroupList.Template?.FindName("PART_ScrollViewer", GroupList) as ScrollViewer;
+    /// <summary>左栏列表的滚动宿主。模板里那块 ScrollViewer 没有名字（Controls.xaml 的 ListBox 模板），
+    /// 按 <c>PART_ScrollViewer</c> 找只能拿到 null——于是 <see cref="RebuildGroups"/> 里
+    /// "记下偏移再放回"长期空转，实机症状是打字过滤时左栏整列弹回顶部（偏移恒为 0）。
+    /// 改从视觉树现找：树里没有别的滚动容器（行内靠截断不靠滚动），第一个就是它；
+    /// 一次只是几层递归，重绑前后各调一次，不值得为此缓存实例。</summary>
+    private ScrollViewer? GroupScroller => FindVisualChild<ScrollViewer>(GroupList);
+
+    private static T? FindVisualChild<T>(DependencyObject parent) where T : DependencyObject
+    {
+        var count = VisualTreeHelper.GetChildrenCount(parent);
+        for (var i = 0; i < count; i++)
+        {
+            var child = VisualTreeHelper.GetChild(parent, i);
+            if (child is T hit)
+                return hit;
+            if (FindVisualChild<T>(child) is { } nested)
+                return nested;
+        }
+        return null;
+    }
 
     private void RebuildGroups()
     {
@@ -402,11 +451,13 @@ public partial class OutputConflictPage : UserControl
         var grouping = buckets.Any(b => !b.IsUngrouped);
         SyncGroupFilter(buckets, grouping);
 
-        var keywords = GroupRules.SplitKeywords(FilterBox.Text);
+        var outfitKeywords = GroupRules.SplitKeywords(OutfitFilterBox.Text);
+        var modKeywords = GroupRules.SplitKeywords(ModFilterBox.Text);
         // "只看跨模组"定的是这一轮的范围，用集合查比逐行 Any 便宜，也让下面计数的分母现成
         var pool = OnlyCrossCheck.IsChecked == true
             ? request.Groups.Where(g => g.CrossMod).ToHashSet()
             : null;
+        var unresolvedOnly = UnresolvedOnlyCheck.IsChecked == true;
 
         // 按**桶**而不是按冲突遍历：WPF 按首次出现建立分组，所以行按桶排下来，
         // 分组头的顺序就等于桶的顺序（组列表顺序 → 未入组），与「分组生成」页的组列表一致。
@@ -416,9 +467,14 @@ public partial class OutputConflictPage : UserControl
             {
                 if (pool is not null && !pool.Contains(row.Conflict))
                     continue;
-                if (keywords.Count > 0 && !MatchesFilter(row.Conflict, keywords))
+                // 两个框各管一类名字，都填了词时要同时满足（交集）；只填一边就只卡那一道
+                if (outfitKeywords.Count > 0 && !MatchesOutfit(row.Conflict, outfitKeywords))
+                    continue;
+                if (modKeywords.Count > 0 && !MatchesMod(row.Conflict, modKeywords))
                     continue;
                 if (_groupFilter is not null && bucket.GroupName != _groupFilter)
+                    continue;
+                if (unresolvedOnly && ChosenOf(row.Conflict) is not null)
                     continue;
                 kept.Add((row.Conflict, bucket.GroupName, row.IntraCollision));
             }
@@ -462,7 +518,8 @@ public partial class OutputConflictPage : UserControl
         var listed = rows.Select(r => r.Group).Distinct().Count();
         GroupsCountLabel.Text = L10n.TrF("L.Conflict_GroupCount", listed);
         BatchScopeLabel.Text = L10n.TrF("L.Conflict_BatchScope", listed);
-        var filtering = keywords.Count > 0 || pool is not null || _groupFilter is not null;
+        var filtering = outfitKeywords.Count > 0 || modKeywords.Count > 0 ||
+            pool is not null || _groupFilter is not null || unresolvedOnly;
         FilterCountLabel.Text = filtering
             ? L10n.TrF("L.Conflict_FilterCount", listed, pool?.Count ?? request.Groups.Count)
             : "";
@@ -489,8 +546,18 @@ public partial class OutputConflictPage : UserControl
         return view;
     }
 
+    /// <summary>分组头那句「其中 N 处未指定」的措辞；N=0 时给空串、整格收起。
+    /// 建头（<see cref="BuildGroupKeys"/>）与就地刷新（<see cref="SaveAndRefresh"/>）都走这里，
+    /// 两条路才不会把措辞算成两样。</summary>
+    private static string UnresolvedTextFor(int count) =>
+        count > 0 ? L10n.TrF("L.Conflict_BucketUnresolvedCount", count) : "";
+
     /// <summary>按已筛出的行造分组头，同一分组共用一个实例。计数在这里算，所以它天然是"过滤后的"。
     /// 顺序无关：分组头的顺序由行的顺序决定，字典的枚举顺序不参与。
+    /// <para>
+    /// 「其中 N 处未指定」的初值也在这里算（按 <see cref="ChosenOf"/> 逐行问）；
+    /// 之后的增减不归重建管——指定/清除赢家走 <see cref="SaveAndRefresh"/> 就地改写。
+    /// </para>
     /// <para>
     /// <paramref name="forceExpand"/> 为真（「只看某组」筛到了单个分组）时一律展开、且**不写设置**：
     /// 那一屏本来就是"我要看这一组"，若它的展开态落了盘，用户在"全部分组"下特意收起的意图
@@ -503,11 +570,14 @@ public partial class OutputConflictPage : UserControl
     {
         var counts = new Dictionary<string, int>(StringComparer.Ordinal);
         var intras = new Dictionary<string, int>(StringComparer.Ordinal);
-        foreach (var (_, name, intra) in kept)
+        var unresolveds = new Dictionary<string, int>(StringComparer.Ordinal);
+        foreach (var (group, name, intra) in kept)
         {
             counts[name] = counts.GetValueOrDefault(name) + 1;
             if (intra)
                 intras[name] = intras.GetValueOrDefault(name) + 1;
+            if (ChosenOf(group) is null)
+                unresolveds[name] = unresolveds.GetValueOrDefault(name) + 1;
         }
 
         // 「只看某组」那一屏不许写回设置（见方法注释），其余走 PersistCollapsed：
@@ -522,6 +592,7 @@ public partial class OutputConflictPage : UserControl
                 intras.TryGetValue(name, out var n) && n > 0
                     ? L10n.TrF("L.Conflict_IntraGroupCount", n)
                     : "",
+                UnresolvedTextFor(unresolveds.GetValueOrDefault(name)),
                 expanded: forceExpand || !request.IsGroupCollapsed(name),
                 persist);
         return keys;
@@ -540,7 +611,8 @@ public partial class OutputConflictPage : UserControl
     /// <summary>被右键的那个分组头。菜单挂在分组头的 ToggleButton 上，而它的 DataContext 是
     /// <see cref="CollectionViewGroup"/>（分组头模板的 DataContext 不是行对象），分组键在 <c>Name</c> 上。
     /// <para>
-    /// 取不到时只有「折叠其他」什么都不做（另两项本来就作用于整列，不需要锚点）。这条兜底不是
+    /// 取不到时只有「折叠其他」与「本组全部清除」什么都不做（其余各项要么作用于整列、
+    /// 要么自取锚点，见 <see cref="PickOwnerForGroup_Click"/>）。这条兜底不是
     /// 为"用户会遇到"准备的——菜单只挂在分组头上，PlacementTarget 必然是其中一个；它挡的是
     /// 模板被改坏之后"右键哪一组都把别的全折了"这种更难查的错法。
     /// </para></summary>
@@ -654,6 +726,8 @@ public partial class OutputConflictPage : UserControl
 
     private void OnlyCross_Changed(object sender, RoutedEventArgs e) => RebuildGroups();
 
+    private void UnresolvedOnly_Changed(object sender, RoutedEventArgs e) => RebuildGroups();
+
     private void GroupFilter_Changed(object sender, SelectionChangedEventArgs e)
     {
         if (_rebuilding)
@@ -725,6 +799,26 @@ public partial class OutputConflictPage : UserControl
     {
         if (sender is RadioButton { DataContext: CandidateRow row })
             SetWinner(row);
+    }
+
+    /// <summary>双击行内的文字/空白 = 直接把这一行设为赢家——不想瞄准左边那颗小圆圈时，整行都算按钮。
+    /// <para>
+    /// 挂 <c>MouseLeftButtonDown</c> 而不是 <c>MouseDoubleClick</c>：后者是 Control 才会 raise 的事件，
+    /// 行模板里只有 Grid/TextBlock，永远收不到；判双击靠 <see cref="MouseButtonEventArgs.ClickCount"/>。
+    /// 第一击照旧只是选中行（预览跟走），第二击才指定——单击预览的习惯不变。
+    /// </para>
+    /// <para>
+    /// 落在小圆圈上的按下被 ToggleButton 标成已处理，到不了这层 Grid——那一侧本来就一点即中；
+    /// 而且指定完列表就地重建，第二击即使落在重建出的新行上也只是把同一个值再写一遍，无害。
+    /// </para></summary>
+    private void Row_DoubleClick(object sender, MouseButtonEventArgs e)
+    {
+        if (e.ClickCount != 2)
+            return;
+        if (sender is not FrameworkElement source || source.DataContext is not CandidateRow row)
+            return;
+        SetWinner(row);
+        e.Handled = true;
     }
 
     /// <summary>右键整行 = 选中它（预览跟走）、按这一行现建菜单项，然后<b>手动</b>弹出。
@@ -1505,6 +1599,76 @@ public partial class OutputConflictPage : UserControl
             System.Windows.Threading.DispatcherPriority.Input);
     }
 
+    /// <summary>分组头右键菜单里的「本组按服装关键字指定…」：把该组卷入的冲突圈出来，
+    /// 弹输入框收关键字（多个用 <c>;</c>/<c>,</c> 分、任一命中即算，与过滤框同一套约定）。
+    /// 与 <see cref="PickOwnerForGroup_Click"/> 的差别只在"点名谁"：那边点名模组，
+    /// 这边点名"长什么样的衣服"——服装名命中关键字的候选当赢家（最强层优先，见
+    /// <see cref="OutputConflicts.PickOwnerByKeyword"/>）。
+    /// <para>同样推一拍再弹：从父菜单的 Click 里直接开模态框，父菜单收尾时的焦点恢复
+    /// 会把刚弹出的窗口顶掉焦点（与那边开子菜单是同一类时序问题）。</para></summary>
+    private void PickOwnerByKeywordForGroup_Click(object sender, RoutedEventArgs e)
+    {
+        if (MenuOf(sender)?.PlacementTarget is not FrameworkElement { DataContext: CollectionViewGroup grp } target)
+            return;
+        if (grp.Name is not ConflictGroupKey anchor)
+            return;
+        var scope = GroupConflicts(anchor);
+        Dispatcher.BeginInvoke(() => PromptKeywordAssign(scope),
+            System.Windows.Threading.DispatcherPriority.Input);
+    }
+
+    /// <summary>收关键字 → 应用 → 反馈。取消（null）与"什么都没输就点了确定"（空白串）都是
+    /// 没有诉求，什么都不做；一个都没命中时提醒一句，命中过的靠列表刷新自己说话
+    /// （左栏的状态与计数当场就变），不再多弹一层。</summary>
+    private void PromptKeywordAssign(IReadOnlyList<OutputConflictGroup> scope)
+    {
+        var title = L10n.Tr("L.Conflict_PickOwnerKeywordTitle");
+        var raw = KeywordPrompt(title, L10n.Tr("L.Conflict_PickOwnerKeywordLabel"));
+        if (string.IsNullOrWhiteSpace(raw))
+            return;
+        if (ApplyKeywordAssign(scope, raw) == 0)
+            Notify.Warn(Shell, title, L10n.Tr("L.Conflict_PickOwnerKeywordEmpty"));
+    }
+
+    /// <summary>切词、数命中、定赢家并存盘刷新。返回命中的冲突数；0 = 一处都没动、不存盘
+    /// （存盘回调会重写设置文件，没变动就不该劳它）。独立成方法而不写在 <see cref="PromptKeywordAssign"/>
+    /// 里，是为了让"零命中不落盘"这条能在测试里直接够到——绕开模态框那条路。</summary>
+    private int ApplyKeywordAssign(IReadOnlyList<OutputConflictGroup> scope, string raw)
+    {
+        if (_request is null)
+            return 0;
+        var keywords = GroupRules.SplitKeywords(raw);
+        if (keywords.Count == 0)
+            return 0;
+        var matched = scope.Count(g => g.Candidates.Any(c => TextFilter.MatchesAny(c.Name, keywords)));
+        if (matched == 0)
+            return 0;
+        _working = OutputConflicts.PickOwnerByKeyword(scope, keywords, _working);
+        SaveAndRefresh();
+        return matched;
+    }
+
+    /// <summary>分组头右键菜单里的「本组全部清除」：该分组名下的冲突全部退回"BodySlide 再问我一次"。
+    /// 它是「本组按模组指定…」的逆操作，范围口径与它一致（只圈被右键的那个分组名下列着的冲突），
+    /// 动作与底部那颗「全部清除」同一枚（<see cref="OutputConflicts.Clear"/>）——所以同样不弹确认：
+    /// 清除不是删数据，只是把本工具记的决定抹掉。锚点取法见 <see cref="MenuAnchor"/>。</summary>
+    private void ClearGroup_Click(object sender, RoutedEventArgs e)
+    {
+        if (MenuAnchor(sender) is not { } anchor)
+            return;
+        var scope = GroupConflicts(anchor);
+        if (scope.Count == 0)
+            return;
+        _working = OutputConflicts.Clear(scope, _working);
+        SaveAndRefresh();
+    }
+
+    // ── 「只看未指定」：把还没定赢家的冲突筛出来（2026-09-25）──
+    //
+    // 分组头上那句「其中 N 处未指定」只报数不报名，而组一大（实机 A-3BA 名下 154 处），
+    // "到底是哪几件"没法从左栏一眼挑出来。这一档与「只看跨模组」同一套开关（见工具条）：
+    // 建行前把已指定的行筛掉，名单越做越短；三道过滤与它都能叠加。
+
     /// <summary>存盘 + 刷新，但<b>不重建左栏</b>。
     /// <para>
     /// 定一组归属真正变的只有那一两行的状态文字，而换 ItemsSource 等于让 WPF 把整列容器丢掉重造。
@@ -1513,18 +1677,40 @@ public partial class OutputConflictPage : UserControl
     /// 就地改属性就够了——不重造，也就没有会弹回的位置。
     /// </para>
     /// <para>
-    /// 批量那三颗同理——它们一次改掉几百组，改的仍然只是状态：列表成员只看过滤词/是否跨模组/「只看某组」
-    /// 那三道筛子（<see cref="RebuildGroups"/> 里没有一个看归属），分组头计数与页顶那句说明同样与归属无关，
-    /// 所以都不必重造。要重建的是过滤、换语言、分组本身变了，那些直接走 <see cref="RebuildGroups"/>。
+    /// 批量那三颗同理——它们一次改掉几百组，改的仍然只是状态。分组头里唯一跟着归属变的字是
+    /// 「其中 N 处未指定」（<see cref="ConflictGroupKey.UnresolvedText"/>，也是可观察的），
+    /// 这里按行集合重算一遍、就地写回，同样不必重造；分组头其余计数与页顶那句说明本来就与归属无关。
+    /// 要重建的是过滤、换语言、分组本身变了，那些直接走 <see cref="RebuildGroups"/>。
+    /// </para>
+    /// <para>
+    /// 例外是「只看未指定」开着的时候：刚指定的那行已经不匹配过滤了，就地更新会让"已处理"的
+    /// 行赖在名单上（头上计数减了、行还在，两边对不上）。这一档走整列重建，让它当场退场——
+    /// 名单本来就是"还欠着决定的"，退场正是要的效果；滚动位置由重建里"记偏移再放回"兜住。
     /// </para></summary>
     private void SaveAndRefresh()
     {
         if (_request is null)
             return;
         _request.Save(_working);
+        if (UnresolvedOnlyCheck.IsChecked == true)
+        {
+            RebuildGroups();
+            return;
+        }
         if (GroupList.ItemsSource is IEnumerable source)
+        {
+            // 未指定数按行集合里还没定的行算：与建头时同一口径（那条冲突挂在几个分组下，
+            // 就在几个头里各计一次），键对象是引用相等的类，拿它当表键正好按"那个头"归堆。
+            var missing = new Dictionary<ConflictGroupKey, int>();
             foreach (var row in source.OfType<GroupRow>())
+            {
                 (row.Status, row.Resolved) = StatusOf(row.Group);
+                if (!row.Resolved && row.GroupKey is { } key)
+                    missing[key] = missing.GetValueOrDefault(key) + 1;
+            }
+            foreach (var key in _groupKeys)
+                key.UnresolvedText = UnresolvedTextFor(missing.GetValueOrDefault(key));
+        }
         UpdateProgress();
         RebuildCandidates();
     }

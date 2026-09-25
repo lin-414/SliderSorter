@@ -27,20 +27,15 @@ public partial class MainWindow : Window
             return false;
         };
         _vm.ConfirmHandler = (title, message) => Notify.Confirm(this, title, message);
-        _vm.SuppressibleConfirmHandler = (title, message, suppressKey) =>
-            Notify.Show(this, title, message, NotifyKind.Question, NotifyButtons.OkCancel,
-                settings: _vm.Settings, suppressKey: suppressKey) == NotifyResult.Primary;
         // 目录/文件框也在这一层：设置页里的「选择实例目录」「浏览…」复用它们，
         // owner 才是真正有窗口身份的壳。
         _vm.FolderPicker = description => PickFolder(description);
         _vm.FilePicker = _ => PickImportFile();
         _vm.NewModsDetected += request => Dispatcher.Invoke(() => ShowNewMods(request));
         _vm.SaveCompleted += (dir, bsAppDir) => Dispatcher.Invoke(() => ShowSaveSuccess(dir, bsAppDir));
-        // 更新提示不在这里订阅：CheckForUpdatesAsync 内部用 SuppressibleConfirmHandler 弹确认框并打开下载页
         // 日志区的 LogFlushed 订阅在分组页上：LogList 是那一页的控件。
 
         HookDragDrop();
-        Loaded += (_, _) => _ = _vm.CheckForUpdatesAsync(reportUpToDate: false);
         PreviewKeyDown += (_, e) =>
         {
             if (e.Key == Key.F1)

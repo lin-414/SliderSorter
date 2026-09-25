@@ -52,8 +52,10 @@ public static class BodySlideLocator
             var exe = FindExe(dir);
             if (exe is null || !File.Exists(Path.Combine(dir, "Config.xml")))
                 return;
-            if (seen.Add(Path.GetFullPath(dir)))
-                result.Add(new BodySlideCandidate(Path.GetFullPath(dir), exe, source));
+            var full = TryGetFullPath(dir);
+            if (full is null || !seen.Add(full))
+                return;
+            result.Add(new BodySlideCandidate(full, exe, source));
         }
 
         if (!string.IsNullOrWhiteSpace(previousDir))
@@ -82,6 +84,22 @@ public static class BodySlideLocator
             return Directory.EnumerateFiles(dir, "BodySlide*.exe", SearchOption.TopDirectoryOnly).FirstOrDefault();
         }
         catch
+        {
+            return null;
+        }
+    }
+
+    /// <summary>带防御的 GetFullPath。路径可能来自 Config.xml 的 ProjectPath / GameDataPath
+    /// （用户可手改）或 settings.json 里的上次使用目录：含空字节等退化输入时 GetFullPath 会抛
+    /// ArgumentException——不接的话异常从扫描链路漏进通用 catch，用户只看到一句"扫描失败"。
+    /// 按"路径无效"处理返回 null，调用方当作目录不存在继续走其余候选。</summary>
+    private static string? TryGetFullPath(string path)
+    {
+        try
+        {
+            return Path.GetFullPath(path);
+        }
+        catch (Exception ex) when (ex is ArgumentException or NotSupportedException)
         {
             return null;
         }
@@ -185,7 +203,9 @@ public static class BodySlideLocator
     /// </summary>
     public static bool VirtualDirectoryExists(string path, string gameDataPath, List<(ModEntry Entry, string Dir)> enabledMods)
     {
-        var full = Path.GetFullPath(path);
+        var full = TryGetFullPath(path);
+        if (full is null)
+            return false;
         if (Directory.Exists(full))
             return true;
 
@@ -201,8 +221,11 @@ public static class BodySlideLocator
     {
         if (string.IsNullOrWhiteSpace(baseDir))
             return null;
-        var fullBase = Path.GetFullPath(baseDir).TrimEnd('\\', '/') + Path.DirectorySeparatorChar;
-        var fullPath = Path.GetFullPath(path);
+        var fullBase = TryGetFullPath(baseDir);
+        var fullPath = TryGetFullPath(path);
+        if (fullBase is null || fullPath is null)
+            return null;
+        fullBase = fullBase.TrimEnd('\\', '/') + Path.DirectorySeparatorChar;
         var comparison = StringComparison.OrdinalIgnoreCase;
         if (!fullPath.StartsWith(fullBase, comparison))
             return null;

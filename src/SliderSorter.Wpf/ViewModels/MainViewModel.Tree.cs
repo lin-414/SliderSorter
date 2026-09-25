@@ -83,6 +83,9 @@ public partial class MainViewModel
 
         var filter = FilterText.Trim();
         var modFilter = ModFilterText.Trim();
+        // 当前组成员表按 HashSet 建一次、穿参下去：逐模组数「组内 x/y」时若用 List.Contains，
+        // 就是 O(模组数×服装数×成员数) 的三重线性扫，大组表 + 大整合包的整轮重建会被它吃掉
+        var memberSet = new HashSet<string>(Store.Current?.Members ?? [], StringComparer.Ordinal);
         var newRoots = new ObservableCollection<NodeVM>();
         if (Scan is not null)
         {
@@ -95,9 +98,9 @@ public partial class MainViewModel
             }
 
             if (IsVirtualScan)
-                BuildStructuredTree(newRoots, outfitsByOwner, filter);
+                BuildStructuredTree(newRoots, outfitsByOwner, filter, memberSet);
             else
-                BuildFlatTree(newRoots, outfitsByOwner, filter);
+                BuildFlatTree(newRoots, outfitsByOwner, filter, memberSet);
 
             if (newRoots.Count == 0)
                 newRoots.Add(new NodeVM(NodeKind.Outfit) { Text = L10n.Tr("L.Tree_NoMatchingMods"), IsPlaceholder = true });
@@ -178,19 +181,19 @@ public partial class MainViewModel
     }
 
     private void BuildFlatTree(ObservableCollection<NodeVM> roots,
-        Dictionary<string, List<OutfitEntry>> outfitsByOwner, string filter)
+        Dictionary<string, List<OutfitEntry>> outfitsByOwner, string filter, HashSet<string> memberSet)
     {
         foreach (var (owner, outfits) in outfitsByOwner)
         {
             var visibleOutfits = outfits.Where(OutfitVisible).ToList();
             if (!ModVisible(owner, outfits.Count, visibleOutfits.Count, filter))
                 continue;
-            roots.Add(BuildOutfitModNode(roots, owner, outfits, visibleOutfits, filter));
+            roots.Add(BuildOutfitModNode(roots, owner, outfits, visibleOutfits, filter, memberSet));
         }
     }
 
     private void BuildStructuredTree(ObservableCollection<NodeVM> roots,
-        Dictionary<string, List<OutfitEntry>> outfitsByOwner, string filter)
+        Dictionary<string, List<OutfitEntry>> outfitsByOwner, string filter, HashSet<string> memberSet)
     {
         var consumed = new HashSet<string>(StringComparer.Ordinal);
         SeparatorNodeVM? separator = null;
@@ -222,7 +225,7 @@ public partial class MainViewModel
             var visibleOutfits = outfits.Where(OutfitVisible).ToList();
             if (!ModVisible(entry.Name, outfits.Count, visibleOutfits.Count, filter))
                 continue;
-            var node = BuildOutfitModNode(roots, entry.Name, outfits, visibleOutfits, filter);
+            var node = BuildOutfitModNode(roots, entry.Name, outfits, visibleOutfits, filter, memberSet);
             if (separator is not null)
             {
                 node.Parent = separator;
@@ -244,7 +247,7 @@ public partial class MainViewModel
                 continue;
             if (!ModVisible(owner, outfits.Count, visibleOutfits.Count, filter))
                 continue;
-            roots.Add(BuildOutfitModNode(roots, owner, outfits, visibleOutfits, filter));
+            roots.Add(BuildOutfitModNode(roots, owner, outfits, visibleOutfits, filter, memberSet));
         }
 
         // 清理没有可见内容的分隔符节点
@@ -256,7 +259,7 @@ public partial class MainViewModel
     }
 
     private ModNodeVM BuildOutfitModNode(ObservableCollection<NodeVM> roots, string owner,
-        List<OutfitEntry> outfits, List<OutfitEntry> visibleOutfits, string filter)
+        List<OutfitEntry> outfits, List<OutfitEntry> visibleOutfits, string filter, HashSet<string> memberSet)
     {
         // 过滤/仅看未分配时标明是"该模组有几个服装可见"
         var narrowed = filter.Length > 0 || UnassignedOnly;
@@ -264,8 +267,7 @@ public partial class MainViewModel
             ? L10n.TrF("L.Tree_MatchHeader", owner, visibleOutfits.Count, outfits.Count)
             : $"{owner}　({outfits.Count})";
 
-        var group = Store.Current;
-        var inGroup = visibleOutfits.Count(o => group is not null && group.Members.Contains(o.Name, StringComparer.Ordinal));
+        var inGroup = visibleOutfits.Count(o => memberSet.Contains(o.Name));
 
         var node = new ModNodeVM(header, owner, visibleOutfits, IsInAnyGroup, false);
         if (inGroup > 0)
@@ -287,13 +289,15 @@ public partial class MainViewModel
     private void UpdateMembershipMarks()
     {
         var group = Store.Current;
+        // 同 RebuildTree：成员判等走 HashSet，别让每次刷新都退回 List.Contains 的线性扫
+        var memberSet = group is null ? null : new HashSet<string>(group.Members, StringComparer.Ordinal);
         foreach (var node in WalkRoots())
         {
             switch (node)
             {
                 case OutfitNodeVM outfit:
                 {
-                    var member = group is not null && group.Members.Contains(outfit.OutfitName, StringComparer.Ordinal);
+                    var member = memberSet?.Contains(outfit.OutfitName) == true;
                     // 成员标记由视图的独立徽标呈现（绑定 IsMember），文本里不再拼 "✔ "
                     var targetText = OutfitNodeVM.FormatText(outfit.OutfitName, outfit.HasConflict,
                         outfit.HasOutputConflict);
@@ -304,8 +308,7 @@ public partial class MainViewModel
                 }
                 case ModNodeVM mod:
                 {
-                    var inGroup = mod.Outfits.Count(o =>
-                        group is not null && group.Members.Contains(o.Name, StringComparer.Ordinal));
+                    var inGroup = mod.Outfits.Count(o => memberSet?.Contains(o.Name) == true);
                     // Text 恒为 BaseHeader：计数走后缀徽标（BadgeText），不再拼进名字里。
                     // 于是换语言只需重算徽标那一小段，模组名本身不用重拼。
                     if (node.Text != mod.BaseHeader)

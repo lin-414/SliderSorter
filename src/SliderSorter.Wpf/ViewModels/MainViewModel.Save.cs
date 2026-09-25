@@ -1,5 +1,4 @@
 using System.IO;
-using System.Net.Http;
 using System.Text;
 using SliderSorter.Core;
 using SliderSorter.Wpf.Services;
@@ -28,8 +27,9 @@ public partial class MainViewModel
     public event Action<NewModsRequest>? NewModsDetected;
     /// <summary>保存成功后触发，视图显示带"打开输出目录"的完成弹窗。</summary>
     public event Action<string, string?>? SaveCompleted;
-    // 曾有一个 UpdateAvailable 事件，视图订阅了却从未被触发——更新提示实际走
-    // CheckForUpdatesAsync 里的 ConfirmHandler。已删除该事件与视图侧的订阅。
+    // 曾有一个 UpdateAvailable 事件，视图订阅了却从未被触发（更新提示实际由更新检查内部
+    // 经 ConfirmHandler 弹框），已删除该事件与订阅。更新检查本身也于 2026-09-25 连同设置页
+    // 「关于」节整个移除，本类不再有任何更新提示的链路。
 
     private OutputTarget? _lastTarget;
 
@@ -375,10 +375,6 @@ public partial class MainViewModel
 
     public Func<string, string, bool?>? ConfirmHandler { get; set; } // 视图注入：确认框，true=确认
 
-    /// <summary>视图注入：带「不再提示」记忆的确认框 (title, message, suppressKey) => 是否确认。
-    /// 未注入时退回普通 ConfirmHandler（单测、无视图场景）。</summary>
-    public Func<string, string, string, bool>? SuppressibleConfirmHandler { get; set; }
-
     // ── 选择实例目录 / BodySlide 浏览 ──
     public void SelectInstanceDirectory(string path)
     {
@@ -424,73 +420,6 @@ public partial class MainViewModel
     {
         if (FilePicker?.Invoke(L10n.Tr("L.Pick_ImportGroups")) is { } file)
             ImportFiles([file]);
-    }
-
-    // ── 更新检查 ──
-    /// <summary>「发现新版本」提示的「不再提示」记忆键（存于 AppSettings.SuppressedPrompts）。</summary>
-    private const string SuppressKeyUpdate = "update-available";
-
-    /// <summary>设置页「检查更新」按钮。生成的命令属性去掉了 Async 后缀：CheckUpdateAsync → CheckUpdateCommand
-    /// （与 SaveAsync → SaveCommand 同一条约定，写错后缀不会编译报错，只会让按钮静默失效）。
-    /// AsyncRelayCommand 在跑完前 CanExecute 为 false，所以按钮执行期间自己会灰掉，不用再绑 IsEnabled。</summary>
-    [RelayCommand]
-    private Task CheckUpdateAsync() => CheckForUpdatesAsync(reportUpToDate: true);
-
-    public async Task CheckForUpdatesAsync(bool reportUpToDate)
-    {
-        const string releasesUrl = "https://github.com/lin-414/SliderSorter/releases/latest";
-        if (reportUpToDate)
-            UpdateStatusText = L10n.Tr("L.Settings_UpdateChecking");
-        try
-        {
-            using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(8) };
-            http.DefaultRequestHeaders.UserAgent.ParseAdd("SliderSorter");
-            var json = await http.GetStringAsync("https://api.github.com/repos/lin-414/SliderSorter/releases/latest");
-            using var doc = System.Text.Json.JsonDocument.Parse(json);
-            var tag = doc.RootElement.GetProperty("tag_name").GetString() ?? "";
-            var latest = Version.TryParse(tag.TrimStart('v', 'V'), out var v) ? v : null;
-            var current = Version.TryParse(typeof(MainViewModel).Assembly.GetName().Version?.ToString() ?? "", out var cv) ? cv : null;
-            if (latest is null || current is null || latest <= current)
-            {
-                // 「已是最新」「检查失败」只在用户主动点按钮时写进设置页：
-                // 启动时的静默检查留一句话在那儿，等于每次开机都往设置页撒噪声。
-                if (reportUpToDate)
-                {
-                    UpdateStatusText = L10n.TrF("L.Msg_UpToDate", current);
-                    NotifyUser(L10n.Tr("L.Title_CheckUpdate"), L10n.TrF("L.Msg_UpToDate", current));
-                }
-                return;
-            }
-            // 有新版本这句话无论如何都留着——静默检查发现的，用户也该在设置页看得见
-            UpdateStatusText = L10n.TrF("L.Msg_UpdateAvailable", tag, current);
-            var go = SuppressibleConfirmHandler is not null
-                ? SuppressibleConfirmHandler(L10n.Tr("L.Title_CheckUpdate"),
-                    L10n.TrF("L.Msg_UpdateAvailable", tag, current), SuppressKeyUpdate)
-                : ConfirmHandler?.Invoke(L10n.Tr("L.Title_CheckUpdate"),
-                    L10n.TrF("L.Msg_UpdateAvailable", tag, current)) == true;
-            if (go)
-                OpenUrl(releasesUrl);
-        }
-        catch (Exception ex)
-        {
-            if (reportUpToDate)
-            {
-                UpdateStatusText = L10n.TrF("L.Msg_UpdateFailed", ex.Message);
-                NotifyUser(L10n.Tr("L.Title_CheckUpdate"), L10n.TrF("L.Msg_UpdateFailed", ex.Message), warning: true);
-            }
-        }
-    }
-
-    public static void OpenUrl(string url)
-    {
-        try
-        {
-            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(url) { UseShellExecute = true });
-        }
-        catch
-        {
-            // 浏览器打开失败时忽略
-        }
     }
 
     public static void OpenDirectory(string path)

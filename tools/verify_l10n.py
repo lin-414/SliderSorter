@@ -422,6 +422,24 @@ def main():
         "L.Msg_NoOutfits": r"L\.Msg_NoOutfits\b",
         # 「应用」跟着规则窗口一起没了，页面上那颗叫「应用此规则」。
         "L.Btn_Apply": r"L\.Btn_Apply\b",
+        # 2026-09-25 设置页改版：「关于」一节整块移除（版本徽标、检查更新按钮、作者/仓库元信息随葬），
+        # 随后启动时的静默更新检查也一并取消——更新检查整条链路（命令 / HttpClient / 抑制确认框）都没了，
+        # 「发现新版本」弹窗的两个键因此跟着退休。
+        "L.Settings_About": r"L\.Settings_About\b",
+        "L.Settings_CheckUpdate": r"L\.Settings_CheckUpdate\b",
+        "L.Settings_UpdateChecking": r"L\.Settings_UpdateChecking\b",
+        "L.About_Desc": r"L\.About_Desc\b",
+        "L.About_AuthorLabel": r"L\.About_AuthorLabel\b",
+        "L.About_Compat": r"L\.About_Compat\b",
+        "L.Title_CheckUpdate": r"L\.Title_CheckUpdate\b",
+        "L.Msg_UpToDate": r"L\.Msg_UpToDate\b",
+        "L.Msg_UpdateAvailable": r"L\.Msg_UpdateAvailable\b",
+        "L.Msg_UpdateFailed": r"L\.Msg_UpdateFailed\b",
+        "UpdateStatusText": r"\bUpdateStatusText\b",
+        "CheckUpdateCommand": r"\bCheckUpdateCommand\b",
+        "CheckUpdateAsync": r"\bCheckUpdateAsync\b",
+        "CheckForUpdatesAsync": r"\bCheckForUpdatesAsync\b",
+        "SuppressibleConfirmHandler": r"\bSuppressibleConfirmHandler\b",
     }
     found = False
     for scan_root in scan_roots:

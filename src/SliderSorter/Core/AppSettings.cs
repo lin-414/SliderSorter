@@ -45,6 +45,10 @@ public class AppSettings
     /// 存语言码就等于"跟随系统"只用一次，用户在系统里换了显示语言它也不会再跟。</summary>
     public string UiLanguage { get; set; } = "system";
 
+    /// <summary>界面字号档位（%）。只认 90/100/110/125 这几档，其余值（含手改的任意数）
+    /// 由 FontScaleManager 吸到最近档——存档位而不是任意倍数，外观节的下拉框才有项可选。</summary>
+    public int UiFontScalePercent { get; set; } = 100;
+
     /// <summary>用户在提示框里勾过「不再提示」的项目（如更新提示）。键由调用方定义，仅做等值比较。</summary>
     public List<string> SuppressedPrompts { get; set; } = new();
 

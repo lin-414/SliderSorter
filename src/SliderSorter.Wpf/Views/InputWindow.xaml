@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Width="380" SizeToContent="Height" WindowStartupLocation="CenterOwner"
         WindowStyle="ToolWindow" ResizeMode="NoResize" ShowInTaskbar="False"
-        Background="{DynamicResource B.Window}" FontFamily="{StaticResource AppFont}" FontSize="13"
+        Background="{DynamicResource B.Window}" FontFamily="{StaticResource AppFont}" FontSize="{DynamicResource Type.H3}"
         Style="{StaticResource AppWindow}">
     <StackPanel Margin="14">
         <TextBlock Text="{Binding Label}" TextWrapping="Wrap" Foreground="{DynamicResource B.Text}" />

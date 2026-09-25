@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Globalization;
 using System.IO;
 using System.Text;
 using System.Windows.Threading;
@@ -13,7 +14,7 @@ namespace SliderSorter.Wpf.ViewModels;
 /// <summary>状态栏写出模式下拉项。</summary>
 public sealed record WriteModeItem(WriteMode Mode, string Label);
 
-/// <summary>设置页「界面主题 / 界面语言」下拉项：Value 是 ThemeManager/L10n 认的键，Label 随语言变。
+/// <summary>设置页「界面主题 / 界面语言 / 字体大小」下拉项：Value 是 ThemeManager/L10n 认的键或档位百分数，Label 随语言变。
 /// 语言那五项（中文 / English / Deutsch / Русский / Français）的 Label 恒为各语言自己的写法——
 /// 把俄语界面翻坏了时，那是唯一还能认出「这里能切回中文」的线索，所以它们不进语言文件。
 /// 「跟随系统」是唯一的例外：它描述的是行为不是语言名，法/德/俄用户该看到自己的说法，走 L.Settings_LanguageSystem。</summary>
@@ -139,9 +140,8 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty] private OptionItem? _selectedThemeOption;
     [ObservableProperty] private ObservableCollection<OptionItem> _languageOptions = [];
     [ObservableProperty] private OptionItem? _selectedLanguageOption;
-
-    /// <summary>「检查更新」旁边的内联结果。空串 = 这次运行还没查过。</summary>
-    [ObservableProperty] private string _updateStatusText = "";
+    [ObservableProperty] private ObservableCollection<OptionItem> _fontScaleOptions = [];
+    [ObservableProperty] private OptionItem? _selectedFontScaleOption;
 
     /// <summary>使用说明 / 诊断信息两块的展开态。正文有 60+ 段，收起时干脆不建（见 SettingsPage）。</summary>
     [ObservableProperty] private bool _isManualExpanded;
@@ -425,6 +425,15 @@ public partial class MainViewModel : ObservableObject
         _selectedLanguageOption = LanguageOptions.FirstOrDefault(o => o.Value == L10n.Normalize(Settings.UiLanguage))
             ?? LanguageOptions[0];
 
+        // 字号回填按设置值吸档（与 FontScaleManager.Apply 的启动口径同一份 Normalize）：
+        // 不依赖"启动时一定先 Apply 过"——手改出的非档位值（137）也会显示成最近档而不是空。
+        FontScaleOptions = BuildFontScaleOptions();
+        var fontScaleValue = FontScaleManager
+            .Normalize(Settings.UiFontScalePercent).ToString(CultureInfo.InvariantCulture);
+        _selectedFontScaleOption = FontScaleOptions.FirstOrDefault(o => o.Value == fontScaleValue)
+            ?? FontScaleOptions.FirstOrDefault(o => o.Value == FontScaleManager.DefaultPercent.ToString(CultureInfo.InvariantCulture))
+            ?? FontScaleOptions[0];
+
         // 设置读不出来或写不进磁盘都要在日志里留一句。整份配置（含冲突页手选的赢家、实例与 Profile）
         // 静默回落到默认值时，用户的感受是"程序怎么又忘了我配过什么"，而不是"文件坏了"。
         // AppSettings 那边只存键与实参，取词要到这一层才做得动（Localizer 在 App.OnStartup 才注入）。
@@ -473,6 +482,13 @@ public partial class MainViewModel : ObservableObject
         new OptionItem(L10n.Fr, "Français"),
     ]);
 
+    /// <summary>字号下拉项：档位取自 <see cref="FontScaleManager.Presets"/>（两处不会各改各的）。
+    /// 标签是百分比、各语言同形——数字与 % 不是文案，与语言下拉里「中文/English」同理不进 Lang 文件；
+    /// 也是因为这个，换语言时这一份不必像主题/语言那样重建（见 OnLanguageChanged）。</summary>
+    private static ObservableCollection<OptionItem> BuildFontScaleOptions() => new(
+        FontScaleManager.Presets.Select(p => new OptionItem(
+            p.ToString(CultureInfo.InvariantCulture), $"{p}%")));
+
     /// <summary>主题下拉：换项即热切换并落盘。ThemeManager 换的是 app 级色板字典，
     /// 所有开着的窗口一起变，不需要重建谁。</summary>
     partial void OnSelectedThemeOptionChanged(OptionItem? value)
@@ -497,6 +513,21 @@ public partial class MainViewModel : ObservableObject
         Settings.UiLanguage = value.Value;
         Settings.Save();
         OnLanguageChanged();
+    }
+
+    /// <summary>字号下拉：换档即热生效并落盘。生效路径在 <see cref="FontScaleManager.Apply"/>
+    /// （改写 Type.H1–H4 四个资源键），这里只管把用户选的档记进设置。
+    /// 比对的是 FontScaleManager.CurrentPercent 而不是设置值：设置里可能存着手改的非档位值
+    /// （启动时被吸到最近档），按设置值比会把"用户点了实际生效的那一档"误判成没变化。</summary>
+    partial void OnSelectedFontScaleOptionChanged(OptionItem? value)
+    {
+        if (value is null || _localizing ||
+            !int.TryParse(value.Value, CultureInfo.InvariantCulture, out var percent) ||
+            percent == FontScaleManager.CurrentPercent)
+            return;
+        FontScaleManager.Apply(percent);
+        Settings.UiFontScalePercent = FontScaleManager.CurrentPercent;
+        Settings.Save();
     }
 
     /// <summary>语言切换后重算所有由代码拼出的绑定串。</summary>
@@ -538,7 +569,6 @@ public partial class MainViewModel : ObservableObject
         RefreshTransferState();
         UpdateMembershipMarks(); // 树节点文本也是代码拼的（同名冲突 / [组内 x/y]），一并换语言
         RefreshConflictText();
-        UpdateStatusText = ""; // 检查更新的结果是拼好的句子，就地重译不了——宁可空着也别留半句别的语言
         UpdateCounts();
         UpdateGroupInfo();
         UpdateTitle();
@@ -994,7 +1024,7 @@ public partial class MainViewModel : ObservableObject
     private bool IsInAnyGroup(string outfit) => Store.IsInAnyGroup(outfit);
 
     /// <summary>逐模组"目录是否在磁盘上"的探测缓存（键 = 模组目录全路径）。
-    /// 树、结构弹窗与规则预览会反复问同一批模组，而每次 Directory.Exists 都要走一次文件系统。
+    /// 树、结构弹窗、规则预览与诊断报告会反复问同一批模组，而每次 Directory.Exists 都要走一次文件系统。
     /// 只用于减少重复探测，判定语义与直接调用完全一致；缓存内容只在扫描完成/切换实例时失效
     ///（这两处是模组目录集合可能变化的时刻）。只在 UI 线程访问，无需加锁。</summary>
     private readonly Dictionary<string, bool> _modDirExistsCache = new(StringComparer.OrdinalIgnoreCase);

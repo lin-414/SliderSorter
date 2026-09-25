@@ -48,10 +48,14 @@
             <MenuItem Header="{DynamicResource L.Tree_ExpandAll}" Click="ExpandAllGroups_Click" />
             <MenuItem Header="{DynamicResource L.Tree_CollapseAll}" Click="CollapseAllGroups_Click" />
             <MenuItem Header="{DynamicResource L.Tree_CollapseOthers}" Click="CollapseOtherGroups_Click" />
-            <!-- 前三项是整列的展开/折叠，这一项改的是归属，所以隔开一档。它按被右键的那一组圈范围，
-                 弹的是底部那颗「按模组指定…」的同一份菜单（限高、限宽、可滚都在那边）。 -->
+            <!-- 前三项是整列的展开/折叠，下面三项改的是归属（都按被右键的那一组圈范围），所以隔开一档。
+                 「本组按模组指定…」弹的是底部那颗「按模组指定…」的同一份菜单（限高、限宽、可滚都在那边）；
+                 「本组按服装关键字指定…」弹的是输入框收关键字，服装名命中的候选当赢家；
+                 「本组全部清除」与底部那颗「全部清除」同一动作，只是范围只有本组名下的冲突。 -->
             <Separator />
             <MenuItem Header="{DynamicResource L.Conflict_PickOwnerGroup}" Click="PickOwnerForGroup_Click" />
+            <MenuItem Header="{DynamicResource L.Conflict_PickOwnerKeyword}" Click="PickOwnerByKeywordForGroup_Click" />
+            <MenuItem Header="{DynamicResource L.Conflict_ClearGroup}" Click="ClearGroup_Click" />
         </ContextMenu>
 
         <!-- ── 「按模组指定」与候选行的右键菜单：都是空壳，项在弹出前由代码现建 ──
@@ -95,15 +99,24 @@
                            Margin="6,0,0,0" VerticalAlignment="Center"
                            Style="{StaticResource DimLabel}"
                            TextTrimming="CharacterEllipsis" />
-                <!-- 「组内互撞」只在有这种冲突时出现：没有就整行收起，
+                <!-- 第二行左右两格：「组内互撞」吃剩余宽度并截断，「未指定」按内容取宽贴右——
+                     同上排"名字让位、数字不消失"的分法，左栏收窄时先截的是那句话，计数始终在。
+                     两条都只在有话可说时出现：没有就整行收起，
                      否则每个分组头都多挂一条空的 13px 行。
-                     收起状态下也照显——那时它是这一组仅剩的"里头什么情况"的线索。 -->
-                <TextBlock Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2"
+                     收起状态下也照显——那时它是这一组仅剩的"里头什么情况"的线索。
+                     「未指定」是头上唯一会变的字：指定/清除赢家后 SaveAndRefresh 就地改写，
+                     键因此是可观察对象（IntraText 从扫描出来就是死的，不必）。 -->
+                <TextBlock Grid.Row="1" Grid.Column="0"
                            Text="{Binding Name.IntraText}" Margin="0,2,0,0"
                            Foreground="{DynamicResource B.WarnText}"
                            ToolTip="{DynamicResource L.Conflict_IntraGroupTip}"
                            TextTrimming="CharacterEllipsis"
                            Visibility="{Binding Name.HasIntra, Converter={StaticResource BoolToVis}}" />
+                <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding Name.UnresolvedText}"
+                           Margin="6,2,0,0" Foreground="{DynamicResource B.WarnText}"
+                           ToolTip="{DynamicResource L.Conflict_BucketUnresolvedTip}"
+                           TextTrimming="CharacterEllipsis"
+                           Visibility="{Binding Name.HasUnresolved, Converter={StaticResource BoolToVis}}" />
             </Grid>
         </DataTemplate>
     </UserControl.Resources>
@@ -135,23 +148,38 @@
         </Grid>
 
         <!-- ── 行 1：工具条。过滤、范围、重扫 ──
-             星分 + MaxWidth 而不是"过滤框定宽 320"：宽窗口下输入框跟着长（够长才看得见输入的内容），
-             窄窗口下它先让，重扫按钮始终贴右边缘（右列也是星分，按钮自己右对齐）。 -->
+             两个过滤框与「新模组」「查看组」同一套：左管服装名，右管模组名。
+             一颗框同时糊三种名字的话，"筛模组"会混进同名服装，反之亦然。
+             星分 + MaxWidth 而不是定宽：宽窗口下输入框跟着长（够长才看得见输入的内容），
+             窄窗口下两个框一起让，重扫按钮始终贴右边缘（右列也是星分，按钮自己右对齐）。 -->
         <Grid Grid.Row="1" Margin="0,0,0,8">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*" MaxWidth="420" MinWidth="140" />
+                <ColumnDefinition Width="*" MaxWidth="280" MinWidth="120" />
+                <ColumnDefinition Width="10" />
+                <ColumnDefinition Width="*" MaxWidth="280" MinWidth="120" />
+                <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
-            <TextBox Grid.Column="0" x:Name="FilterBox" MinWidth="140"
-                     ui:Watermark.Text="{DynamicResource L.Conflict_Filter}" />
+            <TextBox Grid.Column="0" x:Name="OutfitFilterBox" MinWidth="120"
+                     ui:Watermark.Text="{DynamicResource L.Conflict_FilterOutfits}" />
+            <TextBox Grid.Column="2" x:Name="ModFilterBox" MinWidth="120"
+                     ui:Watermark.Text="{DynamicResource L.Conflict_FilterMods}" />
             <!-- 同一模组内部的多个预设共用一个输出文件（一件衣服几百个配色）也是冲突，
                  但那不是"多个模组改了同一件衣服"，默认先藏起来 -->
-            <CheckBox Grid.Column="1" x:Name="OnlyCrossCheck" Margin="10,0,0,0" VerticalAlignment="Center"
+            <CheckBox Grid.Column="3" x:Name="OnlyCrossCheck" Margin="10,0,0,0" VerticalAlignment="Center"
                       Content="{DynamicResource L.Conflict_OnlyCrossMod}"
                       Checked="OnlyCross_Changed" Unchecked="OnlyCross_Changed" />
+            <!-- 只看未指定：与「只看跨模组」同一套过滤开关，两道可叠加。筛出来的就是"还欠着决定的"，
+                 指定一条那一行当场退场（SaveAndRefresh 在这档走整列重建），名单越做越短——
+                 配合左栏分组头就是"这一组还剩几件没处理"。重扫不重置它：那与过滤词框同一待遇，
+                 重扫后的清单换了一批，"只看没处理的"这个意图本身不会变。 -->
+            <CheckBox Grid.Column="4" x:Name="UnresolvedOnlyCheck" Margin="10,0,0,0" VerticalAlignment="Center"
+                      Content="{DynamicResource L.Conflict_UnresolvedOnly}"
+                      Checked="UnresolvedOnly_Changed" Unchecked="UnresolvedOnly_Changed"
+                      ToolTip="{DynamicResource L.Conflict_UnresolvedOnlyTip}" />
             <!-- 只看某个分组：左栏的分组头已经把冲突按组分好了，这一颗是"我只关心这一组"的快捷方式。
                  只列真的有冲突的分组（一个三十组的用户不该在选项里翻三十行才找到那两组），
                  可选项不足两个时整颗收起——那时它与"全部分组"等价，只是噪声。
@@ -160,14 +188,14 @@
                  模板里那层 Border 只按 ToggleButton 里那个 8px 箭头取高，不给高度就只剩一行字那么矮，
                  夹在 34 高的输入框与按钮之间像没画完（探针只查溢出/压窄，不查"比邻座矮一截"）。
                  取 30 与 FieldCombo（设置页、规则归组窗）同一档。 -->
-            <ComboBox Grid.Column="2" x:Name="GroupFilterBox" Margin="10,0,0,0" MinWidth="120" MaxWidth="200"
+            <ComboBox Grid.Column="5" x:Name="GroupFilterBox" Margin="10,0,0,0" MinWidth="120" MaxWidth="200"
                       Height="30" VerticalAlignment="Center" SelectionChanged="GroupFilter_Changed"
                       ToolTip="{DynamicResource L.Conflict_GroupFilterTip}" />
-            <TextBlock Grid.Column="3" x:Name="FilterCountLabel" Margin="10,0,0,0" VerticalAlignment="Center"
+            <TextBlock Grid.Column="6" x:Name="FilterCountLabel" Margin="10,0,0,0" VerticalAlignment="Center"
                        Style="{StaticResource DimLabel}" TextTrimming="CharacterEllipsis" />
             <!-- 冲突清单是扫描的产物：页面上的「自动选择」改的是本工具的设置，不会重扫。
                  以前模态窗口每次都是新开的、天然新鲜，改成常驻页就得自己留一个重扫入口。 -->
-            <Button Grid.Column="4" x:Name="RescanButton" Content="{DynamicResource L.Conflict_Rescan}"
+            <Button Grid.Column="7" x:Name="RescanButton" Content="{DynamicResource L.Conflict_Rescan}"
                     Command="{Binding DetectBodySlideCommand}" HorizontalAlignment="Right"
                     MinWidth="110" Margin="12,0,0,0" />
         </Grid>
@@ -294,7 +322,7 @@
                                     BorderBrush="{DynamicResource B.WarnText}" BorderThickness="1"
                                     ToolTip="{DynamicResource L.Conflict_IntraGroupTip}"
                                     Visibility="{Binding IntraVisibility}">
-                                <TextBlock Text="{DynamicResource L.Conflict_IntraGroup}" FontSize="11"
+                                <TextBlock Text="{DynamicResource L.Conflict_IntraGroup}" FontSize="{DynamicResource Type.H4}"
                                            Foreground="{DynamicResource B.WarnText}" />
                             </Border>
                             <TextBlock Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" Text="{Binding Status}"
@@ -331,7 +359,8 @@
                     <DataTemplate>
                         <!-- 右键整行 = 选中它、按这一行现建菜单项并弹出菜单（第一项就是"设为这一组的赢家"，
                              指针位置不变，只是多点半下；同一模组还有别的冲突在列表里时，
-                             第二项一次全交给它）。左键那个小圆圈仍是即时指定，不用菜单。
+                             第二项一次全交给它）。左键那个小圆圈仍是即时指定，不用菜单；
+                             双击行内文字/空白同理即时指定（Row_DoubleClick）——不想瞄准小圆圈时整行都算按钮。
                              行根套一层 Border 而不是直接拿 Grid 当根，是为了给「不指定」那一行加一条上分隔线。
                              处理器用的是 **Preview**MouseRightButtonUp（隧道），不是 MouseRightButtonUp：
                              后者是 Direct 路由事件，只在鼠标命中的那一个元素上触发——指针落在服装名或
@@ -350,7 +379,8 @@
                                     </Style.Triggers>
                                 </Style>
                             </Border.Style>
-                            <Grid PreviewMouseRightButtonUp="Row_RightClick">
+                            <Grid PreviewMouseRightButtonUp="Row_RightClick"
+                                  MouseLeftButtonDown="Row_DoubleClick">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="Auto" />
                                     <ColumnDefinition Width="*" />

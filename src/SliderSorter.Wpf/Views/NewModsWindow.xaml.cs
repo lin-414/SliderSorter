@@ -213,10 +213,13 @@ public partial class NewModsWindow : Window
 
     private int CountOwners(List<string> outfits)
     {
+        // 批次口径是"当前可见且勾选"（见 NewModsFilterTests 第 ⑦ 步的提交契约），
+        // 这里只负责把查表从 List.Contains 的 O(选中×节点) 换成 HashSet
+        var set = new HashSet<string>(outfits, StringComparer.Ordinal);
         var owners = new HashSet<string>(StringComparer.Ordinal);
         foreach (var node in Walk(Tree.ItemsSource!.Cast<NodeVM>()))
         {
-            if (node is OutfitNodeVM outfit && outfits.Contains(outfit.OutfitName) && node.Parent is ModNodeVM parent)
+            if (node is OutfitNodeVM outfit && set.Contains(outfit.OutfitName) && node.Parent is ModNodeVM parent)
                 owners.Add(parent.Owner);
         }
         return owners.Count;

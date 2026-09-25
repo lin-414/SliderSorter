@@ -83,4 +83,22 @@ public class IniParserTests
     [Fact]
     public void NonUtf8ByteRunsFallBackToBytePerChar() =>
         Assert.Equal(@"A:\éé", ValueOf(@"@ByteArray(A:\\\xe9\xe9)"));
+
+    /// <summary>QSettings 的 <c>@Invalid()</c>（未设置/无效值，实例尚未配置游戏时 gamePath 就是它）
+    /// 必须归一为空串：原样透传会让所有 IsNullOrWhiteSpace 守卫失效——GamePath 返回字面量
+    /// <c>@Invalid()</c>，拼出 <c>@Invalid()\Data</c> 冒充真实游戏目录、跳过注册表回退。</summary>
+    [Fact]
+    public void InvalidMarkerBecomesEmpty()
+    {
+        Assert.Equal("", ValueOf("@Invalid()"));
+        // 其余 @ 打头的类型标记（@Rect/@Size/@Variant 等）同样不是字符串，一律按未设置处理
+        Assert.Equal("", ValueOf("@Rect(0 0 0 0)"));
+    }
+
+    /// <summary>@ 打头的判定只针对**值开头**：出现在中间的 @ 是普通字符，不能动。</summary>
+    [Fact]
+    public void AtSignInTheMiddleIsOrdinaryText()
+    {
+        Assert.Equal(@"D:\user@mail\games", ValueOf(@"D:\user@mail\games"));
+    }
 }

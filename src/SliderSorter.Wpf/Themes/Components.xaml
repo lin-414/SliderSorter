@@ -56,7 +56,7 @@
     <!-- H2 段/卡片标题。「比正文大、比页标题小」是它的全部职责。 -->
     <Style x:Key="SectionTitleText" TargetType="TextBlock">
         <Setter Property="Foreground" Value="{DynamicResource B.Text}" />
-        <Setter Property="FontSize" Value="16" />
+        <Setter Property="FontSize" Value="{DynamicResource Type.H2}" />
         <Setter Property="FontWeight" Value="Bold" />
         <Setter Property="TextTrimming" Value="CharacterEllipsis" />
     </Style>
@@ -64,7 +64,7 @@
     <!-- H4 辅助/徽标文字。计数、说明、状态这类"读得到但不是主角"的文字。 -->
     <Style x:Key="CaptionText" TargetType="TextBlock">
         <Setter Property="Foreground" Value="{DynamicResource B.TextDim}" />
-        <Setter Property="FontSize" Value="11" />
+        <Setter Property="FontSize" Value="{DynamicResource Type.H4}" />
     </Style>
 
     <!-- ── 节点行文本族 ──
@@ -178,7 +178,7 @@
 
     <Style x:Key="NodeCountBadgeText" TargetType="TextBlock">
         <Setter Property="Foreground" Value="{DynamicResource B.TextDim}" />
-        <Setter Property="FontSize" Value="11" />
+        <Setter Property="FontSize" Value="{DynamicResource Type.H4}" />
         <Setter Property="VerticalAlignment" Value="Center" />
         <!-- 计数短且必须完整：不折行、不省略 -->
         <Setter Property="TextWrapping" Value="NoWrap" />

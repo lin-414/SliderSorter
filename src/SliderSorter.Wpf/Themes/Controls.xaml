@@ -1,5 +1,6 @@
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib"
                     xmlns:ui="clr-namespace:SliderSorter.Wpf.Services">
 
     <!-- ── 控件样式（主题无关层：颜色一律 DynamicResource 引用 B.* 键，由 Palette.Light/Palette.Boutique 提供，
@@ -10,6 +11,9 @@
          汉字再落到雅黑。只写雅黑时英语/俄语的拉丁字形明显不如系统字体。 -->
     <FontFamily x:Key="AppFont">Segoe UI, Microsoft YaHei UI</FontFamily>
     <FontFamily x:Key="MonoFont">Consolas, Cascadia Mono</FontFamily>
+
+    <!-- 字阶基准值（Type.H1–H4）在 Themes/TypeScale.xaml：它们要被 FontScaleManager
+         就地改写以实现字号缩放，单独成一份字典才找得到、改得动。 -->
 
     <!-- ── 窗口默认：前景色必须走样式，否则暗色主题下继承系统黑字不可读 ──
          渲染选项放在这里而不是逐个窗口声明：只有主窗口设过 TextFormattingMode/UseLayoutRounding 时，
@@ -23,7 +27,7 @@
         <Setter Property="Background" Value="{DynamicResource B.Window}" />
         <Setter Property="Foreground" Value="{DynamicResource B.Text}" />
         <Setter Property="FontFamily" Value="{StaticResource AppFont}" />
-        <Setter Property="FontSize" Value="13" />
+        <Setter Property="FontSize" Value="{DynamicResource Type.H3}" />
         <Setter Property="TextOptions.TextFormattingMode" Value="Display" />
         <Setter Property="UseLayoutRounding" Value="True" />
         <Setter Property="SnapsToDevicePixels" Value="True" />
@@ -737,7 +741,16 @@
                     <Border Background="{TemplateBinding Background}"
                             BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="1"
                             CornerRadius="4" Padding="{TemplateBinding Padding}">
-                        <ContentPresenter />
+                        <ContentPresenter>
+                            <!-- 字符串内容自动生成的 TextBlock 不换行（TextBlock.TextWrapping 附加属性
+                                 不继承，presenter 也没有可设的 TextWrapping），长句会溢出边框被屏幕边裁掉。
+                                 在 presenter 的资源作用域里给 string 一份带换行的模板，非字符串内容不经过它。 -->
+                            <ContentPresenter.Resources>
+                                <DataTemplate DataType="{x:Type sys:String}">
+                                    <TextBlock Text="{Binding}" TextWrapping="Wrap" />
+                                </DataTemplate>
+                            </ContentPresenter.Resources>
+                        </ContentPresenter>
                     </Border>
                 </ControlTemplate>
             </Setter.Value>
@@ -928,7 +941,7 @@
 
     <Style x:Key="CountBadgeText" TargetType="TextBlock">
         <Setter Property="Foreground" Value="{DynamicResource B.WarnText}" />
-        <Setter Property="FontSize" Value="11" />
+        <Setter Property="FontSize" Value="{DynamicResource Type.H4}" />
         <Setter Property="FontWeight" Value="Bold" />
         <Setter Property="HorizontalAlignment" Value="Center" />
         <Setter Property="VerticalAlignment" Value="Center" />
@@ -981,7 +994,7 @@
          独立窗口若要一个成规模的标题就用它，而不是回到 16 与正文争层级。 -->
     <Style x:Key="PageHeading" TargetType="TextBlock">
         <Setter Property="Foreground" Value="{DynamicResource B.Text}" />
-        <Setter Property="FontSize" Value="18" />
+        <Setter Property="FontSize" Value="{DynamicResource Type.H1}" />
         <Setter Property="FontWeight" Value="Bold" />
         <Setter Property="TextTrimming" Value="CharacterEllipsis" />
     </Style>
@@ -991,7 +1004,7 @@
          设置页「关于」里的应用名都是 16，两页并排看就是"段标题不一样大"。
          字阶表见 Themes/Components.xaml 顶部。 -->
     <Style x:Key="SettingSectionHeader" TargetType="TextBlock" BasedOn="{StaticResource SectionHeader}">
-        <Setter Property="FontSize" Value="16" />
+        <Setter Property="FontSize" Value="{DynamicResource Type.H2}" />
         <Setter Property="FontWeight" Value="SemiBold" />
         <Setter Property="Margin" Value="0,0,0,10" />
     </Style>
@@ -1064,7 +1077,7 @@
                             <Border x:Name="hint" Grid.Column="2" Margin="8,0,0,0" VerticalAlignment="Center"
                                     Background="{DynamicResource B.Border}" CornerRadius="3" Padding="5,1">
                                 <TextBlock Text="{Binding Tag, RelativeSource={RelativeSource TemplatedParent}}"
-                                           Foreground="{DynamicResource B.TextDim}" FontSize="11" />
+                                           Foreground="{DynamicResource B.TextDim}" FontSize="{DynamicResource Type.H4}" />
                             </Border>
                         </Grid>
                     </Border>

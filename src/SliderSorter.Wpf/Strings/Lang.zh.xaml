@@ -30,9 +30,8 @@
     <sys:String x:Key="L.Settings_Theme">界面主题</sys:String>
     <sys:String x:Key="L.Settings_Language">界面语言</sys:String>
     <sys:String x:Key="L.Settings_LanguageSystem">跟随系统</sys:String>
-    <sys:String x:Key="L.Settings_Help">帮助与关于</sys:String>
-    <sys:String x:Key="L.Settings_CheckUpdate">检查更新</sys:String>
-    <sys:String x:Key="L.Settings_UpdateChecking">正在检查更新…</sys:String>
+    <sys:String x:Key="L.Settings_FontSize">字体大小</sys:String>
+    <sys:String x:Key="L.Settings_Help">帮助</sys:String>
     <sys:String x:Key="L.Settings_Manual">使用说明</sys:String>
 
     <!-- 主窗口 -->
@@ -74,7 +73,6 @@
     <sys:String x:Key="L.Title_Tip">提示</sys:String>
     <sys:String x:Key="L.Title_Error">错误</sys:String>
     <sys:String x:Key="L.Title_Confirm">确认</sys:String>
-    <sys:String x:Key="L.Title_CheckUpdate">检查更新</sys:String>
     <sys:String x:Key="L.Title_CleanupStale">清理失效服装</sys:String>
     <sys:String x:Key="L.Title_FilenameConflict">文件名冲突</sys:String>
     <sys:String x:Key="L.Title_NewGroup">新建组</sys:String>
@@ -198,6 +196,7 @@
     <sys:String x:Key="L.Msg_SelectGroupFirst">请先选中一个组。</sys:String>
     <sys:String x:Key="L.Msg_SelectOutfitsFirst">请先勾选要移出的服装（可勾选模组或分隔符批量全选）。</sys:String>
     <sys:String x:Key="L.Msg_ConfirmRemove">确定把 {0} 个服装移出组「{1}」？</sys:String>
+    <sys:String x:Key="L.Msg_ConfirmMove">确定把 {0} 个服装从「{1}」移动到「{2}」？</sys:String>
     <sys:String x:Key="L.Msg_ScanIncomplete">尚未完成扫描或无法确定写入位置。</sys:String>
     <sys:String x:Key="L.Msg_NoGroupsYet">当前没有任何组。请先新建组并勾选服装。</sys:String>
     <sys:String x:Key="L.Msg_EmptyGroupName">存在空名称的组，请先重命名。</sys:String>
@@ -211,11 +210,6 @@
     <sys:String x:Key="L.Msg_NotMo2Dir">该目录下没有 ModOrganizer.ini，不是 MO2 实例目录。请选择含 ModOrganizer.ini 的实例目录（便携安装即 ModOrganizer.exe 所在目录）。</sys:String>
     <sys:String x:Key="L.Msg_Mo2InstallDirNotInstance">这是 MO2 的程序目录，不是实例目录。实例目录含 ModOrganizer.ini，全局实例通常位于 %LOCALAPPDATA%\ModOrganizer 下的实例子目录，一般已被自动检测，无需手动添加。</sys:String>
     <sys:String x:Key="L.Msg_NotBodySlideDir">该目录下没有 Config.xml，不是 BodySlide 目录。</sys:String>
-    <sys:String x:Key="L.Msg_UpToDate">已是最新版本（v{0}）。</sys:String>
-    <sys:String x:Key="L.Msg_UpdateAvailable" xml:space="preserve">发现新版本 {0}（当前 v{1}）。
-
-是否打开发布页下载？</sys:String>
-    <sys:String x:Key="L.Msg_UpdateFailed">检查更新失败：{0}</sys:String>
     <sys:String x:Key="L.Msg_AlreadyRunning">SliderSorter 已经在运行。</sys:String>
     <sys:String x:Key="L.Msg_OutputDirUndetermined">尚未完成扫描，无法确定输出目录。</sys:String>
     <sys:String x:Key="L.Msg_CopiedToClipboard">已复制到剪贴板。</sys:String>
@@ -232,6 +226,8 @@
     <sys:String x:Key="L.Members_FilterMods">过滤模组 / 分隔符…</sys:String>
     <sys:String x:Key="L.Members_Count">组内共 {0} 个服装，当前显示 {1} 个</sys:String>
     <sys:String x:Key="L.Members_RemoveSelected">移出所选</sys:String>
+    <sys:String x:Key="L.Members_MoveSelected">移动到…</sys:String>
+    <sys:String x:Key="L.Members_MoveNoTarget">没有其他分组</sys:String>
 
     <!-- 新装模组弹窗 -->
     <sys:String x:Key="L.NewMods_Title">发现新服装模组</sys:String>
@@ -260,16 +256,21 @@
     <sys:String x:Key="L.Conflict_IntraGroup" xml:space="preserve">组内互撞</sys:String>
     <sys:String x:Key="L.Conflict_IntraGroupCount" xml:space="preserve">其中 {0} 处组内互撞</sys:String>
     <sys:String x:Key="L.Conflict_IntraGroupTip" xml:space="preserve">同一个分组里有 2 个以上成员写同一个输出文件：批建时只会有一个赢，其余的不会生成。</sys:String>
+    <sys:String x:Key="L.Conflict_BucketUnresolvedCount" xml:space="preserve">其中 {0} 处未指定</sys:String>
+    <sys:String x:Key="L.Conflict_BucketUnresolvedTip" xml:space="preserve">这一分组名下还有冲突没指定赢家：批建时 BodySlide 会逐个询问。操作行的批量按钮可以一次指定当前列出的组；勾上工具条的「只看未指定」可只列出这些冲突。</sys:String>
     <sys:String x:Key="L.Conflict_Ungrouped" xml:space="preserve">未入组</sys:String>
     <sys:String x:Key="L.Conflict_GroupFilterAll" xml:space="preserve">全部分组</sys:String>
     <sys:String x:Key="L.Conflict_GroupFilterTip" xml:space="preserve">只列出有该分组成员卷入的冲突。选项里只出现真的有冲突的分组。</sys:String>
     <sys:String x:Key="L.Conflict_CandidatesHeader" xml:space="preserve">由谁生成</sys:String>
     <sys:String x:Key="L.Conflict_PreviewHeader" xml:space="preserve">预览</sys:String>
     <sys:String x:Key="L.Conflict_BatchScope" xml:space="preserve">对当前列出的 {0} 组：</sys:String>
-    <sys:String x:Key="L.Conflict_Filter" xml:space="preserve">过滤输出路径 / 服装名 / 模组名；可多词…</sys:String>
-    <sys:String x:Key="L.Conflict_FilterTip" xml:space="preserve">分号或逗号可以分多个词，任一命中就留下（不分大小写）。先筛出一批，再用下面的批量动作一次指定。</sys:String>
+    <sys:String x:Key="L.Conflict_FilterOutfits" xml:space="preserve">过滤服装名…</sys:String>
+    <sys:String x:Key="L.Conflict_FilterMods" xml:space="preserve">过滤模组名…</sys:String>
+    <sys:String x:Key="L.Conflict_FilterTip" xml:space="preserve">分号或逗号可以分多个词，任一命中就留下（不分大小写）；两个框都填了词时，要同时满足才显示。先筛出一批，再用下面的批量动作一次指定。</sys:String>
     <sys:String x:Key="L.Conflict_OnlyCrossMod" xml:space="preserve">只看跨模组冲突</sys:String>
     <sys:String x:Key="L.Conflict_OnlyCrossModTip" xml:space="preserve">跨模组冲突 {0} 组，同一模组内部共用 {1} 组。同一件衣服的几百个配色共用一个输出文件是模组的常态，勾上就先不看它们。</sys:String>
+    <sys:String x:Key="L.Conflict_UnresolvedOnly" xml:space="preserve">只看未指定</sys:String>
+    <sys:String x:Key="L.Conflict_UnresolvedOnlyTip" xml:space="preserve">只列出还没指定赢家的冲突：指定一条，那一行当场退场，名单越做越短。与过滤词、「只看跨模组」、「只看某组」可以叠加。</sys:String>
     <sys:String x:Key="L.Conflict_RescanTip" xml:space="preserve">重新扫描模组与服装，重算这份冲突清单。页面上的选择改的是本工具的设置，不会自动重扫。</sys:String>
     <sys:String x:Key="L.Conflict_SameModOnly" xml:space="preserve">同模组内部</sys:String>
     <sys:String x:Key="L.Conflict_FilterCount" xml:space="preserve">显示 {0} 组 / 共 {1} 组</sys:String>
@@ -283,6 +284,11 @@
     <sys:String x:Key="L.Conflict_PickOwnerEmpty" xml:space="preserve">当前列表里没有可指定的模组</sys:String>
     <sys:String x:Key="L.Conflict_PickOwnerGroup" xml:space="preserve">本组按模组指定…</sys:String>
     <sys:String x:Key="L.Conflict_PickOwnerGroupHeader" xml:space="preserve">分组：{0} · 共 {1} 组</sys:String>
+    <sys:String x:Key="L.Conflict_PickOwnerKeyword" xml:space="preserve">本组按服装关键字指定…</sys:String>
+    <sys:String x:Key="L.Conflict_PickOwnerKeywordTitle" xml:space="preserve">本组按服装关键字指定</sys:String>
+    <sys:String x:Key="L.Conflict_PickOwnerKeywordLabel" xml:space="preserve">服装名含任一关键字的冲突，交给命中的那件服装（同时命中多个时取最强层）。多个关键字用 ; 或 , 分隔，只作用本组名下的冲突。</sys:String>
+    <sys:String x:Key="L.Conflict_PickOwnerKeywordEmpty" xml:space="preserve">本组没有服装名命中这些关键字，未做改动。</sys:String>
+    <sys:String x:Key="L.Conflict_ClearGroup" xml:space="preserve">本组全部清除</sys:String>
     <sys:String x:Key="L.Conflict_SetWinner" xml:space="preserve">设为这一组的赢家</sys:String>
     <sys:String x:Key="L.Conflict_Export" xml:space="preserve">写入 BodySlide…</sys:String>
     <sys:String x:Key="L.Conflict_ExportTip" xml:space="preserve">把选定结果写进 BuildSelection.xml，落点在当前输出位置里——与分组文件同一个 BodySlide 目录（「自定义」模式下就是所选目录本身；MO2 下正是 BodySlide 实际读取它的那一份）；写之前的确认框会列出全路径，原文件先备份成 .bak</sys:String>
@@ -402,19 +408,16 @@
     <sys:String x:Key="L.Diag_OutputUndetermined">（未定）</sys:String>
 
     <!-- 关于 -->
-    <sys:String x:Key="L.About_Desc">读取 Mod Organizer 2 安装的模组，把 BodySlide 滑块组批量划进分组，生成原生格式的分组文件。支持天际 SE/AE、辐射 4 等所有 BodySlide 支持的游戏。</sys:String>
-    <sys:String x:Key="L.About_AuthorLabel">作者</sys:String>
-    <sys:String x:Key="L.About_Compat">分组文件与 BodySlide 完全兼容；每个组生成一个以组名命名的独立文件，存放在 BodySlide 的 SliderGroups 目录。</sys:String>
 
     <!-- 帮助 -->
     <sys:String x:Key="L.Help_H1">一、常见任务速查</sys:String>
     <sys:String x:Key="L.Help_01">本工具读取 Mod Organizer 2（MO2）安装的模组，让你把服装（BodySlide 滑块组）批量划进分组，并按组生成 BodySlide 原生格式的分组文件。</sys:String>
-    <sys:String x:Key="L.Help_02">1. 选择 MO2 实例与配置（Profile）——程序自动发现全局实例与便携安装；Profile 会默认带上次使用的。</sys:String>
-    <sys:String x:Key="L.Help_03">2. 确认 BodySlide 目录——通常自动检测成功。卡片下方的灰字"有效项目路径"就是 BodySlide 实际读取服装与分组的位置，请留意它。</sys:String>
+    <sys:String x:Key="L.Help_02">1. 在「设置」页选择 MO2 实例与配置（Profile）——程序自动发现全局实例与便携安装；Profile 会默认带上次使用的。</sys:String>
+    <sys:String x:Key="L.Help_03">2. 确认 BodySlide 目录——通常自动检测成功。「设置」页工作环境卡下方的灰字"有效项目路径"就是 BodySlide 实际读取服装与分组的位置，请留意它。</sys:String>
     <sys:String x:Key="L.Help_04">3. 建组与勾选——右侧「⋯」→「新建组」创建并选中一个组（组列表为空时面板中间也有「新建组」按钮）；左侧树勾选分隔符（=全选其下模组）或展开后勾选单个服装；点中间的「加入组」才真正写入，「移出组」用于撤销勾选内容。</sys:String>
-    <sys:String x:Key="L.Help_05">4. 保存——点底部「保存分组文件」，或用菜单「文件 → 保存分组文件」（Ctrl+S）。每个组生成一个文件，文件名即组名（如 UBE.xml）。完成后重启 BodySlide（通过 MO2 启动的建议连 MO2 一起重启）。</sys:String>
+    <sys:String x:Key="L.Help_05">4. 保存——点底部「保存分组文件」（Ctrl+S）。每个组生成一个文件，文件名即组名（如 UBE.xml）。完成后重启 BodySlide（通过 MO2 启动的建议连 MO2 一起重启）。</sys:String>
     <sys:String x:Key="L.Help_H2">二、快速上手（4 步）</sys:String>
-    <sys:String x:Key="L.Help_S2_Top">【顶部设置区】</sys:String>
+    <sys:String x:Key="L.Help_S2_Top">【环境设置（在「设置」页 → 工作环境 / 输出设置）】</sys:String>
     <sys:String x:Key="L.Help_06">MO2 实例：自动发现 %LOCALAPPDATA%\ModOrganizer 下的全局实例与便携安装；「选择实例目录…」可手动指定含 ModOrganizer.ini 的实例目录；「刷新」重新扫描实例。</sys:String>
     <sys:String x:Key="L.Help_07">配置 Profile：列出该实例所有可用的 Profile。启用模组列表读取自该 Profile 的 modlist.txt，顺序与 MO2 左侧栏一致。</sys:String>
     <sys:String x:Key="L.Help_08">BodySlide：自动在启用模组中查找含 BodySlide*.exe 与 Config.xml 的目录；找不到时用「浏览…」手动指定。</sys:String>
@@ -425,14 +428,17 @@
     <sys:String x:Key="L.Help_12">勾选框只是「选中」待操作的内容——点中间的「加入组」/「移出组」才写入。勾选模组或分隔符会自动勾选其下所有服装。</sys:String>
     <sys:String x:Key="L.Help_13">服装名前的标记 = 该服装已在当前选中的组里；模组标题右侧的「组内 x/总数」徽标表示该模组已有几个服装进组。</sys:String>
     <sys:String x:Key="L.Help_S2_Groups">【右侧组面板】</sys:String>
-    <sys:String x:Key="L.Help_14">组列表：单击选中（左侧勾选状态与标注随之切换且不打断浏览位置），双击打开成员预览。新建/重命名/查看/删除与导入都收在标题栏右侧的「⋯」里，也可以直接右键组列表；「撤销」与「规则分组」是那颗「⋯」旁边的两颗常驻按钮。</sys:String>
+    <sys:String x:Key="L.Help_14">组列表：单击选中（左侧勾选状态与标注随之切换且不打断浏览位置），双击打开成员预览（可过滤、勾选批量移出，也能「移动到…」另一个组）。新建/重命名/查看/删除与导入都收在标题栏右侧的「⋯」里，也可以直接右键组列表；「撤销」与「规则分组」是那颗「⋯」旁边的两颗常驻按钮。</sys:String>
     <sys:String x:Key="L.Help_15">「规则分组」按钮（就在「撤销」旁边）把本页下方摊开：按关键字批量操作，详见第五章。</sys:String>
-    <sys:String x:Key="L.Help_16">撤销（Ctrl+Z 或菜单「编辑 → 撤销」）：回退最近 30 步分组操作，详见第六章。</sys:String>
-    <sys:String x:Key="L.Help_17">菜单「文件 → 导入组文件…」：把其他分组 XML 合并进当前列表继续编辑。</sys:String>
+    <sys:String x:Key="L.Help_16">撤销（Ctrl+Z）：回退最近 30 步分组操作，详见第六章。</sys:String>
+    <sys:String x:Key="L.Help_17">「⋯」→「导入组文件…」：把其他分组 XML 合并进当前列表继续编辑。</sys:String>
     <sys:String x:Key="L.Help_18">新装模组提醒：扫描发现新装的服装模组时自动弹窗，按 分隔符 → 模组 → 服装 分层列出（与主界面一致，可展开看具体服装）——勾选、选目标组、点「加入所选组」即可归组（可撤销），可分多批换目标组；列表长时用上方两个过滤框定位（左框筛服装名、右框筛模组 / 分隔符名，勾选状态不会因过滤丢失）。关闭则暂不处理，之后仍可用「仅看未分配」找到这些服装。</sys:String>
     <sys:String x:Key="L.Help_S2_Status">【状态栏】</sys:String>
-    <sys:String x:Key="L.Help_19">左侧：统计（模组/服装/已分配/未分配）。「诊断信息」在菜单「工具」下；运行日志是保存按钮下方可折叠的一条摘要，点一下展开，展开后按级别着色、可复制、可清空，高度可拖拽。</sys:String>
+    <sys:String x:Key="L.Help_19">左侧：统计（模组/服装/已分配/未分配）。「诊断信息」在「设置」页的「帮助」节里；运行日志是保存按钮下方可折叠的一条摘要，点一下展开，展开后按级别着色、可复制、可清空，高度可拖拽。</sys:String>
     <sys:String x:Key="L.Help_20">右侧：当前输出目录描述，悬停显示完整路径。</sys:String>
+    <sys:String x:Key="L.Help_S2_Settings">【设置页】</sys:String>
+    <sys:String x:Key="L.Help_43">五节卡片：工作环境（MO2 实例 / Profile / BodySlide 目录 / 输出位置——主界面不重复放这一套）、输出设置（写出模式与输出目录）、外观（界面主题 / 界面语言 / 字体大小——字号四档 90% / 100% / 110% / 125%，选定即时生效，本篇说明的正文与标题跟着缩放）、维护、帮助。</sys:String>
+    <sys:String x:Key="L.Help_44">「维护」里的「清理失效服装…」把已不在当前扫描里的服装从各组剔除（先确认、可撤销）；「帮助」节里是本篇使用说明与「诊断信息」——排查「BodySlide 读不到」时，先看它的「有效项目路径」与「写出目标」是否指向同一处。</sys:String>
     <sys:String x:Key="L.Help_H3">三、界面各区域说明</sys:String>
     <sys:String x:Key="L.Help_21">保存时每个组生成一个独立文件，文件名即组名（如 UBE.xml、护甲.xml），内容为 BodySlide 原生 &lt;SliderGroups&gt; 格式（UTF-8 带 BOM），与 BodySlide 完全兼容。</sys:String>
     <sys:String x:Key="L.Help_22">重复保存会覆盖同名组文件，并按内部清单自动清理改名/删除组后遗留的旧文件。未保存就关闭程序会弹出提示。</sys:String>
@@ -455,7 +461,7 @@
     <sys:String x:Key="L.Help_36">BodySlide 程序目录 / 游戏真实 Data / 自定义：分别写到对应位置的 SliderGroups。</sys:String>
     <sys:String x:Key="L.Help_H6">六、撤销与输出位置</sys:String>
     <sys:String x:Key="L.Help_37">· 勾选后为什么没进组？勾选只是「选中」，还要点中间的「加入组」。</sys:String>
-    <sys:String x:Key="L.Help_38">· BodySlide 里看不到新组？1) 重启 BodySlide（经 MO2 启动的连 MO2 重启）；2) 打开「工具 → 诊断信息」，核对「有效项目路径」与「输出目录」是否一致——BodySlide 只从有效项目路径的 SliderGroups 读取分组。</sys:String>
+    <sys:String x:Key="L.Help_38">· BodySlide 里看不到新组？1) 重启 BodySlide（经 MO2 启动的连 MO2 重启）；2) 打开「设置」页「帮助」节里的「诊断信息」，核对「有效项目路径」与「输出目录」是否一致——BodySlide 只从有效项目路径的 SliderGroups 读取分组。</sys:String>
     <sys:String x:Key="L.Help_39">· 为什么有些模组不显示？树里只显示含 BodySlide 服装的启用模组；未启用或不含服装的模组不会出现。</sys:String>
     <sys:String x:Key="L.Help_40">· 服装名后的（同名冲突）？该服装名在多个模组中都出现过，归属显示为优先级最高的模组；分组按名称匹配，不受影响。</sys:String>
     <sys:String x:Key="L.Help_41">· 输出目录里多了个 SliderSorter.files.txt？那是本工具的清单文件，用于自动清理旧文件，BodySlide 不会读取它。</sys:String>
@@ -475,13 +481,17 @@
     <sys:String x:Key="L.Help_Conflict_B">② 输出归属（「输出归属」页）——多件服装写出同一个身体网格文件时，选定由哪个模组生成，点「写入 BodySlide…」写进 BuildSelection.xml。选择结果只存在本工具里，写入前原文件会备份为 .bak。落点跟随「输出位置」：写在输出位置下的 CalienteTools\BodySlide 目录里（「自定义」模式就是所选目录本身），与分组文件同一个模组。BodySlide 只从它的程序目录读这个文件，而 MO2 下那个目录就是虚拟 Data 里的 CalienteTools\BodySlide——写进输出位置才是它读得到的那一份。</sys:String>
     <sys:String x:Key="L.Help_Conflict_C">两者各写各的文件，互不覆盖：只要扫描过一次，两份成果就都可用，顺序随意，之后也都能重新进入单独修改。</sys:String>
     <sys:String x:Key="L.Help_Conflict_D">「同一模组内部共用输出文件」（一件衣服的几百个配色）是常态，默认不算需要处理的冲突；勾「只看跨模组冲突」可把它们滤掉。</sys:String>
+    <sys:String x:Key="L.Help_Conflict_E">工具条上四道筛子：「过滤服装名…」「过滤模组名…」两框各管一类名字（连续子串、不区分大小写；分号或逗号可分多个词、任一命中即留下；两框都填了词要同时满足），「只看跨模组冲突」先不看同模组配色，「只看未指定」只列还没定赢家的冲突——指定一条它当场退场，名单越做越短；几道筛子可叠加，「只看某组」下拉与「重新扫描」也在这一行。</sys:String>
+    <sys:String x:Key="L.Help_Conflict_F">左栏按你自己的分组分类：每个分组头写着冲突数与「其中 N 处未指定」（警示色，指定或清除后当场增减），点一下可折叠该组名下的行；右键分组头除「全部展开 / 全部折叠 / 折叠其他」外，还有三个只作用于本组的动作——「本组按模组指定…」「本组按服装关键字指定…」（服装名命中关键字的候选当赢家，同时命中取最强层）与「本组全部清除」。</sys:String>
+    <sys:String x:Key="L.Help_Conflict_G">中栏「由谁生成」一行一个候选：点行首的小圆圈即时指定，双击行内任意位置同理；右键一行开菜单——第一项把它设为赢家，第二项把该模组卷入的冲突一次全交给它（项上带着组数）；末尾分隔线下的「不指定（让 BodySlide 再问我）」交回 BodySlide。下方的操作行是批量动作：「全部按模组优先级」「按模组指定…」「全部清除」，右端「写入 BodySlide…」落盘。</sys:String>
     <sys:String x:Key="L.Help_Toc">目录</sys:String>
     <sys:String x:Key="L.Help_TocHint">点标题可跳到对应章节。</sys:String>
     <sys:String x:Key="L.Help_Task1">把某个模组的服装归到一组 —— 左侧勾选该模组（勾模组名 = 全选其下服装）→ 右侧选中目标组 → 点中间的「加入组」→ 点「保存分组文件」。</sys:String>
     <sys:String x:Key="L.Help_Task2">把散落在多个模组里的同类服装归到一组 —— 点右侧那颗「规则分组」，用关键字一次圈定（见第五章）。</sys:String>
     <sys:String x:Key="L.Help_Task3">某个服装归错了组 —— 左侧勾选它 → 点「移出组」；也可以直接 Ctrl+Z 撤销上一步。</sys:String>
-    <sys:String x:Key="L.Help_Task4">BodySlide 里看不到新生成的组 —— 先重启 BodySlide（经 MO2 启动的连 MO2 一起重启）；仍看不到就打开「工具 → 诊断信息」，核对「有效项目路径」与「输出目录」是否一致。</sys:String>
-    <sys:String x:Key="L.Help_Task5">想确认某个组里都有什么 —— 双击组名，或右侧「⋯」→「查看组」，打开成员列表（可过滤、可勾选批量移出）。</sys:String>
+    <sys:String x:Key="L.Help_Task4">BodySlide 里看不到新生成的组 —— 先重启 BodySlide（经 MO2 启动的连 MO2 一起重启）；仍看不到就打开「设置」页「帮助」节里的「诊断信息」，核对「有效项目路径」与「输出目录」是否一致。</sys:String>
+    <sys:String x:Key="L.Help_Task5">想确认某个组里都有什么 —— 双击组名，或右侧「⋯」→「查看组」，打开成员列表（可过滤、可勾选批量移出，也能「移动到…」另一个组）。</sys:String>
+    <sys:String x:Key="L.Help_Task6">BodySlide 批建时弹「选择输出文件」—— 多个模组改了同一件衣服 —— 到「输出归属」页给每组指定由谁生成，点「写入 BodySlide…」，此后批建不再询问（详见第八章）。</sys:String>
 
     <!-- 输入框提示 -->
     <sys:String x:Key="L.Prompt_GroupName">组名：</sys:String>

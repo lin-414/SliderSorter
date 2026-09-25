@@ -33,6 +33,7 @@ public static class WpfHost
     [
         "Themes/Controls.xaml",
         "Themes/Components.xaml",
+        "Themes/TypeScale.xaml",
     ];
 
     /// <summary>把 App 级字典合并进 Application（幂等）。语言字典由调用方按需追加。</summary>

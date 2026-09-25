@@ -87,6 +87,7 @@ public class ModListParserTests
     [InlineData("SomeMod (Backup 1)", true)]           // MO2 里的括号写法：丢
     [InlineData("SomeMod - backup", true)]             // 结尾整段就是 backup：丢
     [InlineData("Backup", true)]                       // 名字就叫 Backup：丢
+    [InlineData("Foo_backup", true)]                   // 下划线分隔也是 MO2 常见写法（注释里声明了，早先漏了）：丢
     [InlineData("MCM Memory - Settings Backup and Restore", false)] // backup 只是名字中间一个词：留
     [InlineData("MyBackup", false)]                    // 连词都不是：留
     [InlineData("Kalilies Brows backup fix", false)]   // 结尾不是 backup：留

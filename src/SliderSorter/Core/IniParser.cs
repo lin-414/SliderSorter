@@ -57,15 +57,39 @@ public static class IniParser
     /// 但**只有真的出现转义**（含 <c>\\</c>）才去解：未转义的写法 <c>@ByteArray(D:\Games\X)</c> 里
     /// <c>\G</c>、<c>\S</c> 都是普通字符，一律当转义处理会把这些路径改坏。
     /// </para>
+    /// <para>
+    /// 其余 <c>@Xxx(...)</c> 形式（括号配对的 <c>@</c> 打头值）是 QSettings 的**类型标记**
+    /// （<c>@Invalid()</c>、<c>@Rect(...)</c>、<c>@Variant(...)</c> 等），不是字符串：
+    /// <c>@Invalid()</c> 是"未设置/无效"的值，真实 MO2 ini 里实例尚未配置游戏时
+    /// <c>gamePath</c>、<c>gameName</c> 就是它。原样透传会让所有
+    /// <c>IsNullOrWhiteSpace</c> 守卫失效——<see cref="Mo2Instance.GamePath"/> 返回字面量
+    /// <c>@Invalid()</c>，拼出 <c>@Invalid()\Data</c> 冒充真实游戏目录、跳过注册表回退，
+    /// 诊断报告里也印出这行垃圾。归一为空串 = 按"未设置"走各处已有的回退。
+    /// </para>
     /// </summary>
     private static string DecodeQSettingsValue(string value)
     {
         const string prefix = "@ByteArray(";
-        if (!value.StartsWith(prefix, StringComparison.Ordinal) || !value.EndsWith(')'))
-            return value;
+        if (value.StartsWith(prefix, StringComparison.Ordinal) && value.EndsWith(')'))
+        {
+            var inner = value[prefix.Length..^1];
+            return inner.Contains(@"\\", StringComparison.Ordinal) ? UnescapeQtByteArray(inner) : inner;
+        }
 
-        var inner = value[prefix.Length..^1];
-        return inner.Contains(@"\\", StringComparison.Ordinal) ? UnescapeQtByteArray(inner) : inner;
+        // 其余 @ 打头、且括号配对的（@Invalid()、@Rect(...)、@Variant(...) 等）是 QSettings 的
+        // **类型标记**，不是字符串：@Invalid() 是"未设置/无效"的值，真实 MO2 ini 里实例尚未配置
+        // 游戏时 gamePath、gameName 就是它。原样透传会让所有 IsNullOrWhiteSpace 守卫失效——
+        // Mo2Instance.GamePath 返回字面量 @Invalid()，拼出 "@Invalid()\Data" 冒充真实游戏目录、
+        // 跳过注册表回退，诊断报告里也印出这行垃圾。归一为空串 = 按"未设置"走各处已有的回退。
+        // 括号不配对的不算（截断的 "@ByteArray(" 那类坏值保持原样——宁可让用户看见，也不猜）。
+        // 已知代价：真实字符串恰好以 @ 开头、末尾是 ')' 且括号配对时也会被当成标记（MO2 的
+        // 路径实际长不成这样）——归一为空串走的是各键已有的"未设置"回退，不崩、不写坏数据；
+        // 换来 Qt 任何标记（含未来新增的）一并兜住。按标记名白名单收窄反而会把没见过的标记漏成字面量。
+        var open = value.IndexOf('(');
+        if (value.StartsWith('@') && open > 1 && value.EndsWith(')'))
+            return "";
+
+        return value;
     }
 
     /// <summary>

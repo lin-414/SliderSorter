@@ -693,6 +693,73 @@ public class OutputConflictTests
         Assert.Empty(OutputConflicts.PickOwner([group], "Mod", Choices()));
     }
 
+    // ── 「按服装关键字指定」：点名"长什么样的衣服"来生成（分组头右键菜单）──
+
+    [Fact]
+    public void PickOwnerByKeywordGivesTheConflictToTheOutfitThatMatches()
+    {
+        // 关键字认的是服装名不是模组名："SBW Red" 虽然在 B 模组名下，命中的也是它自己
+        var groups = new[]
+        {
+            Owned(PathA, ("Bikini Red", "A"), ("Bikini SBW", "B")),
+            Owned(PathB, ("Armor Steel", "B"), ("Armor Iron", "A")),
+        };
+
+        var picked = OutputConflicts.PickOwnerByKeyword(groups, ["SBW"], Choices());
+
+        Assert.Equal("Bikini SBW", picked[PathA]);
+        // 没有候选命中的冲突一组都不动：它不在这次点名的范围里
+        Assert.False(picked.ContainsKey(PathB));
+    }
+
+    [Fact]
+    public void PickOwnerByKeywordIgnoresCase()
+    {
+        var group = Owned(PathA, ("Bikini RED", "A"), ("Bikini Blue", "B"));
+
+        Assert.Equal("Bikini RED", OutputConflicts.PickOwnerByKeyword([group], ["red"], Choices())[PathA]);
+    }
+
+    [Fact]
+    public void PickOwnerByKeywordMatchesAnyOfSeveralKeywords()
+    {
+        var group = Owned(PathA, ("Swim Shorts", "A"), ("Bikini Blue", "B"), ("Robe Silk", "C"));
+
+        // 任一命中即算——与过滤框、规则组的关键字口径一致
+        Assert.Equal("Bikini Blue",
+            OutputConflicts.PickOwnerByKeyword([group], ["trunks", "bikini"], Choices())[PathA]);
+        Assert.Equal("Swim Shorts", OutputConflicts.PickOwnerByKeyword([group], ["short"], Choices())[PathA]);
+    }
+
+    [Fact]
+    public void PickOwnerByKeywordTakesTheFirstCandidateWhenSeveralMatch()
+    {
+        // 两个候选都含关键字：取 Candidates 顺序的第一个（最强层），与 PickOwner 同一个取法
+        var group = Owned(PathA, ("Bikini Red", "A"), ("Bikini Blue", "B"), ("Armor Steel", "C"));
+
+        Assert.Equal("Bikini Red", OutputConflicts.PickOwnerByKeyword([group], ["bikini"], Choices())[PathA]);
+    }
+
+    [Fact]
+    public void PickOwnerByKeywordKeepsUnmatchedChoicesAndAnEmptyKeywordListChangesNothing()
+    {
+        // 一处命中一处没有：只有命中的那条被改写，其余（连同不相干的旧选择）原样保留
+        var match = Owned(PathA, ("Bikini Red", "A"), ("Bikini Blue", "B"));
+        var plain = Owned(PathB, ("Armor Steel", "C"), ("Armor Iron", "D"));
+
+        var picked = OutputConflicts.PickOwnerByKeyword([match, plain], ["bikini"],
+            Choices((PathB, "Armor Iron"), (@"meshes\Unrelated", "keep")));
+
+        Assert.Equal("Bikini Red", picked[PathA]);
+        Assert.Equal("Armor Iron", picked[PathB]);
+        Assert.Equal("keep", picked[@"meshes\Unrelated"]);
+
+        // 关键字一个都不剩（切词切空了）：原样拷贝，不扔条目也不改写
+        var untouched = OutputConflicts.PickOwnerByKeyword([match], [], Choices((PathA, "Bikini Blue")));
+        Assert.Equal("Bikini Blue", untouched[PathA]);
+        Assert.Single(untouched);
+    }
+
     [Fact]
     public void OwnerTallyCountsGroupsNotRowsAndDedupsTheModPerGroup()
     {

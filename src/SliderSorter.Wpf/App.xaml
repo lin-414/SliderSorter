@@ -13,6 +13,9 @@
             <ResourceDictionary.MergedDictionaries>
                 <ResourceDictionary Source="Themes/Controls.xaml" />
                 <ResourceDictionary Source="Themes/Components.xaml" />
+                <!-- 字阶基准值（Type.H1–H4）：FontScaleManager 就地改写这份字典实现字号缩放，
+                     详见该文件头部注释。 -->
+                <ResourceDictionary Source="Themes/TypeScale.xaml" />
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
     </Application.Resources>

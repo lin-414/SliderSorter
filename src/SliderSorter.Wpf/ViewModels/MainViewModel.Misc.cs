@@ -25,8 +25,11 @@ public partial class MainViewModel
         {
             sb.AppendLine($"[{instance.DisplayName}]");
             sb.AppendLine(L10n.TrF("L.Diag_InstanceDir", instance.InstanceDir));
+            // 探测走共享缓存：MO2 落在断连的网络盘/休眠的外置盘上时，一次 Directory.Exists
+            // 可阻塞数秒（SMB 超时），而本方法由设置页在 UI 线程上同步调用——
+            // 逐条硬探测最多 200+ 次，界面会冻住可达分钟级（详见 _modDirExistsCache 的说明）
             sb.AppendLine($"  mods:     {instance.ModsDirectory} " +
-                          $"({L10n.Tr(Directory.Exists(instance.ModsDirectory) ? "L.Core_Exists" : "L.Core_NotExists")})");
+                          $"({L10n.Tr(ModDirExists(instance.ModsDirectory) ? "L.Core_Exists" : "L.Core_NotExists")})");
             sb.AppendLine($"  profiles: {instance.ProfilesDirectory}");
             sb.AppendLine($"  gameName: {instance.GameName}");
             sb.AppendLine($"  gamePath: {instance.GamePath}");
@@ -39,7 +42,7 @@ public partial class MainViewModel
         sb.AppendLine(L10n.TrF("L.Diag_ProfileLine", SelectedProfile ?? L10n.Tr("L.Diag_None"), Mods.Count));
         foreach (var (entry, dir) in Mods.Take(200))
             sb.AppendLine($"  #{entry.Priority} {entry.Name} → " +
-                          L10n.Tr(Directory.Exists(dir) ? "L.Core_Exists" : "L.Diag_ModDirMissing"));
+                          L10n.Tr(ModDirExists(dir) ? "L.Core_Exists" : "L.Diag_ModDirMissing"));
 
         sb.AppendLine();
         sb.AppendLine(L10n.Tr("L.Diag_SecBodySlide"));

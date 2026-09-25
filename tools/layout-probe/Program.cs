@@ -186,6 +186,7 @@ internal static class Program
         // 实际是探针自己没把环境搭全（2026-09-22 加 Components.xaml 时就踩了一次）。
         // 顺序也不能反：Components.xaml 的样式 BasedOn 到 Controls.xaml 上。
         dicts.Add(Load("Themes/Components.xaml"));
+        dicts.Add(Load("Themes/TypeScale.xaml"));
         dicts.Add(Load($"Strings/Lang.{lang}.xaml"));
     }
 

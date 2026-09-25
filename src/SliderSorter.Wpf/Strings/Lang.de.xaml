@@ -1,4 +1,4 @@
-<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:sys="clr-namespace:System;assembly=mscorlib">
     <!-- Deutsch — keys mirror Lang.zh.xaml one-to-one. -->
@@ -31,9 +31,8 @@
     <sys:String x:Key="L.Settings_Theme">Farbschema</sys:String>
     <sys:String x:Key="L.Settings_Language">Sprache</sys:String>
     <sys:String x:Key="L.Settings_LanguageSystem">System folgen</sys:String>
-    <sys:String x:Key="L.Settings_Help">Hilfe und Info</sys:String>
-    <sys:String x:Key="L.Settings_CheckUpdate">Auf Updates prüfen</sys:String>
-    <sys:String x:Key="L.Settings_UpdateChecking">Prüfe auf Updates…</sys:String>
+    <sys:String x:Key="L.Settings_FontSize">Schriftgröße</sys:String>
+    <sys:String x:Key="L.Settings_Help">Hilfe</sys:String>
     <sys:String x:Key="L.Settings_Manual">Anleitung</sys:String>
 
     <!-- Main window -->
@@ -75,7 +74,6 @@
     <sys:String x:Key="L.Title_Tip">Hinweis</sys:String>
     <sys:String x:Key="L.Title_Error">Fehler</sys:String>
     <sys:String x:Key="L.Title_Confirm">Bestätigen</sys:String>
-    <sys:String x:Key="L.Title_CheckUpdate">Auf Updates prüfen</sys:String>
     <sys:String x:Key="L.Title_CleanupStale">Veraltete Outfits bereinigen</sys:String>
     <sys:String x:Key="L.Title_FilenameConflict">Dateinamenkonflikt</sys:String>
     <sys:String x:Key="L.Title_NewGroup">Neue Gruppe</sys:String>
@@ -200,6 +198,7 @@
     <sys:String x:Key="L.Msg_SelectGroupFirst">Wählen Sie zuerst eine Gruppe aus.</sys:String>
     <sys:String x:Key="L.Msg_SelectOutfitsFirst">Kreuzen Sie zuerst die zu entfernenden Outfits an (eine Mod oder einen Trenner anzukreuzen wählt sie gesammelt aus).</sys:String>
     <sys:String x:Key="L.Msg_ConfirmRemove">{0} Outfit(s) aus der Gruppe "{1}" entfernen?</sys:String>
+    <sys:String x:Key="L.Msg_ConfirmMove">{0} Outfit(s) von "{1}" nach "{2}" verschieben?</sys:String>
     <sys:String x:Key="L.Msg_ScanIncomplete">Der Scan ist nicht abgeschlossen oder das Ausgabeziel ist unbekannt.</sys:String>
     <sys:String x:Key="L.Msg_NoGroupsYet">Es gibt noch keine Gruppen. Erstellen Sie zuerst eine Gruppe und kreuzen Sie Outfits an.</sys:String>
     <sys:String x:Key="L.Msg_EmptyGroupName">Eine Gruppe hat einen leeren Namen; benennen Sie sie zuerst um.</sys:String>
@@ -213,11 +212,6 @@ Aus allen Gruppen entfernen? (Strg+Z macht es rückgängig)</sys:String>
     <sys:String x:Key="L.Msg_NotMo2Dir">Dieser Ordner enthält keine ModOrganizer.ini; es ist kein MO2-Instanzordner. Wählen Sie den Instanzordner mit ModOrganizer.ini (bei einer tragbaren Installation den Ordner mit ModOrganizer.exe).</sys:String>
     <sys:String x:Key="L.Msg_Mo2InstallDirNotInstance">Das ist der MO2-Programmordner, kein Instanzordner. Ein Instanzordner enthält ModOrganizer.ini; globale Instanzen liegen meist in einem Unterordner von %LOCALAPPDATA%\ModOrganizer und werden in der Regel automatisch erkannt, ein manuelles Hinzufügen ist also nicht nötig.</sys:String>
     <sys:String x:Key="L.Msg_NotBodySlideDir">Dieser Ordner enthält keine Config.xml; es ist kein BodySlide-Ordner.</sys:String>
-    <sys:String x:Key="L.Msg_UpToDate">Sie sind auf dem aktuellen Stand (v{0}).</sys:String>
-    <sys:String x:Key="L.Msg_UpdateAvailable" xml:space="preserve">Neue Version {0} gefunden (aktuell v{1}).
-
-Die Release-Seite zum Herunterladen öffnen?</sys:String>
-    <sys:String x:Key="L.Msg_UpdateFailed">Update-Prüfung fehlgeschlagen: {0}</sys:String>
     <sys:String x:Key="L.Msg_AlreadyRunning">SliderSorter läuft bereits.</sys:String>
     <sys:String x:Key="L.Msg_OutputDirUndetermined">Der Scan ist nicht abgeschlossen, der Ausgabeordner lässt sich daher nicht bestimmen.</sys:String>
     <sys:String x:Key="L.Msg_CopiedToClipboard">In die Zwischenablage kopiert.</sys:String>
@@ -234,6 +228,8 @@ Die Release-Seite zum Herunterladen öffnen?</sys:String>
     <sys:String x:Key="L.Members_FilterMods">Mods / Trenner filtern…</sys:String>
     <sys:String x:Key="L.Members_Count">{0} Outfit(s) in der Gruppe, {1} angezeigt</sys:String>
     <sys:String x:Key="L.Members_RemoveSelected">Auswahl entfernen</sys:String>
+    <sys:String x:Key="L.Members_MoveSelected">Verschieben nach…</sys:String>
+    <sys:String x:Key="L.Members_MoveNoTarget">Keine anderen Gruppen</sys:String>
 
     <!-- New mods popup -->
     <sys:String x:Key="L.NewMods_Title">Neue Outfit-Mods gefunden</sys:String>
@@ -262,16 +258,21 @@ Die Release-Seite zum Herunterladen öffnen?</sys:String>
     <sys:String x:Key="L.Conflict_IntraGroup" xml:space="preserve">innerhalb einer Gruppe</sys:String>
     <sys:String x:Key="L.Conflict_IntraGroupCount" xml:space="preserve">davon {0} innerhalb einer Gruppe</sys:String>
     <sys:String x:Key="L.Conflict_IntraGroupTip" xml:space="preserve">Zwei oder mehr Mitglieder derselben Gruppe schreiben dieselbe Ausgabedatei: Nur eine davon kann gewinnen, die übrigen werden nicht gebaut.</sys:String>
+    <sys:String x:Key="L.Conflict_BucketUnresolvedCount" xml:space="preserve">davon {0} offen</sys:String>
+    <sys:String x:Key="L.Conflict_BucketUnresolvedTip" xml:space="preserve">In dieser Gruppe sind noch Konflikte offen: BodySlide fragt für jede einzeln nach. Die Batch-Schaltflächen unten legen alle gelisteten Gruppen auf einmal fest; „Nur offene" in der Symbolleiste listet nur diese Konflikte auf.</sys:String>
     <sys:String x:Key="L.Conflict_Ungrouped" xml:space="preserve">Ohne Gruppe</sys:String>
     <sys:String x:Key="L.Conflict_GroupFilterAll" xml:space="preserve">Alle Gruppen</sys:String>
     <sys:String x:Key="L.Conflict_GroupFilterTip" xml:space="preserve">Nur die Konflikte anzeigen, an denen ein Mitglied dieser Gruppe beteiligt ist. Gelistet werden nur Gruppen, die tatsächlich Konflikte haben.</sys:String>
     <sys:String x:Key="L.Conflict_CandidatesHeader" xml:space="preserve">Erstellen mit</sys:String>
     <sys:String x:Key="L.Conflict_PreviewHeader" xml:space="preserve">Vorschau</sys:String>
     <sys:String x:Key="L.Conflict_BatchScope" xml:space="preserve">Für die {0} gelisteten Gruppen:</sys:String>
-    <sys:String x:Key="L.Conflict_Filter" xml:space="preserve">Pfad / Outfit / Mod filtern; mehrere Begriffe…</sys:String>
-    <sys:String x:Key="L.Conflict_FilterTip" xml:space="preserve">Mehrere Begriffe mit ; oder , trennen — eine Gruppe bleibt, wenn auch nur einer trifft (Groß-/Kleinschreibung egal). Erst die Menge herausfiltern, dann unten per Stapelaktion zuweisen.</sys:String>
+    <sys:String x:Key="L.Conflict_FilterOutfits" xml:space="preserve">Outfits filtern…</sys:String>
+    <sys:String x:Key="L.Conflict_FilterMods" xml:space="preserve">Mod filtern…</sys:String>
+    <sys:String x:Key="L.Conflict_FilterTip" xml:space="preserve">Mehrere Begriffe mit ; oder , trennen — eine Gruppe bleibt, wenn auch nur einer trifft (Groß-/Kleinschreibung egal); sind beide Felder gefüllt, muss beides zutreffen. Erst die Menge herausfiltern, dann unten per Stapelaktion zuweisen.</sys:String>
     <sys:String x:Key="L.Conflict_OnlyCrossMod" xml:space="preserve">Nur Konflikte zwischen Mods</sys:String>
     <sys:String x:Key="L.Conflict_OnlyCrossModTip" xml:space="preserve">{0} Konflikte zwischen Mods, {1} Gruppen teilen sich eine Datei innerhalb derselben Mod. Hunderte Farbvarianten eines Outfits in einer Mod sind normal; kreuzen Sie dies an, um sie herauszufiltern.</sys:String>
+    <sys:String x:Key="L.Conflict_UnresolvedOnly" xml:space="preserve">Nur offene</sys:String>
+    <sys:String x:Key="L.Conflict_UnresolvedOnlyTip" xml:space="preserve">Zeigt nur Konflikte ohne Gewinner: Sobald einer festgelegt ist, verschwindet seine Zeile sofort. Lässt sich mit dem Filter, dem Cross-Mod-Schalter und der Gruppenauswahl kombinieren.</sys:String>
     <sys:String x:Key="L.Conflict_RescanTip" xml:space="preserve">Mods und Outfits neu einlesen und diese Konfliktliste neu aufbauen. Entscheidungen auf dieser Seite ändern die eigenen Einstellungen dieses Werkzeugs; sie lösen keinen neuen Scan aus.</sys:String>
     <sys:String x:Key="L.Conflict_SameModOnly" xml:space="preserve">nur gleiche Mod</sys:String>
     <sys:String x:Key="L.Conflict_FilterCount" xml:space="preserve">{0} von {1} Gruppen angezeigt</sys:String>
@@ -285,6 +286,11 @@ Die Release-Seite zum Herunterladen öffnen?</sys:String>
     <sys:String x:Key="L.Conflict_PickOwnerEmpty" xml:space="preserve">Kein Mod in der aktuellen Liste zum Zuweisen</sys:String>
     <sys:String x:Key="L.Conflict_PickOwnerGroup" xml:space="preserve">Diese Gruppe einem Mod zuweisen…</sys:String>
     <sys:String x:Key="L.Conflict_PickOwnerGroupHeader" xml:space="preserve">Gruppe: {0} · {1} Gruppen</sys:String>
+    <sys:String x:Key="L.Conflict_PickOwnerKeyword" xml:space="preserve">Diese Gruppe nach Outfit-Stichwort zuweisen…</sys:String>
+    <sys:String x:Key="L.Conflict_PickOwnerKeywordTitle" xml:space="preserve">Diese Gruppe nach Outfit-Stichwort zuweisen</sys:String>
+    <sys:String x:Key="L.Conflict_PickOwnerKeywordLabel" xml:space="preserve">Konflikte, deren Outfit-Name ein Stichwort enthält, gehen an das passende Outfit (bei mehreren Treffern zählt die stärkste Schicht). Stichwörter mit ; oder , trennen — nur Konflikte dieser Gruppe sind betroffen.</sys:String>
+    <sys:String x:Key="L.Conflict_PickOwnerKeywordEmpty" xml:space="preserve">Kein Outfit-Name in dieser Gruppe trifft auf diese Stichwörter; nichts wurde geändert.</sys:String>
+    <sys:String x:Key="L.Conflict_ClearGroup" xml:space="preserve">Diese Gruppe zurücksetzen</sys:String>
     <sys:String x:Key="L.Conflict_SetWinner" xml:space="preserve">Als Gewinner dieser Gruppe setzen</sys:String>
     <sys:String x:Key="L.Conflict_Export" xml:space="preserve">In BodySlide schreiben…</sys:String>
     <sys:String x:Key="L.Conflict_ExportTip" xml:space="preserve">Schreibt die Wahl in die BuildSelection.xml im aktuellen Ausgabeziel — derselbe BodySlide-Ordner wie die Gruppendateien (im Modus "Eigener Ordner" dieser Ordner selbst; unter MO2 die Datei, die BodySlide tatsächlich liest); der Bestätigungsdialog zeigt zuerst den vollständigen Pfad, die bisherige Datei bleibt als .bak erhalten</sys:String>
@@ -404,19 +410,16 @@ Insgesamt {4} Mitglied(er).</sys:String>
     <sys:String x:Key="L.Diag_OutputUndetermined">(offen)</sys:String>
 
     <!-- About -->
-    <sys:String x:Key="L.About_Desc">Liest die per Mod Organizer 2 installierten Mods, erlaubt es, BodySlide-SliderSets gesammelten Gruppen zuzuordnen, und erzeugt Gruppendateien im nativen Format von BodySlide. Funktioniert mit jedem von BodySlide unterstützten Spiel, etwa Skyrim SE/AE und Fallout 4.</sys:String>
-    <sys:String x:Key="L.About_AuthorLabel">Autor</sys:String>
-    <sys:String x:Key="L.About_Compat">Die Gruppendateien sind vollständig kompatibel mit BodySlide; jede Gruppe wird eine eigene Datei, benannt nach der Gruppe, abgelegt im SliderGroups-Ordner von BodySlide.</sys:String>
 
     <!-- Help -->
     <sys:String x:Key="L.Help_H1">1. Häufige Aufgaben</sys:String>
     <sys:String x:Key="L.Help_01">Dieses Werkzeug liest die per Mod Organizer 2 (MO2) installierten Mods, erlaubt es, Outfits (BodySlide-SliderSets) gesammelten Gruppen zuzuordnen, und erzeugt Gruppendateien im nativen Format von BodySlide, eine Datei pro Gruppe.</sys:String>
-    <sys:String x:Key="L.Help_02">1. Wählen Sie MO2-Instanz und Profil — globale Instanzen und tragbare Installationen werden automatisch gefunden; das Profil steht default auf dem zuletzt verwendeten.</sys:String>
-    <sys:String x:Key="L.Help_03">2. Prüfen Sie den BodySlide-Ordner — die automatische Erkennung klappt meist. Die graue Zeile mit dem "effektiven Projektpfad" unter den Karten sagt, wo BodySlide tatsächlich Outfits und Gruppen herholt — behalten Sie sie im Blick.</sys:String>
+    <sys:String x:Key="L.Help_02">1. Wählen Sie MO2-Instanz und Profil auf der Registerkarte "Einstellungen" — globale Instanzen und tragbare Installationen werden automatisch gefunden; das Profil steht default auf dem zuletzt verwendeten.</sys:String>
+    <sys:String x:Key="L.Help_03">2. Prüfen Sie den BodySlide-Ordner — die automatische Erkennung klappt meist. Die graue Zeile mit dem "effektiven Projektpfad" unter der Karte "Arbeitsbereich" in den Einstellungen sagt, wo BodySlide tatsächlich Outfits und Gruppen herholt — behalten Sie sie im Blick.</sys:String>
     <sys:String x:Key="L.Help_04">3. Gruppe anlegen und Outfits ankreuzen — rechts bringt Sie "⋯" → "Neue Gruppe" zu einer neuen, ausgewählten Gruppe (ist die Liste leer, steht in der Mitte auch ein "Neue Gruppe"-Knopf); im Baum links kreuzen Sie einen Trenner an (= alle Mods darunter) oder klappen auf und kreuzen einzelne Outfits an. Geschrieben wird erst, wenn Sie in der Mitte auf "Zur Gruppe hinzufügen" klicken; "Aus Gruppe entfernen" nimmt die Anhakung wieder zurück.</sys:String>
-    <sys:String x:Key="L.Help_05">4. Speichern — klicken Sie unten auf "Gruppendateien speichern" oder nutzen Sie Datei → Gruppendateien speichern (Strg+S). Jede Gruppe wird eine Datei, benannt nach der Gruppe (z. B. UBE.xml). Danach BodySlide neu starten (bei Start über MO2 auch MO2).</sys:String>
+    <sys:String x:Key="L.Help_05">4. Speichern — klicken Sie unten auf "Gruppendateien speichern" (Strg+S). Jede Gruppe wird eine Datei, benannt nach der Gruppe (z. B. UBE.xml). Danach BodySlide neu starten (bei Start über MO2 auch MO2).</sys:String>
     <sys:String x:Key="L.Help_H2">2. Schnellstart (4 Schritte)</sys:String>
-    <sys:String x:Key="L.Help_S2_Top">[oberer Einstellbereich]</sys:String>
+    <sys:String x:Key="L.Help_S2_Top">[Umgebungseinstellungen (Registerkarte "Einstellungen" → Arbeitsbereich / Ausgabe)]</sys:String>
     <sys:String x:Key="L.Help_06">MO2-Instanz: globale Instanzen und tragbare Installationen unter %LOCALAPPDATA%\ModOrganizer werden automatisch gefunden; "Instanzordner wählen…" zeigt einer Instanz manuell (enthält ModOrganizer.ini); "Aktualisieren" liest die Instanzen erneut ein.</sys:String>
     <sys:String x:Key="L.Help_07">Profil: listet alle Profile dieser Instanz. Die Liste der aktivierten Mods kommt aus dessen modlist.txt, in derselben Reihenfolge wie das linke Feld in MO2.</sys:String>
     <sys:String x:Key="L.Help_08">BodySlide: durchsucht aktivierte Mods nach Ordnern mit BodySlide*.exe und Config.xml; wird nichts gefunden, zeigen Sie mit "Durchsuchen…" manuell auf einen.</sys:String>
@@ -427,14 +430,17 @@ Insgesamt {4} Mitglied(er).</sys:String>
     <sys:String x:Key="L.Help_12">Ein Haken markiert nur, was Sie bearbeiten wollen — geschrieben wird erst, wenn Sie in der Mitte auf "Zur Gruppe hinzufügen" / "Aus Gruppe entfernen" klicken. Eine Mod oder einen Trenner anzukreuzen hakt alle seine Outfits an.</sys:String>
     <sys:String x:Key="L.Help_13">Das Zeichen vor einem Outfit-Namen bedeutet: Es steckt bereits in der aktuell gewählten Gruppe; das Badge "in Gruppe x/gesamt" rechts neben einem Mod-Titel zeigt, wie viele seiner Outfits in dieser Gruppe sind.</sys:String>
     <sys:String x:Key="L.Help_S2_Groups">[Gruppe-Panel rechts]</sys:String>
-    <sys:String x:Key="L.Help_14">Gruppenliste: Klick wählt aus (die Anhakungen und Markierungen links folgen, ohne die Scrollposition zu verlieren), Doppelklick zeigt die Mitglieder. Neu / umbenennen / ansehen / löschen und Import stecken unter "..." im Kopfbereich und im Rechtsklickmenü der Liste; "Rückgängig" und "Regelgruppierung" sind die zwei Knöpfe daneben.</sys:String>
+    <sys:String x:Key="L.Help_14">Gruppenliste: Klick wählt aus (die Anhakungen und Markierungen links folgen, ohne die Scrollposition zu verlieren), Doppelklick zeigt die Mitglieder (filterbar, Massenentfernung, und "Verschieben nach…" in eine andere Gruppe). Neu / umbenennen / ansehen / löschen und Import stecken unter "..." im Kopfbereich und im Rechtsklickmenü der Liste; "Rückgängig" und "Regelgruppierung" sind die zwei Knöpfe daneben.</sys:String>
     <sys:String x:Key="L.Help_15">Der Knopf "Regelgruppierung" (neben "Rückgängig") öffnet unten auf dieser Seite ein Feld: Sammelarbeit per Stichwort — siehe Abschnitt 5.</sys:String>
-    <sys:String x:Key="L.Help_16">Rückgängig (Strg+Z oder Bearbeiten → Rückgängig): nimmt die letzten 30 Gruppieraktionen Schritt für Schritt zurück — siehe Abschnitt 6.</sys:String>
-    <sys:String x:Key="L.Help_17">Datei → Gruppendateien importieren…: andere Gruppen-XMLs in die aktuelle Liste übernehmen und weiterbearbeiten.</sys:String>
+    <sys:String x:Key="L.Help_16">Rückgängig (Strg+Z): nimmt die letzten 30 Gruppieraktionen Schritt für Schritt zurück — siehe Abschnitt 6.</sys:String>
+    <sys:String x:Key="L.Help_17">"..." → "Gruppendateien importieren…": andere Gruppen-XMLs in die aktuelle Liste übernehmen und weiterbearbeiten.</sys:String>
     <sys:String x:Key="L.Help_18">Neu-Mod-Hinweis: Findet ein Scan neu installierte Outfit-Mods, listet ein Popup sie nach Trenner → Mod → Outfit (wie im Hauptbaum, aufklappbar) — ankreuzen, Zielgruppe wählen, "Auswahl hinzufügen" (rückgängigbar), und mit anderen Zielgruppen wiederholbar. Bei langen Listen helfen die zwei Filterfelder oben (links Outfit-Namen, rechts Mod- / Trenner-Namen); die Anhakungen bleiben beim Filtern erhalten. Schließen stellt es zurück; diese Outfits finden Sie später immer noch über "Nur ohne Gruppe".</sys:String>
     <sys:String x:Key="L.Help_S2_Status">[Statusleiste]</sys:String>
-    <sys:String x:Key="L.Help_19">Links: Zahlen (Mods / Outfits / mit Gruppe / ohne Gruppe). "Diagnose" sitzt im Werkzeug-Menü; das Laufzeitprotokoll ist eine einklappbare Zeile unter dem Speichern-Knopf — Klick klappt es auf, dann nach Ebene eingefärbt, kopierbar, leerbar und per Ziehen in der Höhe verstellbar.</sys:String>
+    <sys:String x:Key="L.Help_19">Links: Zahlen (Mods / Outfits / mit Gruppe / ohne Gruppe). "Diagnose" steckt im Abschnitt Hilfe der Registerkarte "Einstellungen"; das Laufzeitprotokoll ist eine einklappbare Zeile unter dem Speichern-Knopf — Klick klappt es auf, dann nach Ebene eingefärbt, kopierbar, leerbar und per Ziehen in der Höhe verstellbar.</sys:String>
     <sys:String x:Key="L.Help_20">Rechts: der aktuelle Ausgabeordner; die volle Adresse erscheint beim Darüberfahren.</sys:String>
+    <sys:String x:Key="L.Help_S2_Settings">[Registerkarte "Einstellungen"]</sys:String>
+    <sys:String x:Key="L.Help_43">Fünf Karten: Arbeitsbereich (MO2-Instanz / Profil / BodySlide-Ordner / Ausgabeziel — die Hauptseite wiederholt das nicht mehr), Ausgabe (Schreibmodus und Ausgabeordner), Darstellung (Thema / Sprache / Schriftgröße — vier Stufen, 90 % / 100 % / 110 % / 125 %, sofort wirksam; dieser Ratgeber skaliert mit), Wartung, Hilfe.</sys:String>
+    <sys:String x:Key="L.Help_44">"Veraltete Outfits bereinigen…" unter Wartung entfernt aus allen Gruppen die Outfits, die im aktuellen Scan nicht mehr vorkommen (es wird vorher gefragt, Strg+Z macht es rückgängig); im Abschnitt Hilfe stecken dieser Ratgeber und die "Diagnose" — wenn BodySlide nichts übernimmt, prüfen Sie dort zuerst, ob "effektiver Projektpfad" und "Schreibziel" auf denselben Ort zeigen.</sys:String>
     <sys:String x:Key="L.Help_H3">3. Was auf dem Bildschirm passiert</sys:String>
     <sys:String x:Key="L.Help_21">Beim Speichern wird jede Gruppe zu einer eigenen Datei, benannt nach der Gruppe (z. B. UBE.xml), im nativen &lt;SliderGroups&gt;-Format von BodySlide (UTF-8 mit BOM), vollständig kompatibel mit BodySlide.</sys:String>
     <sys:String x:Key="L.Help_22">Erneutes Speichern überschreibt gleichnamige Gruppendateien und räumt über das interne Manifest Reste von umbenannten oder gelöschten Gruppen automatisch weg. Beim Schließen mit ungespeicherten Änderungen kommt eine Warnung.</sys:String>
@@ -457,7 +463,7 @@ Insgesamt {4} Mitglied(er).</sys:String>
     <sys:String x:Key="L.Help_36">BodySlide-Programmordner / echtes Spiel-Data / eigener Ordner: schreiben jeweils in das SliderGroups dieses Ortes.</sys:String>
     <sys:String x:Key="L.Help_H6">6. Rückgängig und Ausgabeziel</sys:String>
     <sys:String x:Key="L.Help_37">· Outfits angekreuzt, aber nichts passiert? Ein Haken wählt nur aus; klicken Sie anschließend in der Mitte auf "Zur Gruppe hinzufügen".</sys:String>
-    <sys:String x:Key="L.Help_38">· Neue Gruppen erscheinen nicht in BodySlide? 1) BodySlide neu starten (mit MO2 auch MO2 neu starten); 2) öffnen Sie Werkzeug → Diagnose und vergleichen Sie den "effektiven Projektpfad" mit Ihrem "Ausgabeordner" — BodySlide liest Gruppen nur aus dem SliderGroups des effektiven Projektpfads.</sys:String>
+    <sys:String x:Key="L.Help_38">· Neue Gruppen erscheinen nicht in BodySlide? 1) BodySlide neu starten (mit MO2 auch MO2 neu starten); 2) öffnen Sie die "Diagnose" im Abschnitt Hilfe der Registerkarte "Einstellungen" und vergleichen Sie den "effektiven Projektpfad" mit Ihrem "Ausgabeordner" — BodySlide liest Gruppen nur aus dem SliderGroups des effektiven Projektpfads.</sys:String>
     <sys:String x:Key="L.Help_39">· Warum fehlen Mods? Der Baum zeigt nur aktivierte Mods mit BodySlide-Outfits; deaktivierte Mods und Mods ohne Outfits erscheinen nicht.</sys:String>
     <sys:String x:Key="L.Help_40">· (Namenskonflikt) hinter einem Outfit-Namen? Diesen Outfit-Namen gibt es in mehreren Mods; angezeigt wird die Eigentümerin mit der höchsten Priorität, aber die Gruppierung arbeitet über den Namen und ist davon nicht betroffen.</sys:String>
     <sys:String x:Key="L.Help_41">· Was ist SliderSorter.files.txt im Ausgabeordner? Das Manifest des Werkzeugs, mit dem alte Dateien automatisch aufgeräumt werden; BodySlide ignoriert es.</sys:String>
@@ -475,13 +481,17 @@ Insgesamt {4} Mitglied(er).</sys:String>
     <sys:String x:Key="L.Help_Conflict_B">· Ausgabekonflikte (Registerkarte "Ausgabekonflikte") — schreiben mehrere Outfits dieselbe Mesh-Datei, wählen Sie, welche Mod sie baut; "In BodySlide schreiben…" sichert die BuildSelection.xml. Die Wahl bleibt, bis Sie schreiben; die bisherige Datei wird vorher als .bak gesichert. Die Datei folgt dem Ausgabeziel: Sie landet dort im Ordner CalienteTools\BodySlide (im Modus "Eigener Ordner" in diesem Ordner selbst), in derselben Mod wie die Gruppendateien. BodySlide liest sie nur aus seinem Programmordner, und unter MO2 ist das der virtuelle Ordner Data\CalienteTools\BodySlide — das Ausgabeziel ist also genau die Stelle, die gelesen wird.</sys:String>
     <sys:String x:Key="L.Help_Conflict_C">Jeder Teil schreibt seine eigene Datei und überschreibt dabei nie den anderen: Nach einem Scan stehen beide bereit, in beliebiger Reihenfolge, und Sie können später an einem der beiden weitermachen.</sys:String>
     <sys:String x:Key="L.Help_Conflict_D">"Geteilte Ausgabe innerhalb einer Mod" (hunderte Farbvarianten desselben Outfits) ist normal und gilt nicht als zu lösen; kreuzen Sie "Nur Konflikte zwischen Mods" an, um sie herauszufiltern.</sys:String>
+    <sys:String x:Key="L.Help_Conflict_E">Die Werkzeugleiste ist eine Zeile mit vier Sieben: "Outfits filtern…" und "Mod filtern…" matchen je eine Namenart (Teilzeichenfolge, Groß-/Kleinschreibung egal; Semikola oder Kommas trennen mehrere Wörter, ein Treffer genügt; stehen in beiden Kästen Wörter, müssen beide passen), "Nur Konflikte zwischen Mods" lässt Farbvarianten derselben Mod außen vor, "Nur offene" listet nur Konflikte ohne Gewinner — legt man einen fest, verschwindet die Zeile sofort, und die Liste wird von selbst kürzer; die Sieben lassen sich kombinieren, der Gruppenaufwurf und "Neu scannen" teilen die Zeile.</sys:String>
+    <sys:String x:Key="L.Help_Conflict_F">Die linke Spalte ist nach Ihren eigenen Gruppen sortiert: Jeder Kopf zeigt eine Konfliktzahl plus, wie viele noch offen sind (in Warnfarbe, aktualisiert sich beim Zuweisen oder Zurücksetzen von selbst), und ein Klick klappt die Zeilen der Gruppe zusammen; Rechtsklick bietet "Alle aufklappen" / "Alle einklappen" / "Übrige einklappen" plus drei Aktionen nur für diese Gruppe — "Diese Gruppe einem Mod zuweisen…", "Diese Gruppe nach Outfit-Stichwort zuweisen…" (der Kandidat, dessen Outfitname passt, gewinnt; bei mehreren der stärkste) und "Diese Gruppe zurücksetzen".</sys:String>
+    <sys:String x:Key="L.Help_Conflict_G">Die mittlere Spalte, "Erstellen mit", listet je Zeile einen Kandidaten: Klick auf den kleinen Kreis am Zeilenanfang weist ihn sofort zu, Doppelklick irgendwo in der Zeile genauso; Rechtsklick auf eine Zeile öffnet ein Menü — der erste Punkt macht sie zur Gewinnerin, der zweite gibt alle Konflikte dieses Mods auf einmal an ihn (mit der Zahl der Gruppen); "Offen lassen (BodySlide nachfragen lassen)" unter der Trennlinie gibt die Entscheidung zurück. Die Aktionszeile darunter hält die Sammelaktionen — "Mod-Priorität folgen", "Einem Mod zuweisen…", "Alles zurücksetzen" —, rechts am Ende "In BodySlide schreiben…".</sys:String>
     <sys:String x:Key="L.Help_Toc">Inhalt</sys:String>
     <sys:String x:Key="L.Help_TocHint">Klicken Sie eine Überschrift an, um zu dem Abschnitt zu springen.</sys:String>
     <sys:String x:Key="L.Help_Task1">Die Outfits einer Mod in eine Gruppe stecken — links die Mod ankreuzen (den Mod-Namen anzukreuzen wählt alle seine Outfits) → rechts die Zielgruppe wählen → in der Mitte auf "Zur Gruppe hinzufügen" → auf "Gruppendateien speichern" klicken.</sys:String>
     <sys:String x:Key="L.Help_Task2">Ähnliche Outfits einsammeln, die über mehrere Mods verstreut sind — drücken Sie rechts auf "Regelgruppierung" und grenzen Sie sie in einem Durchgang per Stichwort ein (siehe Abschnitt 5).</sys:String>
     <sys:String x:Key="L.Help_Task3">Ein Outfit ist in der falschen Gruppe — links ankreuzen → auf "Aus Gruppe entfernen"; oder einfach Strg+Z für den letzten Schritt.</sys:String>
-    <sys:String x:Key="L.Help_Task4">Neue Gruppen tauchen nicht in BodySlide auf — zuerst BodySlide neu starten (bei Start über MO2 auch MO2); fehlen sie weiter, öffnen Sie Werkzeug → Diagnose und prüfen Sie, ob "effektiver Projektpfad" und "Ausgabeordner" zusammenpassen.</sys:String>
-    <sys:String x:Key="L.Help_Task5">Sehen, was in einer Gruppe steckt — Doppelklick auf den Gruppennamen, oder "⋯" → "Mitglieder ansehen" öffnet die Mitgliederliste (filterbar, mit Massenentfernung).</sys:String>
+    <sys:String x:Key="L.Help_Task4">Neue Gruppen tauchen nicht in BodySlide auf — zuerst BodySlide neu starten (bei Start über MO2 auch MO2); fehlen sie weiter, öffnen Sie die "Diagnose" im Abschnitt Hilfe der Registerkarte "Einstellungen" und prüfen Sie, ob "effektiver Projektpfad" und "Ausgabeordner" zusammenpassen.</sys:String>
+    <sys:String x:Key="L.Help_Task5">Sehen, was in einer Gruppe steckt — Doppelklick auf den Gruppennamen, oder "⋯" → "Mitglieder ansehen" öffnet die Mitgliederliste (filterbar, Massenentfernung, und "Verschieben nach…" in eine andere Gruppe).</sys:String>
+    <sys:String x:Key="L.Help_Task6">Beim Stapelbau fragt BodySlide nach der "Ausgabedatei" — mehrere Mods haben dasselbe Outfit geändert — gehen Sie zur Registerkarte "Ausgabekonflikte", legen Sie je Gruppe fest, welche Mod sie baut, und klicken Sie "In BodySlide schreiben…"; danach fragt der Stapelbau nicht mehr (siehe Abschnitt 8).</sys:String>
 
     <!-- Input prompts -->
     <sys:String x:Key="L.Prompt_GroupName">Gruppenname:</sys:String>

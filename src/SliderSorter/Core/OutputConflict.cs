@@ -261,6 +261,32 @@ public static class OutputConflicts
         return result;
     }
 
+    /// <summary>按服装关键字定归属：服装名命中任一关键字的候选赢下它所在的冲突。
+    /// 与 <see cref="PickOwner"/> 的分工：那颗点名模组，这里点名"长什么样的衣服"——
+    /// 用户说的"凡是带 SBW 字样的都交给它赢"就是它。范围由调用方圈（本组/可见组皆可）。
+    /// <para>
+    /// 匹配走 <see cref="TextFilter.MatchesAny"/>：忽略大小写、任一关键字命中即算，与冲突页
+    /// 「按服装过滤」同一匹配面、同一套切词（<see cref="GroupRules.SplitKeywords"/>）。
+    /// 一条冲突里多个候选都命中时取 <see cref="OutputConflictGroup.Candidates"/> 顺序里的第一个，
+    /// 即最强层——与 <see cref="PickOwner"/> 同一个取法，不自己发明第二次排序。
+    /// </para>
+    /// <para>一处候选都没命中的冲突原样不动；关键字一个都不剩时原样拷贝，
+    /// 调用方决定要不要当作"没命中"提醒。返回的是全量工作副本。</para></summary>
+    public static Dictionary<string, string> PickOwnerByKeyword(IEnumerable<OutputConflictGroup> groups,
+        IReadOnlyList<string> keywords, IReadOnlyDictionary<string, string> existing)
+    {
+        var result = new Dictionary<string, string>(existing, StringComparer.Ordinal);
+        if (keywords.Count == 0)
+            return result;
+        foreach (var group in groups)
+        {
+            var winner = group.Candidates.FirstOrDefault(c => TextFilter.MatchesAny(c.Name, keywords));
+            if (winner is not null)
+                result[group.OutputFilePath] = winner.Name;
+        }
+        return result;
+    }
+
     /// <summary>这批冲突里出过候选的模组，以及"该模组能定几组"——供「按模组指定」的菜单列项。
     /// <para>
     /// 计数数的是<b>组</b>不是候选：一条冲突里同一模组有三个配色也只算 1 组，因为菜单说的是"能替它定几组"。

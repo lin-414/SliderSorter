@@ -7,7 +7,10 @@ namespace SliderSorter.Core;
 public class GroupStore
 {
     private readonly List<SliderGroup> _groups = new();
-    private readonly Stack<List<SliderGroup>> _undoStack = new();
+    // 撤销栈必须能从两头动：新的压到**末尾**，超容量时从**开头**丢最老的。
+    // 不能用 Stack<T>——它只有 Pop（弹栈顶），"超过 30 条丢最老"写出来会把刚压入的最新快照弹掉：
+    // 栈一旦攒满 30 份就被冻结，之后每次快照都是 push+立即 pop 抵消，一次撤销会静默回跳几十步。
+    private readonly List<List<SliderGroup>> _undoStack = new();
     private HashSet<string>? _membershipCache;
 
     public bool Dirty { get; private set; }
@@ -54,6 +57,9 @@ public class GroupStore
         _groups.AddRange(groups);
         CurrentGroupName = _groups.Count > 0 ? _groups[0].Name : null;
         Dirty = false;
+        // 上一轮数据（甚至上一份扫描结果）的快照不能留着：留着的话，新清单上按一次撤销
+        // 会把旧扫描的组整个恢复回来并置脏——状态穿越且无提示
+        _undoStack.Clear();
         InvalidateMembershipCache();
         Changed?.Invoke();
     }
@@ -178,6 +184,29 @@ public class GroupStore
         return (true, null);
     }
 
+    /// <summary>把一批服装从 from 组搬到 to 组（成员预览窗口的「移动到…」）。
+    /// 目标里已有的只从 from 移除、不重复添加；from 与 to 是同一个组时不动（菜单侧已按引用排除）。
+    /// 组名沿用 <see cref="GetGroup"/> 的忽略大小写口径。任一组找不到返回 -1，调用方须告知用户。</summary>
+    public int MoveMembers(string fromName, string toName, IEnumerable<string> names)
+    {
+        var from = GetGroup(fromName);
+        var to = GetGroup(toName);
+        if (from is null || to is null || ReferenceEquals(from, to))
+            return -1;
+        Snapshot();
+        var moved = 0;
+        foreach (var name in names.Distinct(StringComparer.Ordinal))
+        {
+            if (!to.Members.Contains(name, StringComparer.Ordinal))
+                to.Members.Add(name);
+            if (from.Members.RemoveAll(m => m == name) > 0)
+                moved++;
+        }
+        if (moved > 0)
+            MarkDirty();
+        return moved;
+    }
+
     public (int AddedGroups, int AddedMembers) Import(IEnumerable<SliderGroup> imported)
     {
         Snapshot();
@@ -212,7 +241,10 @@ public class GroupStore
     {
         if (_undoStack.Count == 0)
             return (false, CoreStrings.Get("L.Core_GroupNothingToUndo"));
-        var restored = _undoStack.Pop();
+        // 撤销弹的是最新一次快照（列表末尾），还原后把它从栈里拿掉
+        var at = _undoStack.Count - 1;
+        var restored = _undoStack[at];
+        _undoStack.RemoveAt(at);
         _groups.Clear();
         _groups.AddRange(restored);
         if (CurrentGroupName is not null && _groups.All(g => !string.Equals(g.Name, CurrentGroupName, StringComparison.OrdinalIgnoreCase)))
@@ -226,10 +258,15 @@ public class GroupStore
     /// <summary>手动入撤销快照（特殊变更路径用）。</summary>
     public void Snapshot()
     {
-        _undoStack.Push(_groups.Select(g => g.Clone()).ToList());
-        while (_undoStack.Count > 30)
-            _undoStack.Pop();
+        _undoStack.Add(_groups.Select(g => g.Clone()).ToList());
+        // 超容量丢的是**最老**的（列表开头），最新快照必须留得住——否则栈满之后
+        // 一次撤销会跳到几十步之前，中间的修改既回不去也没法重做
+        if (_undoStack.Count > UndoCapacity)
+            _undoStack.RemoveRange(0, _undoStack.Count - UndoCapacity);
     }
+
+    /// <summary>撤销栈深度。快照是整份组列表的克隆，30 步封顶防止大组表把内存吃穿。</summary>
+    private const int UndoCapacity = 30;
 
     /// <summary>保存成功后清除脏标记。</summary>
     public void MarkSaved() => Dirty = false;

@@ -30,9 +30,8 @@
     <sys:String x:Key="L.Settings_Theme">Thème de l’interface</sys:String>
     <sys:String x:Key="L.Settings_Language">Langue de l’interface</sys:String>
     <sys:String x:Key="L.Settings_LanguageSystem">Suivre le système</sys:String>
-    <sys:String x:Key="L.Settings_Help">Aide et à propos</sys:String>
-    <sys:String x:Key="L.Settings_CheckUpdate">Rechercher des mises à jour</sys:String>
-    <sys:String x:Key="L.Settings_UpdateChecking">Recherche de mises à jour…</sys:String>
+    <sys:String x:Key="L.Settings_FontSize">Taille de la police</sys:String>
+    <sys:String x:Key="L.Settings_Help">Aide</sys:String>
     <sys:String x:Key="L.Settings_Manual">Guide d’utilisation</sys:String>
 
     <!-- Main window -->
@@ -74,7 +73,6 @@
     <sys:String x:Key="L.Title_Tip">Information</sys:String>
     <sys:String x:Key="L.Title_Error">Erreur</sys:String>
     <sys:String x:Key="L.Title_Confirm">Confirmation</sys:String>
-    <sys:String x:Key="L.Title_CheckUpdate">Recherche de mises à jour</sys:String>
     <sys:String x:Key="L.Title_CleanupStale">Supprimer les tenues obsolètes</sys:String>
     <sys:String x:Key="L.Title_FilenameConflict">Conflit de noms de fichiers</sys:String>
     <sys:String x:Key="L.Title_NewGroup">Nouveau groupe</sys:String>
@@ -197,6 +195,7 @@
     <sys:String x:Key="L.Msg_SelectGroupFirst">Sélectionnez d'abord un groupe.</sys:String>
     <sys:String x:Key="L.Msg_SelectOutfitsFirst">Cochez d'abord les tenues à retirer (cochez un mod ou un séparateur pour tout sélectionner).</sys:String>
     <sys:String x:Key="L.Msg_ConfirmRemove">Retirer {0} tenue(s) du groupe « {1} » ?</sys:String>
+    <sys:String x:Key="L.Msg_ConfirmMove">Déplacer {0} tenue(s) de « {1} » vers « {2} » ?</sys:String>
     <sys:String x:Key="L.Msg_ScanIncomplete">L'analyse n'est pas terminée ou l'emplacement d'écriture est inconnu.</sys:String>
     <sys:String x:Key="L.Msg_NoGroupsYet">Aucun groupe pour l'instant. Créez un groupe et cochez des tenues.</sys:String>
     <sys:String x:Key="L.Msg_EmptyGroupName">Un groupe a un nom vide ; renommez-le d'abord.</sys:String>
@@ -208,9 +207,6 @@
     <sys:String x:Key="L.Msg_NotMo2Dir">Pas de ModOrganizer.ini dans ce dossier : ce n'est pas un dossier d'instance MO2. Choisissez le dossier d'instance contenant ModOrganizer.ini (pour une installation portable, le dossier contenant ModOrganizer.exe).</sys:String>
     <sys:String x:Key="L.Msg_Mo2InstallDirNotInstance">C'est le dossier du programme MO2, pas un dossier d'instance. Un dossier d'instance contient ModOrganizer.ini ; les instances globales se trouvent généralement dans un sous-dossier de %LOCALAPPDATA%\ModOrganizer et sont détectées automatiquement — aucun ajout manuel n'est nécessaire.</sys:String>
     <sys:String x:Key="L.Msg_NotBodySlideDir">Pas de Config.xml dans ce dossier ; ce n'est pas un dossier BodySlide.</sys:String>
-    <sys:String x:Key="L.Msg_UpToDate">Vous êtes à jour (v{0}).</sys:String>
-    <sys:String x:Key="L.Msg_UpdateAvailable" xml:space="preserve">Nouvelle version {0} disponible (actuelle v{1}).&#x0a;&#x0a;Ouvrir la page de publication pour la télécharger ?</sys:String>
-    <sys:String x:Key="L.Msg_UpdateFailed">Échec de la recherche de mise à jour : {0}</sys:String>
     <sys:String x:Key="L.Msg_AlreadyRunning">SliderSorter est déjà en cours d'exécution.</sys:String>
     <sys:String x:Key="L.Msg_OutputDirUndetermined">L'analyse n'est pas terminée, le dossier de sortie ne peut donc pas être déterminé.</sys:String>
     <sys:String x:Key="L.Msg_CopiedToClipboard">Copié dans le presse-papiers.</sys:String>
@@ -227,6 +223,8 @@
     <sys:String x:Key="L.Members_FilterMods">Filtrer les mods / séparateurs…</sys:String>
     <sys:String x:Key="L.Members_Count">{0} tenue(s) dans le groupe, {1} affichée(s)</sys:String>
     <sys:String x:Key="L.Members_RemoveSelected">Retirer la sélection</sys:String>
+    <sys:String x:Key="L.Members_MoveSelected">Déplacer vers…</sys:String>
+    <sys:String x:Key="L.Members_MoveNoTarget">Aucun autre groupe</sys:String>
 
     <!-- New mods popup -->
     <sys:String x:Key="L.NewMods_Title">Nouveaux mods de tenues détectés</sys:String>
@@ -255,16 +253,21 @@
     <sys:String x:Key="L.Conflict_IntraGroup" xml:space="preserve">intra-groupe</sys:String>
     <sys:String x:Key="L.Conflict_IntraGroupCount" xml:space="preserve">dont {0} intra-groupe</sys:String>
     <sys:String x:Key="L.Conflict_IntraGroupTip" xml:space="preserve">Deux membres ou plus d'un même groupe écrivent le même fichier de sortie : un seul pourra gagner, les autres ne seront pas générés.</sys:String>
+    <sys:String x:Key="L.Conflict_BucketUnresolvedCount" xml:space="preserve">dont {0} sans choix</sys:String>
+    <sys:String x:Key="L.Conflict_BucketUnresolvedTip" xml:space="preserve">Des conflits de ce groupe n'ont pas encore de gagnant : BodySlide redemandera pour chacun au moment de construire. Les boutons d'action en bas tranchent d'un coup tous les groupes listés ; cochez « Non définis uniquement » dans la barre d'outils pour ne lister que ces conflits.</sys:String>
     <sys:String x:Key="L.Conflict_Ungrouped" xml:space="preserve">Hors groupe</sys:String>
     <sys:String x:Key="L.Conflict_GroupFilterAll" xml:space="preserve">Tous les groupes</sys:String>
     <sys:String x:Key="L.Conflict_GroupFilterTip" xml:space="preserve">N'afficher que les conflits auxquels participe un membre de ce groupe. Seuls les groupes ayant réellement des conflits sont listés.</sys:String>
     <sys:String x:Key="L.Conflict_CandidatesHeader" xml:space="preserve">Construit par</sys:String>
     <sys:String x:Key="L.Conflict_PreviewHeader" xml:space="preserve">Aperçu</sys:String>
     <sys:String x:Key="L.Conflict_BatchScope" xml:space="preserve">Pour les {0} groupes listés :</sys:String>
-    <sys:String x:Key="L.Conflict_Filter" xml:space="preserve">Filtrer chemin / tenue / mod ; plusieurs mots…</sys:String>
-    <sys:String x:Key="L.Conflict_FilterTip" xml:space="preserve">Plusieurs mots séparés par ; ou , — un groupe reste si l'un d'eux correspond (sans tenir compte de la casse). Filtrez d'abord le lot, puis attribuez-le d'un coup avec les actions ci-dessous.</sys:String>
+    <sys:String x:Key="L.Conflict_FilterOutfits" xml:space="preserve">Filtrer les tenues…</sys:String>
+    <sys:String x:Key="L.Conflict_FilterMods" xml:space="preserve">Filtrer mod…</sys:String>
+    <sys:String x:Key="L.Conflict_FilterTip" xml:space="preserve">Plusieurs mots séparés par ; ou , — un groupe reste si l'un d'eux correspond (sans tenir compte de la casse) ; si les deux champs sont remplis, il doit satisfaire les deux. Filtrez d'abord le lot, puis attribuez-le d'un coup avec les actions ci-dessous.</sys:String>
     <sys:String x:Key="L.Conflict_OnlyCrossMod" xml:space="preserve">Seulement les conflits entre mods</sys:String>
     <sys:String x:Key="L.Conflict_OnlyCrossModTip" xml:space="preserve">{0} conflits entre mods, {1} groupes partageant un fichier au sein d'un même mod. Des centaines de variantes de couleur d'une tenue partageant un fichier sont normales pour un mod ; cochez pour ne plus les voir.</sys:String>
+    <sys:String x:Key="L.Conflict_UnresolvedOnly" xml:space="preserve">Non définis uniquement</sys:String>
+    <sys:String x:Key="L.Conflict_UnresolvedOnlyTip" xml:space="preserve">Ne montre que les conflits sans gagnant : dès que l'un est tranché, sa ligne quitte la liste. Se combine avec le filtre, l'option inter-mods et le choix de groupe.</sys:String>
     <sys:String x:Key="L.Conflict_RescanTip" xml:space="preserve">Relancer l'analyse des mods et des tenues et reconstruire cette liste de conflits. Les choix faits sur cette page ne changent que les réglages de cet outil et ne relancent pas l'analyse.</sys:String>
     <sys:String x:Key="L.Conflict_SameModOnly" xml:space="preserve">même mod seulement</sys:String>
     <sys:String x:Key="L.Conflict_FilterCount" xml:space="preserve">{0} groupes affichés sur {1}</sys:String>
@@ -278,6 +281,11 @@
     <sys:String x:Key="L.Conflict_PickOwnerEmpty" xml:space="preserve">Aucun mod à attribuer dans la liste actuelle</sys:String>
     <sys:String x:Key="L.Conflict_PickOwnerGroup" xml:space="preserve">Attribuer ce groupe à un mod…</sys:String>
     <sys:String x:Key="L.Conflict_PickOwnerGroupHeader" xml:space="preserve">Groupe : {0} · {1} groupes</sys:String>
+    <sys:String x:Key="L.Conflict_PickOwnerKeyword" xml:space="preserve">Attribuer ce groupe par mot-clé de tenue…</sys:String>
+    <sys:String x:Key="L.Conflict_PickOwnerKeywordTitle" xml:space="preserve">Attribuer ce groupe par mot-clé de tenue</sys:String>
+    <sys:String x:Key="L.Conflict_PickOwnerKeywordLabel" xml:space="preserve">Les conflits dont le nom de tenue contient un mot-clé vont à la tenue correspondante (si plusieurs correspondent, la couche la plus forte l'emporte). Séparez les mots-clés par ; ou , — seuls les conflits de ce groupe sont concernés.</sys:String>
+    <sys:String x:Key="L.Conflict_PickOwnerKeywordEmpty" xml:space="preserve">Aucun nom de tenue dans ce groupe ne correspond à ces mots-clés ; rien n'a été modifié.</sys:String>
+    <sys:String x:Key="L.Conflict_ClearGroup" xml:space="preserve">Tout effacer dans ce groupe</sys:String>
     <sys:String x:Key="L.Conflict_SetWinner" xml:space="preserve">En faire le gagnant de ce groupe</sys:String>
     <sys:String x:Key="L.Conflict_Export" xml:space="preserve">Écrire pour BodySlide…</sys:String>
     <sys:String x:Key="L.Conflict_ExportTip" xml:space="preserve">Écrit les choix dans BuildSelection.xml au sein du répertoire de sortie actuel — le même dossier BodySlide que les fichiers de groupes (en mode « Personnalisé », le dossier choisi lui-même ; sous MO2, celui que BodySlide lit réellement) ; la boîte de confirmation affiche le chemin complet, l'ancien fichier est sauvegardé en .bak</sys:String>
@@ -397,19 +405,16 @@ Un fichier par groupe, nommé d'après le groupe : {1}{2} ({3}).
     <sys:String x:Key="L.Diag_OutputUndetermined">(indéterminé)</sys:String>
 
     <!-- About -->
-    <sys:String x:Key="L.About_Desc">Lit les mods installés via Mod Organizer 2, permet d'attribuer en lot les jeux de curseurs BodySlide à des groupes et génère les fichiers de groupes au format natif de BodySlide. Fonctionne avec tout jeu pris en charge par BodySlide, comme Skyrim SE/AE et Fallout 4.</sys:String>
-    <sys:String x:Key="L.About_AuthorLabel">Auteur</sys:String>
-    <sys:String x:Key="L.About_Compat">Les fichiers de groupes sont entièrement compatibles avec BodySlide ; chaque groupe devient son propre fichier nommé d'après le groupe, stocké dans le dossier SliderGroups de BodySlide.</sys:String>
 
     <!-- Help -->
     <sys:String x:Key="L.Help_H1">1. Tâches courantes</sys:String>
     <sys:String x:Key="L.Help_01">Cet outil lit les mods installés via Mod Organizer 2 (MO2), permet d'attribuer en lot des tenues (jeux de curseurs BodySlide) à des groupes et génère les fichiers de groupes au format natif de BodySlide, un fichier par groupe.</sys:String>
-    <sys:String x:Key="L.Help_02">1. Choisissez l'instance MO2 et le profil — les instances globales et les installations portables sont détectées automatiquement ; le profil par défaut est le dernier utilisé.</sys:String>
-    <sys:String x:Key="L.Help_03">2. Confirmez le dossier BodySlide — la détection automatique réussit généralement. La ligne grise « chemin de projet effectif » sous les cartes indique l'endroit où BodySlide lit réellement les tenues et les groupes ; surveillez-la.</sys:String>
+    <sys:String x:Key="L.Help_02">1. Choisissez l'instance MO2 et le profil dans l'onglet « Paramètres » — les instances globales et les installations portables sont détectées automatiquement ; le profil par défaut est le dernier utilisé.</sys:String>
+    <sys:String x:Key="L.Help_03">2. Confirmez le dossier BodySlide — la détection automatique réussit généralement. La ligne grise « chemin de projet effectif » sous la carte « Environnement » de l'onglet « Paramètres » indique l'endroit où BodySlide lit réellement les tenues et les groupes ; surveillez-la.</sys:String>
     <sys:String x:Key="L.Help_04">3. Créer un groupe et cocher des tenues — à droite, « ⋯ » → « Nouveau groupe » crée et sélectionne un groupe (quand la liste est vide, un bouton « Nouveau groupe » est aussi proposé au centre du panneau) ; dans l'arborescence à gauche, cochez un séparateur (= sélectionne tous ses mods) ou dépliez puis cochez des tenues une par une. Rien n'est écrit avant que vous cliquiez sur « Ajouter au groupe » au milieu ; « Retirer du groupe » annule ce que vous avez coché.</sys:String>
-    <sys:String x:Key="L.Help_05">4. Enregistrer — cliquez sur « Enregistrer les fichiers de groupes » en bas, ou utilisez Fichier → Enregistrer les fichiers de groupes (Ctrl+S). Chaque groupe devient un fichier portant son nom (par ex. UBE.xml). Redémarrez ensuite BodySlide (si vous le lancez via MO2, redémarrez aussi MO2).</sys:String>
+    <sys:String x:Key="L.Help_05">4. Enregistrer — cliquez sur « Enregistrer les fichiers de groupes » en bas (Ctrl+S). Chaque groupe devient un fichier portant son nom (par ex. UBE.xml). Redémarrez ensuite BodySlide (si vous le lancez via MO2, redémarrez aussi MO2).</sys:String>
     <sys:String x:Key="L.Help_H2">2. Prise en main (4 étapes)</sys:String>
-    <sys:String x:Key="L.Help_S2_Top">[Zone de paramètres supérieure]</sys:String>
+    <sys:String x:Key="L.Help_S2_Top">[Réglages d'environnement (onglet « Paramètres » → Environnement / Paramètres de sortie)]</sys:String>
     <sys:String x:Key="L.Help_06">Instance MO2 : les instances globales et les installations portables sous %LOCALAPPDATA%\ModOrganizer sont trouvées automatiquement ; « Sélectionner le dossier d'instance… » pointe manuellement vers un dossier d'instance (contenant ModOrganizer.ini) ; « Actualiser » réanalyse les instances.</sys:String>
     <sys:String x:Key="L.Help_07">Profil : liste tous les profils disponibles pour cette instance. La liste des mods activés provient du modlist.txt de ce profil, dans le même ordre que le volet gauche de MO2.</sys:String>
     <sys:String x:Key="L.Help_08">BodySlide : recherche dans les mods activés les dossiers contenant BodySlide*.exe et Config.xml ; si rien n'est trouvé, utilisez « Parcourir… » pour en indiquer un.</sys:String>
@@ -420,14 +425,17 @@ Un fichier par groupe, nommé d'après le groupe : {1}{2} ({3}).
     <sys:String x:Key="L.Help_12">Une case cochée ne fait que désigner ce sur quoi vous voulez agir — rien n'est écrit avant de cliquer sur « Ajouter au groupe » / « Retirer du groupe » au milieu. Cocher un mod ou un séparateur coche toutes ses tenues.</sys:String>
     <sys:String x:Key="L.Help_13">La marque devant un nom de tenue signifie qu’elle est déjà dans le groupe sélectionné ; le badge « dans le groupe x/total » à droite du nom d’un mod indique combien de ses tenues y figurent.</sys:String>
     <sys:String x:Key="L.Help_S2_Groups">[Panneau des groupes à droite]</sys:String>
-    <sys:String x:Key="L.Help_14">Liste des groupes : un clic sélectionne (les cases et les marques à gauche suivent sans perdre la position de défilement), un double-clic ouvre l'aperçu des membres. Création, renommage, consultation, suppression et import sont regroupés sous « ... » dans l'en-tête, et aussi accessibles par clic droit sur la liste ; « Annuler » et « Règles de groupement » sont les deux boutons juste à côté.</sys:String>
+    <sys:String x:Key="L.Help_14">Liste des groupes : un clic sélectionne (les cases et les marques à gauche suivent sans perdre la position de défilement), un double-clic ouvre l'aperçu des membres (filtrable, retrait par lot, et « Déplacer vers… » un autre groupe). Création, renommage, consultation, suppression et import sont regroupés sous « ... » dans l'en-tête, et aussi accessibles par clic droit sur la liste ; « Annuler » et « Règles de groupement » sont les deux boutons juste à côté.</sys:String>
     <sys:String x:Key="L.Help_15">Le bouton « Règles de groupement » (à côté de « Annuler ») ouvre un panneau en bas de cette page : travail par lot à partir de mots-clés, voir section 5.</sys:String>
-    <sys:String x:Key="L.Help_16">Annuler (Ctrl+Z, ou Édition → Annuler) : revient sur les 30 dernières actions de regroupement, voir section 6.</sys:String>
-    <sys:String x:Key="L.Help_17">Fichier → Importer des fichiers de groupes… : fusionne d'autres XML de groupes dans la liste courante pour continuer à éditer.</sys:String>
+    <sys:String x:Key="L.Help_16">Annuler (Ctrl+Z) : revient sur les 30 dernières actions de regroupement, voir section 6.</sys:String>
+    <sys:String x:Key="L.Help_17">« ... » → « Importer des fichiers de groupes… » : fusionne d'autres XML de groupes dans la liste courante pour continuer à éditer.</sys:String>
     <sys:String x:Key="L.Help_18">Rappel des nouveaux mods : lorsqu'une analyse trouve des mods de tenues nouvellement installés, une fenêtre les liste par séparateur → mod → tenue (comme l'arborescence principale, dépliable) — cochez, choisissez un groupe cible, cliquez sur « Ajouter la sélection » (annulable), et vous pouvez répéter avec d'autres groupes cibles. Pour les listes longues, utilisez les deux champs de filtre ci-dessus (celui de gauche filtre les noms de tenues, celui de droite les noms de mods / séparateurs) ; les coches survivent au filtrage. Fermer reporte l'opération ; ces tenues restent trouvables via « Non attribuées uniquement ».</sys:String>
     <sys:String x:Key="L.Help_S2_Status">[Barre d'état]</sys:String>
-    <sys:String x:Key="L.Help_19">À gauche : les statistiques (mods / tenues / attribuées / non attribuées). « Diagnostic » se trouve dans le menu Outils ; le journal d'exécution est une ligne de résumé repliable sous le bouton d'enregistrement — cliquez pour la déplier ; une fois déplié, il est coloré par niveau, copiable, effaçable et redimensionnable par glissement.</sys:String>
+    <sys:String x:Key="L.Help_19">À gauche : les statistiques (mods / tenues / attribuées / non attribuées). « Diagnostic » se trouve dans la section Aide de l'onglet « Paramètres » ; le journal d'exécution est une ligne de résumé repliable sous le bouton d'enregistrement — cliquez pour la déplier ; une fois déplié, il est coloré par niveau, copiable, effaçable et redimensionnable par glissement.</sys:String>
     <sys:String x:Key="L.Help_20">À droite : le dossier de sortie actuel ; survolez-le pour obtenir le chemin complet.</sys:String>
+    <sys:String x:Key="L.Help_S2_Settings">[Onglet « Paramètres »]</sys:String>
+    <sys:String x:Key="L.Help_43">Cinq cartes : Environnement (instance MO2 / profil / dossier BodySlide / lieu de sortie — la page principale ne les répète plus), Paramètres de sortie (mode d'écriture et dossier de sortie), Apparence (thème / langue / taille de police — quatre crans, 90 % / 100 % / 110 % / 125 %, appliqués immédiatement ; le texte de ce manuel suit), Maintenance, Aide.</sys:String>
+    <sys:String x:Key="L.Help_44">« Supprimer les tenues obsolètes… » sous Maintenance retire de tous les groupes les tenues absentes de l'analyse actuelle (une confirmation est demandée, Ctrl+Z annule) ; la section Aide regroupe ce manuel et le « Diagnostic » — si BodySlide ne ramasse rien, commencez par vérifier que son « chemin de projet effectif » et sa « cible d'écriture » pointent au même endroit.</sys:String>
     <sys:String x:Key="L.Help_H3">3. À quoi correspond chaque zone</sys:String>
     <sys:String x:Key="L.Help_21">À l'enregistrement, chaque groupe devient son propre fichier nommé d'après lui (p. ex. UBE.xml), contenant le format natif &lt;SliderGroups&gt; de BodySlide (UTF-8 avec BOM), entièrement compatible avec BodySlide.</sys:String>
     <sys:String x:Key="L.Help_22">Un nouvel enregistrement écrase les fichiers de groupes de même nom et nettoie automatiquement les restes des groupes renommés ou supprimés via le manifeste interne. Fermer l'application avec des modifications non enregistrées affiche un avertissement.</sys:String>
@@ -450,7 +458,7 @@ Un fichier par groupe, nommé d'après le groupe : {1}{2} ({3}).
     <sys:String x:Key="L.Help_36">Dossier de l'application BodySlide / Data réel du jeu / personnalisé : écrit dans les SliderGroups de l'emplacement correspondant.</sys:String>
     <sys:String x:Key="L.Help_H6">6. Annulation et dossier de sortie</sys:String>
     <sys:String x:Key="L.Help_37">· J'ai coché des tenues mais rien ne s'est passé ? Cocher ne fait que sélectionner ; il faut encore cliquer sur « Ajouter au groupe » au milieu.</sys:String>
-    <sys:String x:Key="L.Help_38">· Nouveaux groupes absents de BodySlide ? 1) Redémarrez BodySlide (avec MO2, redémarrez aussi MO2) ; 2) ouvrez Outils → Diagnostic et comparez le « chemin de projet effectif » avec votre « dossier de sortie » — BodySlide ne lit les groupes que dans les SliderGroups du chemin de projet effectif.</sys:String>
+    <sys:String x:Key="L.Help_38">· Nouveaux groupes absents de BodySlide ? 1) Redémarrez BodySlide (avec MO2, redémarrez aussi MO2) ; 2) ouvrez le « Diagnostic » dans la section Aide de l'onglet « Paramètres » et comparez le « chemin de projet effectif » avec votre « dossier de sortie » — BodySlide ne lit les groupes que dans les SliderGroups du chemin de projet effectif.</sys:String>
     <sys:String x:Key="L.Help_39">· Pourquoi certains mods manquent-ils ? L'arborescence n'affiche que les mods activés contenant des tenues BodySlide ; les mods désactivés ou sans tenues n'apparaissent pas.</sys:String>
     <sys:String x:Key="L.Help_40">· (conflit de noms) après un nom de tenue ? Ce nom de tenue apparaît dans plusieurs mods ; l'appartenance est affichée pour le mod de plus haute priorité, mais le groupement se fait par nom et n'est pas affecté.</sys:String>
     <sys:String x:Key="L.Help_41">· Qu'est-ce que SliderSorter.files.txt dans le dossier de sortie ? Le manifeste de l'outil, utilisé pour nettoyer automatiquement les anciens fichiers ; BodySlide l'ignore.</sys:String>
@@ -464,13 +472,17 @@ Un fichier par groupe, nommé d'après le groupe : {1}{2} ({3}).
     <sys:String x:Key="L.Help_Conflict_B">· Les choix de conflits de sortie (onglet « Conflits de sortie ») — lorsque plusieurs tenues écrivent le même fichier de maillage, choisissez quel mod le génère, puis « Écrire dans BodySlide… » enregistre BuildSelection.xml. Les choix restent dans cet outil jusqu'à l'écriture ; le fichier d'origine est d'abord sauvegardé en .bak. Le fichier suit le répertoire de sortie : il est écrit dans le dossier CalienteTools\BodySlide de celui-ci (en mode « Personnalisé », dans le dossier choisi lui-même), dans le même mod que les fichiers de groupes. BodySlide ne le lit que depuis son dossier de programme, et sous MO2 ce dossier est le Data\CalienteTools\BodySlide virtuel : le répertoire de sortie est donc bien l'endroit lu.</sys:String>
     <sys:String x:Key="L.Help_Conflict_C">Chacun écrit son propre fichier sans écraser l’autre : après une seule analyse, les deux résultats sont disponibles, dans n’importe quel ordre, et vous pouvez revenir à l’un ou l’autre plus tard.</sys:String>
     <sys:String x:Key="L.Help_Conflict_D">Le « partage interne à un mod » (des centaines de recolorations d’une même tenue) est normal et n’est pas un conflit à résoudre ; cochez « Conflits entre mods uniquement » pour les masquer.</sys:String>
+    <sys:String x:Key="L.Help_Conflict_E">La barre d'outils aligne quatre filtres : « Filtrer les tenues… » et « Filtrer mod… » répondent chacun d'un type de nom (sous-chaîne, sans distinction de casse ; point-virgule ou virgule sépare plusieurs mots, un seul suffit à garder la ligne ; si les deux champs ont des mots, les deux conditions doivent être réunies), « Seulement les conflits entre mods » masque les recolorations internes à un mod, « Non définis uniquement » ne montre que les conflits sans vainqueur — désignez-en un et la ligne sort aussitôt de la liste, qui ne fait que rétrécir ; les filtres se cumulent, le menu déroulant des groupes et « Rescanner » partagent la ligne.</sys:String>
+    <sys:String x:Key="L.Help_Conflict_F">La colonne de gauche est rangée selon vos propres groupes : chaque en-tête porte le nombre de conflits et combien restent sans choix (en couleur d'avertissement, mis à jour sur place à chaque attribution ou effacement) ; un clic replie les lignes du groupe ; un clic droit propose « Tout développer » / « Tout réduire » / « Réduire les autres », plus trois actions limitées à ce groupe — « Attribuer ce groupe à un mod… », « Attribuer ce groupe par mot-clé de tenue… » (le candidat dont le nom de tenue correspond gagne ; s'il y en a plusieurs, la couche la plus forte) et « Tout effacer dans ce groupe ».</sys:String>
+    <sys:String x:Key="L.Help_Conflict_G">La colonne du milieu, « Construit par », liste un candidat par ligne : cliquez sur le petit cercle en début de ligne pour l'attribuer aussitôt, un double-clic n'importe où dans la ligne fait de même ; un clic droit ouvre un menu — le premier item en fait le vainqueur, le deuxième remet d'un coup à ce mod tous les conflits où il est impliqué (avec le nombre de groupes) ; « Ne rien fixer (BodySlide demandera) » sous le séparateur rend la décision. La ligne d'actions en dessous regroupe les actions par lot — « Suivre la priorité des mods », « Attribuer à un mod… », « Tout effacer » — avec « Écrire pour BodySlide… » tout à droite.</sys:String>
     <sys:String x:Key="L.Help_Toc">Sommaire</sys:String>
     <sys:String x:Key="L.Help_TocHint">Cliquez sur un titre pour accéder à la section.</sys:String>
     <sys:String x:Key="L.Help_Task1">Regrouper les tenues d'un même mod — cochez ce mod à gauche (cocher le nom du mod sélectionne toutes ses tenues) → sélectionnez le groupe cible à droite → cliquez sur « Ajouter au groupe » au milieu → cliquez sur « Enregistrer les fichiers de groupes ».</sys:String>
     <sys:String x:Key="L.Help_Task2">Rassembler des tenues similaires dispersées dans plusieurs mods — appuyez sur « Règles de groupement » à droite, puis ciblez-les en une passe avec des mots-clés (voir section 5).</sys:String>
     <sys:String x:Key="L.Help_Task3">Une tenue s'est retrouvée dans le mauvais groupe — cochez-la à gauche → cliquez sur « Retirer du groupe » ; ou appuyez simplement sur Ctrl+Z pour annuler la dernière étape.</sys:String>
-    <sys:String x:Key="L.Help_Task4">Les nouveaux groupes n'apparaissent pas dans BodySlide — redémarrez d'abord BodySlide (si vous le lancez via MO2, redémarrez aussi MO2) ; s'ils manquent toujours, ouvrez Outils → Diagnostic et vérifiez que le « chemin de projet effectif » correspond au « dossier de sortie ».</sys:String>
-    <sys:String x:Key="L.Help_Task5">Voir ce que contient un groupe — double-cliquez sur le nom du groupe, ou « ⋯ » → « Voir le groupe » pour ouvrir la liste des membres (filtrable, avec retrait par lot).</sys:String>
+    <sys:String x:Key="L.Help_Task4">Les nouveaux groupes n'apparaissent pas dans BodySlide — redémarrez d'abord BodySlide (si vous le lancez via MO2, redémarrez aussi MO2) ; s'ils manquent toujours, ouvrez le « Diagnostic » dans la section Aide de l'onglet « Paramètres » et vérifiez que le « chemin de projet effectif » correspond au « dossier de sortie ».</sys:String>
+    <sys:String x:Key="L.Help_Task5">Voir ce que contient un groupe — double-cliquez sur le nom du groupe, ou « ⋯ » → « Voir le groupe » pour ouvrir la liste des membres (filtrable, retrait par lot, et « Déplacer vers… » un autre groupe).</sys:String>
+    <sys:String x:Key="L.Help_Task6">BodySlide affiche « Choisir le fichier de sortie » pendant une construction par lot — plusieurs mods ont modifié la même tenue — allez dans l'onglet « Conflits de sortie », désignez pour chaque groupe qui le génère, cliquez sur « Écrire pour BodySlide… », et la construction par lot ne posera plus la question (voir section 8).</sys:String>
 
     <!-- Input prompts -->
     <sys:String x:Key="L.Prompt_GroupName">Nom du groupe :</sys:String>

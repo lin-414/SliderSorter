@@ -4,7 +4,7 @@
         Title="{Binding DialogTitle}" Width="470" SizeToContent="Height"
         WindowStartupLocation="CenterOwner" WindowStyle="ToolWindow" ResizeMode="NoResize"
         ShowInTaskbar="False" MinHeight="120"
-        Background="{DynamicResource B.Window}" FontFamily="{StaticResource AppFont}" FontSize="13"
+        Background="{DynamicResource B.Window}" FontFamily="{StaticResource AppFont}" FontSize="{DynamicResource Type.H3}"
         Style="{StaticResource AppWindow}">
     <Window.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVis" />

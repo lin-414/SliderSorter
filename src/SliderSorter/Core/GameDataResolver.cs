@@ -17,10 +17,12 @@ public sealed class GameDataResolver : IDisposable
     private readonly IReadOnlyList<string> _roots;
     private readonly object _gate = new();
 
-    /// <summary>相对路径 → 含它的归档下标列表，按层从强到弱（同层内先枚举到的那个）。
-    /// 必须是列表而不是单个下标：判定"这一层有没有"要按层问，把整张表压成"最强层那一个"
-    /// 就退化成"所有层的散文件都优先于任何归档"（见 <see cref="TryRead"/>）。</summary>
-    private Dictionary<string, List<int>>? _archiveIndex;
+    /// <summary>相对路径 → 含它的（归档下标 + 条目在该归档 <c>Files</c> 里的位置），按层从强到弱
+    /// （同层内先枚举到的那个）。必须是列表而不是单个下标：判定"这一层有没有"要按层问，
+    /// 把整张表压成"最强层那一个"就退化成"所有层的散文件都优先于任何归档"（见 <see cref="TryRead"/>）。
+    /// 连条目位置一起存：读取时按位置直取，不必每次把整张文件名表线性扫一遍——
+    /// 大整合包的 BSA 几十万条目，逐张贴图扫会是可感知的卡顿。</summary>
+    private Dictionary<string, List<(int ArchiveId, int EntryIndex)>>? _archiveIndex;
     private readonly List<string> _archivePaths = new();
     private readonly List<int> _archiveLayer = new();
 
@@ -97,22 +99,24 @@ public sealed class GameDataResolver : IDisposable
     private byte[]? TryReadFromArchive(string rel, int layer)
     {
         var index = EnsureArchiveIndex();
-        if (index is null || !index.TryGetValue(rel, out var ids))
+        if (index is null || !index.TryGetValue(rel, out var entries))
             return null;
 
-        // ids 按层从强到弱追加，同层只留一个（先枚举到的那个归档）
-        foreach (var id in ids)
+        // entries 按层从强到弱追加，同层只留一个（先枚举到的那个归档）
+        foreach (var (archiveId, entryIndex) in entries)
         {
-            if (_archiveLayer[id] == layer)
-                return ReadEntryFromArchive(id, rel);
+            if (_archiveLayer[archiveId] == layer)
+                return ReadEntryFromArchive(archiveId, entryIndex, rel);
         }
         return null;
     }
 
-    private byte[]? ReadEntryFromArchive(int archiveId, string rel)
+    private byte[]? ReadEntryFromArchive(int archiveId, int entryIndex, string rel)
     {
-        // 每次重新打开归档、按路径找回条目：一次预览只有个位数张贴图，而整合包里有几百个归档，
+        // 每次重新打开归档取数据：一次预览只有个位数张贴图，而整合包里有几百个归档，
         // 常驻文件句柄不值当；解出来的位图由渲染端缓存，所以这里不会被反复走到。
+        // 条目按建索引时记下的位置直取——Files 的顺序来自归档头，同一个文件每次打开都一致；
+        // 位置对不上号（建索引后归档被换过）才退回整表扫描兜底。
         try
         {
             var archive = OpenArchive(_archivePaths[archiveId]);
@@ -120,8 +124,12 @@ public sealed class GameDataResolver : IDisposable
                 return null;
             try
             {
-                var entry = archive.Files?.FirstOrDefault(e =>
-                    string.Equals(Normalize(e.FullPath), rel, StringComparison.OrdinalIgnoreCase));
+                var files = archive.Files;
+                var entry = files is not null && entryIndex < files.Count &&
+                            string.Equals(Normalize(files[entryIndex].FullPath), rel, StringComparison.OrdinalIgnoreCase)
+                    ? files[entryIndex]
+                    : files?.FirstOrDefault(e =>
+                        string.Equals(Normalize(e.FullPath), rel, StringComparison.OrdinalIgnoreCase));
                 return entry?.GetDataStream() is { } stream ? ReadAll(stream) : null;
             }
             finally
@@ -146,14 +154,14 @@ public sealed class GameDataResolver : IDisposable
         return stream.ToArray();
     }
 
-    private Dictionary<string, List<int>>? EnsureArchiveIndex()
+    private Dictionary<string, List<(int ArchiveId, int EntryIndex)>>? EnsureArchiveIndex()
     {
         lock (_gate)
         {
             if (_archiveIndex is not null)
                 return _archiveIndex;
 
-            var index = new Dictionary<string, List<int>>(StringComparer.OrdinalIgnoreCase);
+            var index = new Dictionary<string, List<(int ArchiveId, int EntryIndex)>>(StringComparer.OrdinalIgnoreCase);
 
             // 清单必须按层序串行收集：同名文件归谁由层序决定，并行填字典会把胜负顺序写乱
             // （和 SliderSetScanner.BuildShapeDataIndex 同一套规矩）。记下每条来自哪一层，
@@ -182,8 +190,10 @@ public sealed class GameDataResolver : IDisposable
                 }
             }
 
-            // 读文件名表（不读数据）可以并行：这一步在 2667 层的整合包上约一秒
-            var names = new string[paths.Count][];
+            // 读文件名表（不读数据）可以并行：这一步在 2667 层的整合包上约一秒。
+            // 每条连它在 Files 里的位置一起记下（位置按 Files 原始序数，跳过空名也要 +1）：
+            // 读取时按位置直取，见 ReadEntryFromArchive。
+            var names = new List<(string FullPath, int EntryIndex)>?[paths.Count];
             Parallel.For(0, paths.Count, i =>
             {
                 var archive = OpenArchive(paths[i]);
@@ -191,10 +201,16 @@ public sealed class GameDataResolver : IDisposable
                     return;
                 try
                 {
-                    names[i] = archive.Files?
-                        .Where(e => !string.IsNullOrEmpty(e.FullPath))
-                        .Select(e => e.FullPath!)
-                        .ToArray() ?? [];
+                    var list = new List<(string FullPath, int EntryIndex)>();
+                    var position = 0;
+                    if (archive.Files is { } files)
+                        foreach (var e in files)
+                        {
+                            if (!string.IsNullOrEmpty(e.FullPath))
+                                list.Add((e.FullPath, position));
+                            position++;
+                        }
+                    names[i] = list;
                 }
                 finally
                 {
@@ -205,20 +221,20 @@ public sealed class GameDataResolver : IDisposable
             // 装配仍是串行的、按 layers 的强到弱顺序，所以每个键下的下标表天然按层序排好
             for (var i = 0; i < names.Length; i++)
             {
-                if (names[i] is null)
+                if (names[i] is not { } entries)
                     continue;
                 _archivePaths.Add(paths[i]);
                 _archiveLayer.Add(layers[i]);
                 var id = _archivePaths.Count - 1;
-                foreach (var name in names[i])
+                foreach (var (name, entryIndex) in entries)
                 {
                     if (Normalize(name) is not { } key)
                         continue;
                     if (!index.TryGetValue(key, out var list))
                         index[key] = list = [];
                     // 同一层里多个归档含同一个文件时先见的赢；换层了才再记一个
-                    if (list.Count == 0 || _archiveLayer[list[^1]] != layers[i])
-                        list.Add(id);
+                    if (list.Count == 0 || _archiveLayer[list[^1].ArchiveId] != layers[i])
+                        list.Add((id, entryIndex));
                 }
             }
 

@@ -4,7 +4,7 @@
         xmlns:ui="clr-namespace:SliderSorter.Wpf.Services"
         Title="{DynamicResource L.NewMods_Title}" Width="580" Height="600" WindowStartupLocation="CenterOwner"
         ShowInTaskbar="False" Background="{DynamicResource B.Window}"
-        FontFamily="{StaticResource AppFont}" FontSize="13" Style="{StaticResource AppWindow}">
+        FontFamily="{StaticResource AppFont}" FontSize="{DynamicResource Type.H3}" Style="{StaticResource AppWindow}">
     <DockPanel>
         <TextBlock x:Name="TopLabel" DockPanel.Dock="Top" Margin="10,10,10,4" TextWrapping="Wrap"
                    Foreground="{DynamicResource B.Text}" />

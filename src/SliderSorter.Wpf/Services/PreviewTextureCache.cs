@@ -49,6 +49,15 @@ public sealed class PreviewTextureCache
 
         lock (_gate)
         {
+            // 解码在锁外：快速连点两行就是两条线程池线程同时解同一路径。先落地的那份
+            // 已经进了缓存——复用它的结果，别把自己这份再插一遍，否则 _order 会积累
+            // 重复条目，淘汰逻辑随之漂移失效（条数悄悄超出上限、陈旧路径赖着不走）
+            if (_cached.TryGetValue(path, out var raced))
+            {
+                Touch(path);
+                return raced;
+            }
+
             if (_cached.Count >= MaxCached)
             {
                 // 淘汰最久没用的那条：预览是"沿着列表往下翻"，最近用过的下一件多半还要用

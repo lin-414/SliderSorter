@@ -163,7 +163,8 @@ public class MainWindowCommandTests(ITestOutputHelper output)
     /// （实测 DataContext 已正确继承到按钮上，只是没人推动求值）。不泵就断言 null，等于断言了个假象。
     ///
     /// 为什么不用 <c>UpdateTarget()</c>：它不会让未挂接的绑定挂接起来，实测仍为 null。
-    /// 为什么不 <c>Show()</c>：那会触发 <c>Loaded</c> → <c>CheckForUpdatesAsync</c>（联网 + 可能弹更新确认框）。
+    /// 为什么不 <c>Show()</c>：那会走完整的窗口生命周期（激活、焦点、Z 序），离屏泵送就够；
+    /// 早年 Loaded 还挂着启动更新检查（联网 + 可能弹更新确认框），那条链路已随「关于」节移除。
     ///
     /// 泵队列会连带执行优先级更高的残留回调——构造窗口时 VM 已经启动了一次扫描，若它判定「有新模组」，
     /// 就会经 Dispatcher 回调弹模态框。所以这里挂一个 Send 优先级的兜底定时器：3 秒内没跑完就把

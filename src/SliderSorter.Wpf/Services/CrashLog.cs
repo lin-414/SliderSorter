@@ -13,26 +13,34 @@ public static class CrashLog
         Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "SliderSorter");
     private static string Path2 => System.IO.Path.Combine(Dir, "crash.log");
 
+    // Write 有两个并发入口：UI 线程的各类调用，与 GC 终结器线程上的 UnobservedTaskException。
+    // 无锁的话"读全文→截断→写回"与另一条的追加交错，轻则丢一条记录，重则写出半条——
+    // 崩溃日志是排查时唯一的凭据，一把静态锁的成本几乎为零。
+    private static readonly object WriteGate = new();
+
     public static void Write(Exception? ex, bool isFatal)
     {
         try
         {
-            Directory.CreateDirectory(Dir);
-            if (File.Exists(Path2) && new FileInfo(Path2).Length > 512 * 1024)
+            lock (WriteGate)
             {
-                // 超过 512KB 保留后半。必须按**行边界**截：从字符中点硬切会把一条异常记录劈成两半，
-                // 开头那半行既读不出时间也没有堆栈头，看着像日志损坏。找不到换行（单行超长）才退化成按字符切，
-                // 且不能落在代理对中间——切出孤立代理项会让后续读取直接抛编码异常。
-                var text = File.ReadAllText(Path2);
-                var cut = text.Length / 2;
-                var newline = text.IndexOf('\n', cut);
-                cut = newline >= 0 ? newline + 1 : cut;
-                if (cut > 0 && cut < text.Length && char.IsHighSurrogate(text[cut - 1]) && char.IsLowSurrogate(text[cut]))
-                    cut--; // 回退一位，把这对代理项完整留下
-                File.WriteAllText(Path2, text[cut..]);
+                Directory.CreateDirectory(Dir);
+                if (File.Exists(Path2) && new FileInfo(Path2).Length > 512 * 1024)
+                {
+                    // 超过 512KB 保留后半。必须按**行边界**截：从字符中点硬切会把一条异常记录劈成两半，
+                    // 开头那半行既读不出时间也没有堆栈头，看着像日志损坏。找不到换行（单行超长）才退化成按字符切，
+                    // 且不能落在代理对中间——切出孤立代理项会让后续读取直接抛编码异常。
+                    var text = File.ReadAllText(Path2);
+                    var cut = text.Length / 2;
+                    var newline = text.IndexOf('\n', cut);
+                    cut = newline >= 0 ? newline + 1 : cut;
+                    if (cut > 0 && cut < text.Length && char.IsHighSurrogate(text[cut - 1]) && char.IsLowSurrogate(text[cut]))
+                        cut--; // 回退一位，把这对代理项完整留下
+                    File.WriteAllText(Path2, text[cut..]);
+                }
+                File.AppendAllText(Path2,
+                    $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] {(isFatal ? "致命" : "UI")}异常：\n{ex}\n\n");
             }
-            File.AppendAllText(Path2,
-                $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] {(isFatal ? "致命" : "UI")}异常：\n{ex}\n\n");
         }
         catch
         {

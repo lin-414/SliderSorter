@@ -32,7 +32,10 @@ public static class HelpDocument
 
     public static FlowDocument Build()
     {
-        var doc = new FlowDocument { PagePadding = new Thickness(20), FontSize = 13 };
+        // 字号跟界面档位走（正文 13、标题 15 是这份文档自己的小字阶）：
+        // FlowDocument 不吃 DynamicResource，构建时经 FontScaleManager.Scaled 换算，
+        // 换档后的重建由 SettingsPage 盯着 VM 的字号属性做。
+        var doc = new FlowDocument { PagePadding = new Thickness(20), FontSize = FontScaleManager.Scaled(13) };
         // 颜色走色板键而不是写死：暗色主题下正文必须是浅色，而 DynamicResource 在
         // ThemeManager 换色板时会跟着热切换。
         doc.SetResourceReference(TextElement.ForegroundProperty, "B.Text");
@@ -46,7 +49,7 @@ public static class HelpDocument
             });
             if (heading)
             {
-                para.FontSize = 15;
+                para.FontSize = FontScaleManager.Scaled(15);
                 para.Margin = new Thickness(0, 14, 0, 4);
             }
             else
@@ -103,6 +106,7 @@ public static class HelpDocument
         doc.Blocks.Add(B(L10n.Tr("L.Help_Task3")));
         doc.Blocks.Add(B(L10n.Tr("L.Help_Task4")));
         doc.Blocks.Add(B(L10n.Tr("L.Help_Task5")));
+        doc.Blocks.Add(B(L10n.Tr("L.Help_Task6")));
 
         // 二、快速上手
         doc.Blocks.Add(H("L.Help_H2", "sec2"));
@@ -132,6 +136,9 @@ public static class HelpDocument
         doc.Blocks.Add(P(L10n.Tr("L.Help_S2_Status")));
         doc.Blocks.Add(B(L10n.Tr("L.Help_19")));
         doc.Blocks.Add(B(L10n.Tr("L.Help_20")));
+        doc.Blocks.Add(P(L10n.Tr("L.Help_S2_Settings")));
+        doc.Blocks.Add(B(L10n.Tr("L.Help_43")));
+        doc.Blocks.Add(B(L10n.Tr("L.Help_44")));
 
         // 四、保存与文件布局
         doc.Blocks.Add(H("L.Help_H4", "sec4"));
@@ -175,6 +182,9 @@ public static class HelpDocument
         doc.Blocks.Add(P(L10n.Tr("L.Help_Conflict_B")));
         doc.Blocks.Add(P(L10n.Tr("L.Help_Conflict_C")));
         doc.Blocks.Add(P(L10n.Tr("L.Help_Conflict_D")));
+        doc.Blocks.Add(P(L10n.Tr("L.Help_Conflict_E")));
+        doc.Blocks.Add(P(L10n.Tr("L.Help_Conflict_F")));
+        doc.Blocks.Add(P(L10n.Tr("L.Help_Conflict_G")));
 
         return doc;
     }

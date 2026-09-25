@@ -600,9 +600,12 @@ public static class SliderSetScanner
         Parallel.For(0, shapeDataRoots.Count, i =>
         {
             var list = new List<(string, string)>();
-            var root = Path.GetFullPath(shapeDataRoots[i]);
             try
             {
+                // GetFullPath 必须在 try 内：层的目录名可能来自 Config.xml（用户可手改），
+                // 退化输入抛出的异常若逃出 Parallel.For，整个扫描就落进通用 catch 变成一句
+                // "扫描失败"；留在 try 里则只丢这一层的候选网格（与下面 IOException 同一取舍）
+                var root = Path.GetFullPath(shapeDataRoots[i]);
                 if (!Directory.Exists(root))
                 {
                     perRoot[i] = list;

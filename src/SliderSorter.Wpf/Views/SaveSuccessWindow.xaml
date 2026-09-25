@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="{DynamicResource L.SaveOk_Title}" Width="520" SizeToContent="Height" WindowStartupLocation="CenterOwner"
         ShowInTaskbar="False" Background="{DynamicResource B.Window}"
-        FontFamily="{StaticResource AppFont}" FontSize="13" Style="{StaticResource AppWindow}">
+        FontFamily="{StaticResource AppFont}" FontSize="{DynamicResource Type.H3}" Style="{StaticResource AppWindow}">
     <StackPanel Margin="18">
         <!-- 标题走字阶的 H2（SectionTitleText，16）：与设置页的段标题同号 -->
         <TextBlock Text="{DynamicResource L.SaveOk_Heading}" Style="{StaticResource SectionTitleText}" />

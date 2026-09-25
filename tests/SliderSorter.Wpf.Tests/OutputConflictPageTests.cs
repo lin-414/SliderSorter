@@ -54,10 +54,11 @@ public class OutputConflictPageTests
     private static ConflictRequest Request(IReadOnlyList<OutputConflictGroup> groups,
         Action<IReadOnlyDictionary<string, string>>? save = null,
         IReadOnlyList<SliderGroup>? userGroups = null,
-        HashSet<string>? collapsed = null) => new()
+        HashSet<string>? collapsed = null,
+        Dictionary<string, string>? choices = null) => new()
     {
         Groups = groups,
-        Choices = new Dictionary<string, string>(StringComparer.Ordinal),
+        Choices = choices ?? new Dictionary<string, string>(StringComparer.Ordinal),
         IsGrouped = _ => false,
         // 默认"一个组都没建"：本页据此不做分类，其余用例看到的仍是平铺一层的列表
         UserGroups = () => userGroups ?? [],
@@ -251,6 +252,22 @@ public class OutputConflictPageTests
             RoutedEvent = FrameworkElement.PreviewMouseRightButtonUpEvent,
         });
 
+    /// <summary>模拟"双击某一行"：在挂了处理器的那个 Grid 上 raise 一条 ClickCount=2 的左键按下事件。
+    /// <para>
+    /// 与 <see cref="RightClickRow"/> 同一手法。真实双击的 ClickCount 由系统按两次按下的间隔与
+    /// 距离现算，这里只是替系统把"这是第二击"写进事件参数——setter 是 internal 的，借反射写。
+    /// </para></summary>
+    private static void DoubleClickRow(UIElement rowGrid)
+    {
+        var args = new MouseButtonEventArgs(Mouse.PrimaryDevice, 0, MouseButton.Left)
+        {
+            RoutedEvent = UIElement.MouseLeftButtonDownEvent,
+        };
+        typeof(MouseButtonEventArgs).GetProperty(nameof(MouseButtonEventArgs.ClickCount))!
+            .SetValue(args, 2);
+        rowGrid.RaiseEvent(args);
+    }
+
     /// <summary>点菜单项。WPF 的 MenuItem.Click 就是那条路由事件背后的 CLR 事件，
     /// 所以 raise 它等价于真点一下（与既有用例对 RadioButton 用 ButtonBase.ClickEvent 同一手法）。</summary>
     private static void Click(MenuItem item) => item.RaiseEvent(new RoutedEventArgs(MenuItem.ClickEvent));
@@ -288,6 +305,35 @@ public class OutputConflictPageTests
         Assert.Equal(0, outcome.Clicks);
         Assert.Equal("Beta Suit", outcome.Title); // 预览跟着选中的行走，这一半手势没有变
         Assert.Equal(2, outcome.Items);
+    }
+
+    [Fact]
+    public void DoubleClickingARowAssignsItAsWinner()
+    {
+        var saved = new List<IReadOnlyDictionary<string, string>>();
+        var groups = new[] { Group(OutPath, ("Alpha Suit", "ModA", 0), ("Beta Suit", "ModB", 1)) };
+
+        var outcome = WithPage(Request(groups, dict => saved.Add(dict)), page =>
+        {
+            var radios = Descendants<RadioButton>(Box(page, "CandidateList"));
+            DoubleClickRow(AncestorOf(radios[1], typeof(Grid))!);
+            WpfHost.Pump();
+            page.UpdateLayout();
+            return new
+            {
+                Clicks = saved.Count,
+                Chosen = saved.Count == 0 ? null : saved[^1].Values.SingleOrDefault(),
+                // 双击不该只是选中：指定必须当场落定（重建后赢家行自己回到选中位，预览跟着走）
+                Title = Named<TextBlock>(page, "PreviewTitle").Text,
+                Checked = Descendants<RadioButton>(Box(page, "CandidateList"))
+                    .Select(r => r.IsChecked == true).ToList(),
+            };
+        });
+
+        Assert.Equal(1, outcome.Clicks);
+        Assert.Equal("Beta Suit", outcome.Chosen);
+        Assert.Equal("Beta Suit", outcome.Title);
+        Assert.Equal(new[] { false, true, false }, outcome.Checked);
     }
 
     /// <summary>同一份菜单在矮窗口与高窗口里该往哪边开。</summary>
@@ -369,6 +415,224 @@ public class OutputConflictPageTests
         // 只有泳装那条冲突被改，护甲那条原样不动
         Assert.Equal(new[] { OutPath }, outcome.Picked.Keys);
         Assert.Equal("Bikini Blue", outcome.Picked[OutPath]);
+    }
+
+    [Fact]
+    public void TheGroupHeaderMenuClearsOnlyThatGroupsChoices()
+    {
+        // 「本组全部清除」是「本组按模组指定…」的逆操作：两组的归属都先定好，从「泳装」的头进去
+        // 点清除，泳装名下的退回"BodySlide 再问我一次"，护甲名下的原样不动——范围口径与指定一致，
+        // 只圈被右键的那个分组名下列着的冲突。与底部那颗「全部清除」同一枚动作，所以不弹确认框。
+        var bikini = Group(OutPath, ("Bikini Red", "ModA", 0), ("Bikini Blue", "ModB", 1));
+        var armor = Group(OutPath + "2", ("Armor Steel", "ModC", 0), ("Armor Iron", "ModD", 1));
+        var saved = new List<IReadOnlyDictionary<string, string>>();
+        var request = Request([bikini, armor], dict => saved.Add(dict),
+            userGroups: [UserGroup("泳装", "Bikini Red"), UserGroup("护甲", "Armor Steel")],
+            choices: new Dictionary<string, string>(StringComparer.Ordinal)
+            {
+                [OutPath] = "Bikini Blue",
+                [OutPath + "2"] = "Armor Iron",
+            });
+
+        var outcome = WithPage(request, page =>
+        {
+            InvokeGroupMenu(page, "泳装", "本组全部清除");
+            return (
+                Picked: saved[^1].ToDictionary(e => e.Key, e => e.Value, StringComparer.Ordinal),
+                BikiniHeader: TextsOf(GroupHeader(page, "泳装")));
+        });
+
+        // 保存出去的是全量工作副本：泳装那条已不在其中，护甲那条原样保留
+        Assert.Equal(new Dictionary<string, string> { [OutPath + "2"] = "Armor Iron" }, outcome.Picked);
+        // 头上那句「其中 N 处未指定」就地涨回来（SaveAndRefresh 改写，不走整列重建）
+        Assert.Contains("L.Conflict_BucketUnresolvedCount", outcome.BikiniHeader);
+    }
+
+    // ── 「本组按服装关键字指定…」（2026-09-25）──
+    //
+    // 与「本组按模组指定…」同一口径，只是点名方式从模组换成服装名里的关键字：
+    // 范围仍只圈被右键的那个分组名下列着的冲突；命中的候选当赢家，没命中的冲突原样不动。
+
+    /// <summary>把收关键字的输入框换成桩（真模态框在离屏宿主里会挂死测试进程），顺路记下实参。
+    /// 返回的是**取值委托**而不是当时的值：Click 是推一拍才执行，返回那一刻实参还没进来。</summary>
+    private static (Func<string?> Title, Func<string?> Label) StubKeywordPrompt(OutputConflictPage page, string? answer)
+    {
+        string? title = null, label = null;
+        SetField(page, "_keywordPrompt",
+            new Func<string, string, string?>((t, l) => { title = t; label = l; return answer; }));
+        return (() => title, () => label);
+    }
+
+    [Fact]
+    public void TheGroupHeaderMenuAssignsByOutfitKeywordOnlyForThatGroup()
+    {
+        // 泳装名下两条：Bikini 冲突（两个候选都含关键字，赢家该是最强层）与一条不含关键字的；
+        // 护甲名下故意放一条候选名同样含 "Bikini" 的冲突——从泳装的头进去，它连被改的资格都没有
+        var bikini = Group(OutPath, ("Bikini Red", "ModA", 0), ("Bikini Blue", "ModB", 1));
+        var swim = Group(OutPath + "2", ("Swim Trunks", "ModA", 0), ("Swim Shorts", "ModB", 1));
+        var chained = Group(OutPath + "3", ("Bikini Chain", "ModC", 0), ("Chain Gold", "ModD", 1));
+        var saved = new List<IReadOnlyDictionary<string, string>>();
+        var request = Request([bikini, swim, chained], dict => saved.Add(dict),
+            userGroups: [UserGroup("泳装", "Bikini Red", "Swim Trunks"), UserGroup("护甲", "Bikini Chain")]);
+
+        var outcome = WithPage(request, page =>
+        {
+            var prompted = StubKeywordPrompt(page, "bikini");
+            InvokeGroupMenu(page, "泳装", "本组按服装关键字指定…");
+            return (prompted, Picked: saved[^1].ToDictionary(e => e.Key, e => e.Value, StringComparer.Ordinal));
+        });
+
+        // 弹的确实是收关键字的那个框。测试宿主只并语言字典、不填 L10n 快照（见 WpfHost），
+        // 代码侧 Tr 取到的是键名本身——与「本组按模组指定」那条用例的 Header 断言同一口径
+        Assert.Equal("L.Conflict_PickOwnerKeywordTitle", outcome.prompted.Title());
+        Assert.NotNull(outcome.prompted.Label());
+        // 两个候选都命中时取最强层；不含关键字的泳装冲突、护甲名下的 Bikini Chain 都原样不动
+        Assert.Equal(new Dictionary<string, string> { [OutPath] = "Bikini Red" }, outcome.Picked);
+    }
+
+    [Fact]
+    public void CancellingTheKeywordPromptChangesNothing()
+    {
+        var bikini = Group(OutPath, ("Bikini Red", "ModA", 0), ("Bikini Blue", "ModB", 1));
+        var saved = new List<IReadOnlyDictionary<string, string>>();
+        var request = Request([bikini], dict => saved.Add(dict),
+            userGroups: [UserGroup("泳装", "Bikini Red")]);
+
+        WithPage(request, page =>
+        {
+            StubKeywordPrompt(page, answer: null); // 输入框点了「取消」
+            InvokeGroupMenu(page, "泳装", "本组按服装关键字指定…");
+            return saved.Count;
+        });
+
+        Assert.Empty(saved);
+    }
+
+    [Fact]
+    public void ZeroKeywordHitsSkipsTheSave()
+    {
+        // 零命中不落盘：存盘回调会重写设置文件，没变动就不该劳它。绕开输入框直接调应用步
+        // （这一路若走菜单会弹"没命中"的模态框，把测试进程挂死——见 StubKeywordPrompt）
+        var bikini = Group(OutPath, ("Bikini Red", "ModA", 0), ("Bikini Blue", "ModB", 1));
+        var saved = new List<IReadOnlyDictionary<string, string>>();
+        var request = Request([bikini], dict => saved.Add(dict),
+            userGroups: [UserGroup("泳装", "Bikini Red")]);
+
+        var outcome = WithPage(request, page =>
+        {
+            var apply = typeof(OutputConflictPage).GetMethod("ApplyKeywordAssign",
+                BindingFlags.NonPublic | BindingFlags.Instance)!;
+            var matched = (int)apply.Invoke(page,
+                [new List<OutputConflictGroup> { bikini }, "zzz-nomatch"])!;
+            // 空串（切不出任何词）同样算零命中
+            var blank = (int)apply.Invoke(page,
+                [new List<OutputConflictGroup> { bikini }, "  ;  "])!;
+            return (matched, blank);
+        });
+
+        Assert.Equal(0, outcome.matched);
+        Assert.Equal(0, outcome.blank);
+        Assert.Empty(saved);
+    }
+
+    // ── 「只看未指定」（2026-09-25）──
+    //
+    // 分组头上那句「其中 N 处未指定」只报数不报名；这一档开关把它筛成名单。三条要钉住：
+    // 已指定的行被筛掉、指定一条当场退场（SaveAndRefresh 在这档走整列重建）、
+    // 批量仍只作用于筛出来的行（VisibleGroups 口径不变）。
+
+    [Fact]
+    public void UnresolvedOnlyToggleHidesResolvedRowsAndTheCountLabelFollows()
+    {
+        var resolved = Group(OutPath, ("Bikini Gold", "ModA", 0), ("Bikini Pink", "ModB", 1));
+        var open = Group(OutPath + "2", ("Bikini Red", "ModA", 0), ("Bikini Blue", "ModB", 1));
+        var request = Request([resolved, open],
+            choices: new Dictionary<string, string>(StringComparer.Ordinal) { [OutPath] = "Bikini Gold" });
+
+        var outcome = WithPage(request, page =>
+        {
+            var list = Box(page, "GroupList");
+            var count = Named<TextBlock>(page, "FilterCountLabel");
+            // 「只看跨模组」默认勾着（夹具两条都是跨模组），pool 非空时计数行本来就常显——
+            // 先取消它，让计数行的出现/收起只归这颗开关管
+            Named<CheckBox>(page, "OnlyCrossCheck").IsChecked = false;
+            var all = list.Items.Count;
+
+            Named<CheckBox>(page, "UnresolvedOnlyCheck").IsChecked = true;
+            WpfHost.Pump();
+            page.UpdateLayout();
+            var filtered = list.Items.Count;
+            var countWhileFiltering = (count.Text, count.Visibility);
+
+            Named<CheckBox>(page, "UnresolvedOnlyCheck").IsChecked = false;
+            WpfHost.Pump();
+            page.UpdateLayout();
+            return (all, filtered, countWhileFiltering, countAfter: count.Visibility);
+        });
+
+        Assert.Equal(2, outcome.all);
+        Assert.Equal(1, outcome.filtered); // 已指定的那条被筛掉
+        // 过滤生效时「显示 N / 共 M 组」计数行出现，取消后整行收起
+        Assert.Equal(Visibility.Visible, outcome.countWhileFiltering.Visibility);
+        Assert.Equal(Visibility.Collapsed, outcome.countAfter);
+    }
+
+    [Fact]
+    public void ResolvingWhileUnresolvedOnlyOnRemovesTheRowFromTheList()
+    {
+        // 「只看未指定」开着时点赢家：那一行已经不匹配过滤了，就地更新会让它赖在名单上——
+        // 这档 SaveAndRefresh 走整列重建，行当场退场，计数与批量范围跟着缩。
+        var first = Group(OutPath, ("Bikini Red", "ModA", 0), ("Bikini Blue", "ModB", 1));
+        var second = Group(OutPath + "2", ("Robe Silk", "ModC", 0), ("Robe Wool", "ModD", 1));
+        var saved = new List<IReadOnlyDictionary<string, string>>();
+
+        var outcome = WithPage(Request([first, second], dict => saved.Add(dict)), page =>
+        {
+            Named<CheckBox>(page, "UnresolvedOnlyCheck").IsChecked = true;
+            WpfHost.Pump();
+            page.UpdateLayout();
+            var radios = Descendants<RadioButton>(Box(page, "CandidateList"));
+            radios[1].IsChecked = true;
+            radios[1].RaiseEvent(new RoutedEventArgs(ButtonBase.ClickEvent));
+            WpfHost.Pump();
+            page.UpdateLayout();
+            return (
+                Rows: RowCount(page),
+                Scope: Named<TextBlock>(page, "BatchScopeLabel").Text,
+                Progress: Named<TextBlock>(page, "ProgressLabel").Text,
+                Chosen: saved[^1].ToDictionary(e => e.Key, e => e.Value, StringComparer.Ordinal));
+        });
+
+        Assert.Equal(1, outcome.Rows); // 两行筛掉一行，只剩 Robe 那条
+        Assert.Equal("Bikini Blue", outcome.Chosen[OutPath]);
+        // 进度数整份清单（4 处未指定 → 指定 1 处后 1/2），批量范围只数筛出来的
+        Assert.Contains("L.Conflict_Progress", outcome.Progress);
+        Assert.Contains("L.Conflict_BatchScope", outcome.Scope);
+    }
+
+    [Fact]
+    public void AutoPickWithUnresolvedOnlyOnLeavesHiddenResolvedGroupsAlone()
+    {
+        // 批量仍按 VisibleGroups 作用：开关开着时"当前列出的"就是未指定的那些，
+        // 已指定且被筛掉的那组不该被顺手改掉（屏幕外的组一动不动，口径与「只看跨模组」一致）。
+        var resolved = Group(OutPath, ("Bikini Gold", "ModA", 0), ("Bikini Pink", "ModB", 1));
+        var open = Group(OutPath + "2", ("Robe Silk", "ModC", 0), ("Robe Wool", "ModD", 1));
+        var saved = new List<IReadOnlyDictionary<string, string>>();
+        var request = Request([resolved, open], dict => saved.Add(dict),
+            choices: new Dictionary<string, string>(StringComparer.Ordinal) { [OutPath] = "Bikini Pink" });
+
+        var picked = WithPage(request, page =>
+        {
+            Named<CheckBox>(page, "UnresolvedOnlyCheck").IsChecked = true;
+            WpfHost.Pump();
+            Named<Button>(page, "AutoButton").RaiseEvent(new RoutedEventArgs(ButtonBase.ClickEvent));
+            return saved[^1].ToDictionary(e => e.Key, e => e.Value, StringComparer.Ordinal);
+        });
+
+        // Save 收到的是全量工作副本（两条都在），证明"没被批量改到"要看值：只动了筛出来的那条
+        Assert.Equal("Robe Silk", picked[OutPath + "2"]);
+        // 已指定那条保持原选择（Bikini Pink），没有被"按模组优先级"覆盖成 Bikini Gold
+        Assert.Equal("Bikini Pink", picked[OutPath]);
     }
 
     [Fact]
@@ -527,7 +791,7 @@ public class OutputConflictPageTests
     }
 
     [Fact]
-    public void FilterAcceptsSeveralKeywordsAndKeepsGroupsMatchingAnyOfThem()
+    public void OutfitFilterAcceptsSeveralKeywordsAndKeepsGroupsMatchingAnyOfThem()
     {
         var mail = Group(OutPath, ("Chain Mail Top", "ModA", 0), ("Chain Mail Bra", "ModB", 1));
         var robe = Group(OutPath + "2", ("Silk Robe", "ModA", 0), ("Robe Alt", "ModB", 1));
@@ -535,7 +799,7 @@ public class OutputConflictPageTests
 
         var counts = WithPage(new[] { mail, robe, vest }, page =>
         {
-            var box = Named<TextBox>(page, "FilterBox");
+            var box = Named<TextBox>(page, "OutfitFilterBox");
             var list = Box(page, "GroupList");
             var all = list.Items.Count;
             box.Text = "mail;robe";
@@ -556,6 +820,72 @@ public class OutputConflictPageTests
         Assert.Equal(1, counts.one);
         // 只打了个分隔符 = 没筛：留一条空白关键字当过滤词的话，带空格的名字全会被判命中
         Assert.Equal(3, counts.afterSeparatorOnly);
+    }
+
+    [Fact]
+    public void OutfitAndModFiltersEachStickToTheirOwnField()
+    {
+        var mail = Group(OutPath, ("Chain Mail Top", "ModA", 0), ("Chain Mail Bra", "ModB", 1));
+        var robe = Group(OutPath + "2", ("Silk Robe", "ModB", 0), ("Robe Alt", "ModB", 1));
+
+        var counts = WithPage(new[] { mail, robe }, page =>
+        {
+            // 清单里有跨模组冲突时页面会自动勾上「只看跨模组」（同模组内部的那几组被藏掉）；
+            // 这里要验的是两颗过滤框本身，先关掉它，免得池子先被砍了一刀
+            Named<CheckBox>(page, "OnlyCrossCheck").IsChecked = false;
+            var outfitBox = Named<TextBox>(page, "OutfitFilterBox");
+            var modBox = Named<TextBox>(page, "ModFilterBox");
+            var list = Box(page, "GroupList");
+            // 模组框只认模组名："Chain Mail"是服装词，旧的一颗框糊三种名字的行为会留下 mail
+            modBox.Text = "Chain Mail";
+            var modBoxIgnoresOutfits = list.Items.Count;
+            modBox.Text = "bikini";
+            var modBoxIgnoresPath = list.Items.Count; // 输出路径不参与筛选：哪颗框都搜不到它
+            modBox.Text = "ModB";
+            var byMod = list.Items.Count;
+            modBox.Text = "";
+            outfitBox.Text = "ModB";
+            var outfitBoxIgnoresMods = list.Items.Count; // 模组词同样进不了服装框
+            outfitBox.Text = "bikini";
+            var pathIsNotSearched = list.Items.Count;    // 服装框也只认服装名，不认文件名
+            return (modBoxIgnoresOutfits, modBoxIgnoresPath, byMod, outfitBoxIgnoresMods, pathIsNotSearched);
+        });
+
+        Assert.Equal(0, counts.modBoxIgnoresOutfits);
+        Assert.Equal(0, counts.modBoxIgnoresPath);
+        Assert.Equal(2, counts.byMod);
+        Assert.Equal(0, counts.outfitBoxIgnoresMods);
+        Assert.Equal(0, counts.pathIsNotSearched);
+    }
+
+    [Fact]
+    public void OutfitAndModFiltersStackAsAnIntersection()
+    {
+        var mail = Group(OutPath, ("Chain Mail Top", "ModA", 0), ("Chain Mail Bra", "ModB", 1));
+        var robe = Group(OutPath + "2", ("Silk Robe", "ModB", 0), ("Robe Alt", "ModB", 1));
+        var vest = Group(OutPath + "3", ("Leather Vest", "ModA", 0), ("Vest Alt", "ModA", 1));
+
+        var counts = WithPage(new[] { mail, robe, vest }, page =>
+        {
+            // 同上：vest 是同模组内部的冲突，自动勾上的「只看跨模组」会把它藏掉
+            Named<CheckBox>(page, "OnlyCrossCheck").IsChecked = false;
+            var outfitBox = Named<TextBox>(page, "OutfitFilterBox");
+            var modBox = Named<TextBox>(page, "ModFilterBox");
+            var list = Box(page, "GroupList");
+            outfitBox.Text = "mail";  // 服装侧：只剩 mail
+            modBox.Text = "ModA";     // 模组侧：mail + vest；两道都过 → 只剩 mail
+            var both = list.Items.Count;
+            outfitBox.Text = "";      // 只卡模组侧 → mail + vest
+            var modOnly = list.Items.Count;
+            outfitBox.Text = "vest";  // vest 全是 ModA 的，与 ModB 交集为空
+            modBox.Text = "ModB";
+            var none = list.Items.Count;
+            return (both, modOnly, none);
+        });
+
+        Assert.Equal(1, counts.both);
+        Assert.Equal(2, counts.modOnly);
+        Assert.Equal(0, counts.none);
     }
 
     [Fact]
@@ -971,6 +1301,43 @@ public class OutputConflictPageTests
     }
 
     [Fact]
+    public void TheGroupHeaderKeepsCountingTheConflictsStillUnset()
+    {
+        // 分组头那条「其中 N 处未指定」是头上唯一跟着归属走的字：指定一个赢家少一处，
+        // 清零后整格收起。它必须就地改写而不是等下次重建——重建 = 整列弹回顶部，
+        // 正是 SaveAndRefresh 要避开的。测试宿主不装载语言，取词回落成键名
+        //（与既有约定一致）：按键名断言"有/没有"，数字取不出来。
+        var bikini = Group(OutPath, ("Bikini Red", "ModA", 0), ("Bikini Blue", "ModB", 1));
+        var armor = Group(OutPath + "2", ("Armor Steel", "ModC", 0), ("Armor Iron", "ModD", 1));
+        var request = Request([bikini, armor],
+            userGroups: [UserGroup("泳装", "Bikini Red", "Bikini Blue", "Armor Steel", "Armor Iron")]);
+
+        var outcome = WithPage(request, page =>
+        {
+            var list = Box(page, "GroupList");
+            var before = TextsOf(list);
+            var stages = new List<List<string>>();
+            // 两组都在「泳装」名下：逐组各指定一个赢家，看头上的计数跟着走
+            for (var i = 0; i < 2; i++)
+            {
+                list.SelectedItem = list.Items[i];
+                WpfHost.Pump();
+                var radios = Descendants<RadioButton>(Box(page, "CandidateList"));
+                radios[0].IsChecked = true;
+                radios[0].RaiseEvent(new RoutedEventArgs(ButtonBase.ClickEvent));
+                WpfHost.Pump();
+                page.UpdateLayout();
+                stages.Add(TextsOf(list));
+            }
+            return (Before: before, AfterFirst: stages[0], AfterSecond: stages[1]);
+        });
+
+        Assert.Contains("L.Conflict_BucketUnresolvedCount", outcome.Before);
+        Assert.Contains("L.Conflict_BucketUnresolvedCount", outcome.AfterFirst); // 还剩一处：照显
+        Assert.DoesNotContain("L.Conflict_BucketUnresolvedCount", outcome.AfterSecond);
+    }
+
+    [Fact]
     public void ComingBackToTheTabReclassifiesWhenTheGroupsChanged()
     {
         // 分组是在「分组生成」页改的，而本页只在 CurrentConflict 变化时重建：
@@ -1076,9 +1443,10 @@ public class OutputConflictPageTests
                 AfterExpand: collapsed.ToList());
         });
 
-        // 前三项是整列的展开/折叠，第四项改归属，隔了一道分隔符（Separator 不是 MenuItem，
-        // 所以这里只有四条）
-        Assert.Equal(["全部展开", "全部折叠", "折叠其他", "本组按模组指定…"], outcome.Items);
+        // 前三项是整列的展开/折叠，后三项改归属（模组点名/关键字点名/清除），隔了一道分隔符
+        // （Separator 不是 MenuItem，所以这里只有六条）
+        Assert.Equal(["全部展开", "全部折叠", "折叠其他", "本组按模组指定…", "本组按服装关键字指定…", "本组全部清除"],
+            outcome.Items);
         // 两个分组各一行，全收起后一行都不该剩下（头本身还在，否则没法再展开）
         Assert.Equal(0, outcome.Folded.Rows);
         Assert.Equal(new bool?[] { false, false }, outcome.Folded.Checked);

@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:ui="clr-namespace:SliderSorter.Wpf.Services"
         Width="760" Height="680" MinWidth="560" MinHeight="420" WindowStartupLocation="CenterOwner"
-        Background="{DynamicResource B.Window}" FontFamily="{StaticResource AppFont}" FontSize="13"
+        Background="{DynamicResource B.Window}" FontFamily="{StaticResource AppFont}" FontSize="{DynamicResource Type.H3}"
         Style="{StaticResource AppWindow}">
     <DockPanel>
         <!-- 两个过滤框与「新模组」/ 主界面同一套：左管成员名，右管模组名与分隔符名。
@@ -25,6 +25,10 @@
                    Foreground="{DynamicResource B.TextDim}" TextTrimming="CharacterEllipsis" />
         <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" HorizontalAlignment="Right" Margin="10">
             <Button Content="{DynamicResource L.Members_RemoveSelected}" Click="Remove_Click" MinWidth="100" MinHeight="28" Margin="0,0,8,0" />
+            <!-- 「移动到…」的目标列表点开时才建：组的增删改名在窗口开着时不会发生（模态），
+                 但弹出锚点必须落在按钮上、朝上开——按钮贴着窗口底边，朝下开会被裁掉。 -->
+            <Button x:Name="MoveButton" Content="{DynamicResource L.Members_MoveSelected}" Click="MoveTo_Click"
+                    MinWidth="100" MinHeight="28" Margin="0,0,8,0" />
             <Button Content="{DynamicResource L.Btn_Close}" IsCancel="True" MinWidth="84" MinHeight="28" />
         </StackPanel>
         <!-- 行模板与另外两棵勾选树共用 NodeRowTemplate（Themes/Components.xaml）。

@@ -90,7 +90,7 @@ public partial class GroupGenerationPage : UserControl
             Notify.Info(Shell, L10n.Tr("L.Title_Tip"), L10n.Tr("L.Msg_SelectGroupFirst"));
             return;
         }
-        new GroupMembersWindow(group, _vm.GetTreeDisplayStructure(),
+        new GroupMembersWindow(group, _vm.Store, _vm.GetTreeDisplayStructure(),
             beforeChange: () => _vm.Store.Snapshot(),
             onChanged: () =>
             {
