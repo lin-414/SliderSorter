@@ -36,7 +36,10 @@ public sealed class OutputConflictGroup
     /// <summary>候选来自 2 个以上的模组/层——也就是"多个模组改了同一件衣服"。
     /// 同一个模组内部的多个预设共用一个输出文件（UBE 一件衣服几百个配色就是这个情况）同样会
     /// 争用同一个 .nif，但那是模组自己的设计，不是模组间冲突：树里的标记与状态栏计数都只认这种。</summary>
-    public bool CrossMod => Candidates.Select(c => c.OwnerLabel).Distinct(StringComparer.Ordinal).Count() > 1;
+    /// <remarks>用 <see cref="ConflictCandidate.LayerIndex"/> 判身份，而不是 <see cref="ConflictCandidate.OwnerLabel"/>：
+    /// 后者是给人看的模组名，目录叶子名重复（多根/符号链接）或整层 Data 汇聚时可能把不同来源并成一个名字；
+    /// 层号在扫描里一层就是一个模组，唯一且不会因显示名相同而丢掉真正跨模组的组。</remarks>
+    public bool CrossMod => Candidates.Select(c => c.LayerIndex).Distinct().Count() > 1;
 
     /// <summary>用户已选定的赢家；未选或所选的 set 已不在候选里（模组被禁用/卸载）则为 null。
     /// 名字按逐字节精确比较：<c>choice</c> 的大小写与 set 名不一致时 BodySlide 自己也认不出

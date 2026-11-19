@@ -279,17 +279,19 @@ public static class SliderSetScanner
     /// 在它眼里是**一组**冲突、批建时会弹窗；这里若按 Ordinal 分就成了两组各一人、谁都不算冲突，
     /// 于是这个功能正好漏掉它存在的理由。折大小写的范围照它来（只折 ASCII，见
     /// <see cref="AsciiCaseInsensitiveComparer"/>），不是按 .NET 的 OrdinalIgnoreCase——后者把
-    /// Ы/ы 也折在一起，那在 BodySlide 里是两组。模组名仍按 Ordinal 去重（那是本工具自己的概念）。</summary>
+    /// Ы/ы 也折在一起，那在 BodySlide 里是两组。模组身份按层号去重（一层 = 一个模组，显示名重复不影响判定）。</summary>
     private static void MarkOutputConflicts(List<OutfitEntry> outfits)
     {
-        var owners = new Dictionary<string, HashSet<string>>(AsciiCaseInsensitiveComparer.Instance);
+        // 按层号而不是 OwnerLabel 判"不同模组"：层号在扫描里一层就是一个模组，唯一；OwnerLabel 只是显示名，
+        // 多根/符号链接或整层 Data 汇聚时可能重名，重名会把真正的跨模组冲突误判成组内冲突。
+        var owners = new Dictionary<string, HashSet<int>>(AsciiCaseInsensitiveComparer.Instance);
         foreach (var outfit in outfits)
         {
             if (outfit.OutputFilePath is not { } path)
                 continue;
             if (!owners.TryGetValue(path, out var set))
-                owners[path] = set = new HashSet<string>(StringComparer.Ordinal);
-            set.Add(outfit.OwnerLabel);
+                owners[path] = set = [];
+            set.Add(outfit.LayerIndex);
         }
 
         foreach (var outfit in outfits)

@@ -228,6 +228,63 @@ public class OutputConflictTests
     }
 
     [Fact]
+    public void CrossModUsesLayerIdentityWhenFolderNamesCollide()
+    {
+        // 两个不同来源的层叶子名相同（多根/符号链接等场景）：OwnerLabel 都是 "Same"，
+        // 但它们是两个层、两个模组。旧实现按 OwnerLabel 去重会把这条真冲突判成同模组内部共用。
+        var scan = new ScanResult();
+        scan.Outfits.Add(new OutfitEntry
+        {
+            Name = "Alpha",
+            OwnerLabel = "Same",
+            SourceFile = "A.xml",
+            OutputFilePath = PathA,
+            LayerIndex = 0,
+        });
+        scan.Outfits.Add(new OutfitEntry
+        {
+            Name = "Beta",
+            OwnerLabel = "Same",
+            SourceFile = "B.xml",
+            OutputFilePath = PathA,
+            LayerIndex = 1,
+        });
+
+        var group = Assert.Single(OutputConflicts.Detect(scan));
+        Assert.Equal(2, group.Candidates.Count);
+        Assert.True(group.CrossMod);
+    }
+
+    [Fact]
+    public void ScannerMarksOutputConflictAcrossCollidingFolderLabels()
+    {
+        using var temp = new TempDir();
+        var gameData = temp.Sub("Data");
+        var first = temp.Sub("root1", "Same");
+        var second = temp.Sub("root2", "Same");
+        temp.File("root1", "Same", "CalienteTools", "BodySlide", "SliderSets", "A.xml", Doc(Set("Alpha", PathA)));
+        temp.File("root2", "Same", "CalienteTools", "BodySlide", "SliderSets", "B.xml", Doc(Set("Beta", PathA)));
+
+        var mods = new List<(ModEntry, string)>
+        {
+            (new ModEntry("Same", true, false, false, 0), first),
+            (new ModEntry("Same", true, false, false, 1), second),
+        };
+        var resolution = new ProjectPathResolution
+        {
+            EffectivePath = Path.Combine(gameData, "CalienteTools", "BodySlide"),
+            Kind = ProjectPathKind.GameDataCalienteTools,
+            GameDataPath = gameData,
+        };
+
+        var scan = SliderSetScanner.Scan(resolution, mods);
+        var group = Assert.Single(OutputConflicts.Detect(scan));
+        Assert.Equal(2, group.Candidates.Count);
+        Assert.True(group.CrossMod);
+        Assert.All(scan.Outfits, o => Assert.True(o.HasOutputConflict));
+    }
+
+    [Fact]
     public void CandidateOrderFollowsLayerStrength()
     {
         using var temp = new TempDir();

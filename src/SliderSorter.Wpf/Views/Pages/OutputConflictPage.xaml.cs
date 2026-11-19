@@ -304,10 +304,12 @@ public partial class OutputConflictPage : UserControl
     /// </para></summary>
     private void ApplyTexts(ConflictRequest request)
     {
-        IntroLabel.Text = L10n.TrF("L.Conflict_Intro",
-            request.Groups.Count(g => g.CrossMod), request.Groups.Count);
-        OnlyCrossCheck.ToolTip = L10n.TrF("L.Conflict_OnlyCrossModTip",
-            request.Groups.Count(g => g.CrossMod), request.Groups.Count);
+        var crossModCount = request.Groups.Count(g => g.CrossMod);
+        // {1} 是"同一模组内部共用"的组数，不能用总组数——那会把跨模组的组又数一遍
+        // （跨模组 N + 同模组 M 会显示成 N / N+M，看起来像同一模组内部有 N+M 组）。
+        var sameModCount = request.Groups.Count - crossModCount;
+        IntroLabel.Text = L10n.TrF("L.Conflict_Intro", crossModCount, sameModCount);
+        OnlyCrossCheck.ToolTip = L10n.TrF("L.Conflict_OnlyCrossModTip", crossModCount, sameModCount);
         // 分隔符那套规则没处说：过滤框最小宽度下只有一百二十像素，塞不下"分号分多词、两框交集"
         OutfitFilterBox.ToolTip = L10n.Tr("L.Conflict_FilterTip");
         ModFilterBox.ToolTip = L10n.Tr("L.Conflict_FilterTip");

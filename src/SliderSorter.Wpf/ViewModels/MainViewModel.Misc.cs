@@ -80,7 +80,7 @@ public partial class MainViewModel
 
         sb.AppendLine();
         sb.AppendLine(L10n.Tr("L.Diag_SecConflicts"));
-        if (OutputConflictCount == 0)
+        if (ConflictGroups.Count == 0)
         {
             sb.AppendLine(L10n.Tr("L.Diag_NoConflicts"));
         }
@@ -96,8 +96,8 @@ public partial class MainViewModel
                 foreach (var candidate in group.Candidates)
                     sb.AppendLine($"    [{candidate.LayerIndex}] {candidate.Name} ← {candidate.OwnerLabel}");
             }
-            if (OutputConflictCount > 60)
-                sb.AppendLine(L10n.TrF("L.Diag_ConflictMore", OutputConflictCount - 60));
+            if (ConflictGroups.Count > 60)
+                sb.AppendLine(L10n.TrF("L.Diag_ConflictMore", ConflictGroups.Count - 60));
         }
         return sb.ToString();
     }
