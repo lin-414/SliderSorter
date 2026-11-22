@@ -178,19 +178,35 @@ public partial class MainViewModel
     }
 
     // ── 新模组提醒 ──
-    /// <summary>扫描完成后对照上次基线找新装的服装模组：更新基线；首次建立基线不弹窗。</summary>
+    /// <summary>扫描完成后对照上次基线找新装的服装模组：更新基线；首次建立基线不弹窗。
+    /// <para>
+    /// 基线按 OwnerLabel 的<b>稳定身份</b>（<see cref="ScanResult.OwnerStableKey"/>）存取，
+    /// 不按显示标签：游戏 Data / BodySlide 本体这两个"伪模组"的标签随界面语言变，
+    /// 按标签记的话换一次语言整份清单就成了"新模组"——弹窗默认全选，顺手确认会把
+    /// 整份清单灌进当前组。旧基线里的标签在读取时按当前语言翻译一次；用别的语言写下的
+    /// 旧基线会在升级后多弹一次（基线随即被键覆写，仅此一次）。
+    /// </para></summary>
     private void CheckNewModsAfterScan()
     {
         if (Scan is null || Scan.Outfits.Count == 0)
             return;
-        var currentOwners = Scan.Outfits.Select(o => o.OwnerLabel).Distinct().ToList();
+        var scan = Scan; // 闭包里只用本地引用，别让重扫把 Scan 换掉
+        var currentOwners = scan.Outfits.Select(o => scan.OwnerStableKey(o.OwnerLabel)).Distinct().ToList();
         var baselineKey = BaselineKey();
         // 旧版的全局基线迁移到当前 实例|Profile 名下，避免升级后全量弹窗
-        if (!Settings.KnownOwnersByProfile.TryGetValue(baselineKey, out var known)
-            && Settings.KnownOwners is { Count: > 0 } legacy)
+        List<string>? known;
+        if (Settings.KnownOwnersByProfile.TryGetValue(baselineKey, out var stored))
         {
-            known = legacy;
+            known = stored.Select(scan.OwnerStableKey).ToList();
+        }
+        else if (Settings.KnownOwners is { Count: > 0 } legacy)
+        {
+            known = legacy.Select(scan.OwnerStableKey).ToList();
             Settings.KnownOwners = null;
+        }
+        else
+        {
+            known = null;
         }
         var hadBaseline = known is { Count: > 0 };
         var newOwners = KnownMods.Diff(known, currentOwners);
@@ -199,18 +215,24 @@ public partial class MainViewModel
         if (!hadBaseline || newOwners.Count == 0)
             return;
 
+        // 稳定键 → 显示标签（模组层的键本来就是标签；伪层用扫描时记下的那个）
+        var labelByKey = new Dictionary<string, string>(StringComparer.Ordinal);
+        foreach (var outfit in scan.Outfits)
+            labelByKey.TryAdd(scan.OwnerStableKey(outfit.OwnerLabel), outfit.OwnerLabel);
+
         // 按树结构（MO2 顺序）排列并带分隔符上下文与服装明细；结构外的模组兜底追加
         var ordered = new List<(string? Separator, string Owner, List<string> Outfits)>();
         var seen = new HashSet<string>(StringComparer.Ordinal);
         foreach (var (separator, owner, outfits) in GetTreeDisplayStructure())
         {
-            if (!seen.Add(owner) || !newOwners.Contains(owner))
+            var key = scan.OwnerStableKey(owner);
+            if (!seen.Add(key) || !newOwners.Contains(key))
                 continue;
             ordered.Add((separator, owner, outfits));
         }
-        foreach (var owner in newOwners.Where(o => !seen.Contains(o)))
-            ordered.Add((null, owner, Scan.Outfits
-                .Where(o => o.OwnerLabel == owner)
+        foreach (var key in newOwners.Where(o => !seen.Contains(o)))
+            ordered.Add((null, labelByKey.GetValueOrDefault(key, key), scan.Outfits
+                .Where(o => scan.OwnerStableKey(o.OwnerLabel) == key)
                 .Select(o => o.Name)
                 .Distinct()
                 .ToList()));

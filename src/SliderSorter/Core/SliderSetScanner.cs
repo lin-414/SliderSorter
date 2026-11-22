@@ -39,6 +39,21 @@ public class ScanResult
     public List<string> Warnings { get; } = new();
     public List<string> LayerNotes { get; } = new();
     public int WinnerFileCount { get; set; }
+
+    /// <summary>伪层（没有对应模组的那一层）的显示标签与稳定身份：虚拟扫描的伪层是游戏 Data
+    /// （标签取 <c>L.Core_LayerGameData</c>），单目录扫描的伪层是 BodySlide 本体
+    /// （<c>L.Core_LayerBodySlide</c>）。标签是给界面看的，**随界面语言变**；身份是常量
+    /// （<see cref="SliderSetScanner.GameDataOwnerKey"/> / <see cref="SliderSetScanner.BodySlideOwnerKey"/>），
+    /// 给「新装模组」基线当比对键——按标签记基线的话，换一次语言整份清单都会被当成新模组
+    /// （弹窗还默认全选，顺手确认就会把整份清单灌进当前组）。模组层没有伪层概念：标签就是
+    /// 模组目录名，语言无关。比对口径见 <see cref="OwnerStableKey"/>。</summary>
+    public string PseudoOwnerLabel { get; set; } = "";
+    public string PseudoOwnerKey { get; set; } = "";
+
+    /// <summary>OwnerLabel 的稳定身份：伪层标签翻译成常量键，其余（模组目录名）原样返回。
+    /// 基线的存取两侧都走这里，换语言才不会把伪层误报成新模组。</summary>
+    public string OwnerStableKey(string ownerLabel) =>
+        ownerLabel.Length > 0 && ownerLabel == PseudoOwnerLabel ? PseudoOwnerKey : ownerLabel;
 }
 
 /// <summary>一个 &lt;SliderSet&gt; 的解析产物；OutputFilePath 为 null 表示该 set 没写 &lt;OutputPath&gt;。</summary>
@@ -84,6 +99,13 @@ public static class SliderSetScanner
     /// <summary>滑块组文件所在子目录名（BodySlide 的固定约定）。</summary>
     private const string SliderSetsDirName = "SliderSets";
 
+    /// <summary>游戏 Data 伪层的稳定身份。<c>&lt;&gt;</c> 是 Windows 目录名的非法字符，
+    /// 模组目录不可能叫这个名字，常量键因此不会与任何模组撞车。</summary>
+    public const string GameDataOwnerKey = "<GameData>";
+
+    /// <summary>BodySlide 本体伪层（单目录扫描）的稳定身份，同上。</summary>
+    public const string BodySlideOwnerKey = "<BodySlide>";
+
     /// <param name="parseParallelism">解析阶段的并行度；0 = 自动（见 <see cref="DefaultParseParallelism"/>）。</param>
     public static ScanResult Scan(ProjectPathResolution resolution, List<(ModEntry Entry, string Dir)> enabledMods,
         IProgress<ScanProgress>? progress = null, int parseParallelism = 0)
@@ -105,12 +127,20 @@ public static class SliderSetScanner
             var layerSuffix = Path.Combine(suffix, SliderSetsDirName);
             foreach (var (_, dir) in enabledMods)
                 layers.Add(($"{Path.GetFileName(dir.TrimEnd('\\', '/'))}", Path.Combine(dir, layerSuffix)));
-            layers.Add((CoreStrings.Get("L.Core_LayerGameData"), Path.Combine(resolution.GameDataPath, layerSuffix)));
+            var gameDataLabel = CoreStrings.Get("L.Core_LayerGameData");
+            layers.Add((gameDataLabel, Path.Combine(resolution.GameDataPath, layerSuffix)));
+            // 游戏 Data 层没有对应的"模组"：显示标签随界面语言变，基线比对要用稳定键
+            result.PseudoOwnerLabel = gameDataLabel;
+            result.PseudoOwnerKey = GameDataOwnerKey;
             result.LayerNotes.Add(CoreStrings.Format("L.Core_ScanVirtualLayers", layerSuffix, layers.Count, enabledMods.Count));
         }
         else
         {
-            layers.Add((CoreStrings.Get("L.Core_LayerBodySlide"), Path.Combine(resolution.EffectivePath, SliderSetsDirName)));
+            var bsLabel = CoreStrings.Get("L.Core_LayerBodySlide");
+            layers.Add((bsLabel, Path.Combine(resolution.EffectivePath, SliderSetsDirName)));
+            // 单目录扫描只有一个伪层（BodySlide 本体）：同上，标签给界面、键给基线
+            result.PseudoOwnerLabel = bsLabel;
+            result.PseudoOwnerKey = BodySlideOwnerKey;
             result.LayerNotes.Add(CoreStrings.Format("L.Core_ScanSingleDir", layers[0].Dir));
         }
 

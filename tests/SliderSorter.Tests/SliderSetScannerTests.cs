@@ -56,6 +56,54 @@ public class SliderSetScannerTests
         Assert.Equal("L.Core_LayerGameData", data.OwnerLabel);
     }
 
+    /// <summary>伪层的显示标签随语言变（CoreStrings 未注入时就是键名本身），「新装模组」基线
+    /// 比对必须用稳定身份：OwnerStableKey 把伪层标签翻成常量键，模组目录名原样返回。
+    /// 按标签记基线的话，换一次界面语言整份清单都会被当成新模组（弹窗还默认全选）。</summary>
+    [Fact]
+    public void PseudoLayerHasStableOwnerKeyWhileLabelsAreLocalized()
+    {
+        using var temp = new TempDir();
+        var gameData = temp.Sub("Data");
+        var modA = temp.Sub("mods", "ArmorPackA");
+        temp.File("mods", "ArmorPackA", "CalienteTools", "BodySlide", "SliderSets", "A.xml", SliderSetXml("ModOutfit"));
+        temp.File("Data", "CalienteTools", "BodySlide", "SliderSets", "Vanilla.xml", SliderSetXml("DataOutfit"));
+        var mods = new List<(ModEntry, string)>
+        {
+            (new ModEntry("ArmorPackA", true, false, false, 0), modA),
+        };
+
+        var result = SliderSetScanner.Scan(VirtualResolution(gameData, @"CalienteTools\BodySlide"), mods);
+
+        Assert.Equal(SliderSetScanner.GameDataOwnerKey, result.PseudoOwnerKey);
+        var data = result.Outfits.First(o => o.Name == "DataOutfit");
+        var mod = result.Outfits.First(o => o.Name == "ModOutfit");
+        Assert.Equal(result.PseudoOwnerLabel, data.OwnerLabel);                       // 伪层的显示标签
+        Assert.Equal(result.PseudoOwnerKey, result.OwnerStableKey(data.OwnerLabel));  // → 常量键
+        Assert.Equal(mod.OwnerLabel, result.OwnerStableKey(mod.OwnerLabel));          // 模组层原样返回
+    }
+
+    /// <summary>单目录（非 MO2）扫描的伪层是 BodySlide 本体，同样有稳定键——
+    /// standalone 用户的全部服装都挂在这个伪层名下，换语言最容易被整份误报。</summary>
+    [Fact]
+    public void SingleDirectoryScanKeysTheBodySlidePseudoOwner()
+    {
+        using var temp = new TempDir();
+        var bsDir = temp.Sub("BS");
+        temp.File("BS", "SliderSets", "CBBE.xml", SliderSetXml("CBBE"));
+        var resolution = new ProjectPathResolution
+        {
+            EffectivePath = bsDir,
+            Kind = ProjectPathKind.AppDir,
+            GameDataPath = "",
+        };
+
+        var result = SliderSetScanner.Scan(resolution, new List<(ModEntry, string)>());
+
+        Assert.Equal(SliderSetScanner.BodySlideOwnerKey, result.PseudoOwnerKey);
+        Assert.Equal(result.PseudoOwnerLabel, result.Outfits.Single().OwnerLabel);
+        Assert.Equal(result.PseudoOwnerKey, result.OwnerStableKey(result.PseudoOwnerLabel));
+    }
+
     [Fact]
     public void DuplicateSetNamesAcrossDifferentFilesFlagConflict()
     {
