@@ -514,6 +514,8 @@
     <sys:String x:Key="L.Core_StepSliderSetsFound">Обнаружен {0}\SliderSets (содержит файлы наборов) → используется каталог BodySlide.</sys:String>
     <sys:String x:Key="L.Core_StepSliderSetsEmpty">SliderSets рядом с BodySlide существует, но файлов наборов в нём нет — пропускается, проверка кандидатов продолжается.</sys:String>
     <sys:String x:Key="L.Core_StepNoSliderSets">Рядом с BodySlide нет подкаталога SliderSets — проверка кандидатов продолжается.</sys:String>
+    <sys:String x:Key="L.Core_StepVirtualAppDirFound">BodySlide размещён в моде (MO2): {0}\SliderSets содержит slider-сеты в объединённом представлении → сканируем слои, как при запуске BodySlide через MO2.</sys:String>
+    <sys:String x:Key="L.Core_StepVirtualAppDirEmpty">У BodySlide, размещённого в моде, в объединённом представлении тоже нет slider-сетов — проверка кандидатов продолжается.</sys:String>
     <sys:String x:Key="L.Core_StepCandidate">кандидат [{0}] {1} → {2}</sys:String>
     <sys:String x:Key="L.Core_Exists">есть</sys:String>
     <sys:String x:Key="L.Core_NotExists">нет</sys:String>

@@ -523,6 +523,8 @@ Insgesamt {4} Mitglied(er).</sys:String>
     <sys:String x:Key="L.Core_StepSliderSetsFound">{0}\SliderSets gefunden (enthält SliderSet-Dateien) → der BodySlide-Ordner wird genommen.</sys:String>
     <sys:String x:Key="L.Core_StepSliderSetsEmpty">SliderSets neben BodySlide existiert, enthält aber keine SliderSet-Dateien; ignoriert und weiter durch die Kandidaten.</sys:String>
     <sys:String x:Key="L.Core_StepNoSliderSets">Kein SliderSets-Unterordner neben BodySlide; weiter durch die Kandidaten.</sys:String>
+    <sys:String x:Key="L.Core_StepVirtualAppDirFound">BodySlide liegt in einem Mod (MO2): {0}\SliderSets enthält Slider-Sets in der zusammengeführten Ansicht → Ebenen scannen wie bei BodySlide unter MO2.</sys:String>
+    <sys:String x:Key="L.Core_StepVirtualAppDirEmpty">Das in einem Mod gehostete BodySlide hat auch in der zusammengeführten Ansicht keine Slider-Sets; weiter durch die Kandidaten.</sys:String>
     <sys:String x:Key="L.Core_StepCandidate">Kandidat [{0}] {1} → {2}</sys:String>
     <sys:String x:Key="L.Core_Exists">vorhanden</sys:String>
     <sys:String x:Key="L.Core_NotExists">fehlt</sys:String>

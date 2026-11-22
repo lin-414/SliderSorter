@@ -50,6 +50,7 @@ BodySlide 自带的 Group Manager 只有一个服装平铺列表，不知道哪�
 工具复刻了 BodySlide（v5.8.2 / dev 分支）源码里的两段关键逻辑：
 
 - **有效项目路径**：`Config.xml` 的 `ProjectPath` → 若 `BodySlide.exe` 旁存在 `SliderSets` 目录则用 exe 目录 → `<GameDataPath>\CalienteTools\BodySlide` → `<GameDataPath>\Tools\BodySlide`。
+  例外：所选 BodySlide 目录是模组托管的标准布局（`<模组>\CalienteTools\BodySlide`、`<模组>\Tools\BodySlide`，或直接在真实 Data 下）且装载了 MO2 模组表时，BodySlide 经 usvfs 启动的 AppDir 是虚拟 Data 下的合并视图，"AppDir\SliderSets 有没有滑块组"按合并视图判断——BodySlide 模组自带非空 SliderSets（整合包常把滑块组放在它旁边）时不再钉在该模组的真实目录上单目录扫描，而是按虚拟路径分层扫描，与其余模组汇聚的滑块组一起进清单（BodySlide 实际读得到它们）。
 - **服装清单**：`<有效项目路径>\SliderSets\*.xml|*.osp` 中的 `<SliderSet name="…">` 名称，逐字符原样使用。同名判重**忽略大小写**（BodySlide 的 `outfitNameSource` 是 `case_insensitive_compare` 的 map，`BodySlideApp.h:125`），而**分组成员**的匹配是逐字节精确比较（`SliderGroup.cpp:90-96`）——BodySlide 自己这两处就不对称，工具照抄而不是统一成一个。另外 BodySlide 是先整批读 `*.osp`、再整批读 `*.xml`（`BodySlideApp.cpp:837-839`），所以弱层 `.osp` 里的同名 set 会盖掉强层 `.xml` 里的那个。通过 MO2 启动时该目录是虚拟 Data 的汇聚点，工具按 profile 的模组优先级**模拟 USVFS 覆盖**（同名相对路径文件由更强的模组获胜），因此列出的服装与 BodySlide 启动后看到的完全一致。
 
 同名服装出现在多个模组（同名冲突）时，归属给优先级最高的模组并在树里以蓝色标注；这不影响分组的正确性（BodySlide 的组成员本来就是按名称匹配的）。

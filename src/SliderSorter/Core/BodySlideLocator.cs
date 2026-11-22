@@ -137,9 +137,35 @@ public static class BodySlideLocator
         steps.Add(CoreStrings.Format("L.Core_StepGameDataPath", gameDataPath,
             fromMo2 ? CoreStrings.Get("L.Core_FromMo2") : ""));
 
+        // 0) 所选 BodySlide 目录是"模组托管"的标准布局（<模组>\CalienteTools\BodySlide /
+        //    <模组>\Tools\BodySlide，或直接躺在真实 Data 下）且装载了 MO2 模组表时，BodySlide
+        //    经 MO2（usvfs）启动后它的 AppDir 是虚拟 Data 下的同相对路径目录——那里是全部
+        //    模组按优先级**合并**的视图，"AppDir\SliderSets 有没有滑块组文件"必须按合并视图问。
+        //    只按所选目录的真实磁盘问的话：BodySlide 模组自带的 SliderSets 非空（整合包常把
+        //    滑块组放在 BodySlide 旁边）会把有效项目路径钉在该模组的真实目录上、走单目录扫描，
+        //    其余模组经虚拟 Data 汇聚的滑块组全体漏扫——BodySlide 实际读得到它们，清单却比它少。
+        //    没有 MO2 模组表时不走这一步：那时虚拟视图就是真实磁盘，原有判断已经是同一答案。
+        var hostedRel = enabledMods.Count == 0
+            ? null
+            : StandardBodySlideRelUnder(appDir, enabledMods) ?? StandardBodySlideRelUnder(appDir, gameDataPath);
+        if (hostedRel is not null && !string.IsNullOrWhiteSpace(gameDataPath))
+        {
+            var virtualAppDir = Path.Combine(gameDataPath, hostedRel);
+            var hostedKind = hostedRel.Equals(@"Tools\BodySlide", StringComparison.OrdinalIgnoreCase)
+                ? ProjectPathKind.GameDataTools
+                : ProjectPathKind.GameDataCalienteTools;
+            if (VirtualHasSliderSetFiles(Path.Combine(virtualAppDir, "SliderSets"), gameDataPath, enabledMods))
+            {
+                steps.Add(CoreStrings.Format("L.Core_StepVirtualAppDirFound", virtualAppDir));
+                return resolution with { EffectivePath = virtualAppDir, Kind = hostedKind };
+            }
+            steps.Add(CoreStrings.Get("L.Core_StepVirtualAppDirEmpty"));
+        }
+
         // 1) AppDir\SliderSets 存在且确实包含滑块组文件 → AppDir（最高优先级，与 BodySlide 一致）。
         //    注意：部分安装（FOMOD 等）会留下一个空的 SliderSets 文件夹，此时不能视为命中，
-        //    否则永远扫不到模组经虚拟 Data 汇聚的服装。
+        //    否则永远扫不到模组经虚拟 Data 汇聚的服装。走到这里的 appDir 必然不是上面那种
+        //    模组托管布局（托管布局的虚拟视图为空 ⟹ 它自己的真实目录也为空，同一条路回落）。
         var appSliderSets = Path.Combine(appDir, "SliderSets");
         if (Directory.Exists(appSliderSets))
         {
@@ -177,6 +203,49 @@ public static class BodySlideLocator
         var fallback = !string.IsNullOrWhiteSpace(projectPath) ? projectPath : appDir;
         steps.Add(CoreStrings.Format("L.Core_StepFallback", fallback));
         return resolution with { EffectivePath = fallback, Kind = ProjectPathKind.Fallback };
+    }
+
+    /// <summary>appDir 若位于 rootDir 之下、且相对路径恰是 BodySlide 的两种标准布局之一
+    /// （<c>CalienteTools\BodySlide</c> / <c>Tools\BodySlide</c>），返回该相对路径；
+    /// 其余情形（不在其下、exe 在模组根、或更深的自定义层级）返回 null——那些布局交回
+    /// 既有的真实目录判断，不猜。</summary>
+    private static string? StandardBodySlideRelUnder(string appDir, string rootDir)
+    {
+        var rel = GetSuffixUnder(appDir, rootDir);
+        if (rel is null)
+            return null;
+        var normalized = rel.Replace('/', '\\');
+        return normalized.Equals(@"CalienteTools\BodySlide", StringComparison.OrdinalIgnoreCase)
+            || normalized.Equals(@"Tools\BodySlide", StringComparison.OrdinalIgnoreCase)
+                ? normalized
+                : null;
+    }
+
+    private static string? StandardBodySlideRelUnder(string appDir, List<(ModEntry Entry, string Dir)> enabledMods) =>
+        enabledMods.Select(m => StandardBodySlideRelUnder(appDir, m.Dir))
+            .FirstOrDefault(rel => rel is not null);
+
+    /// <summary>虚拟 Data 视角下 dir（递归）是否有滑块组文件：真实磁盘有，或任一启用模组提供的
+    /// 同相对路径目录里有。与 <see cref="VirtualDirectoryExists"/> 同一个口径，
+    /// 只是问的内容从"目录存在"换成了"目录里有滑块组"——BodySlide 判 AppDir 命中的
+    /// 正是后者（空目录不算，见 <see cref="HasSliderSetFiles"/>）。</summary>
+    private static bool VirtualHasSliderSetFiles(string dir, string gameDataPath,
+        List<(ModEntry Entry, string Dir)> enabledMods)
+    {
+        if (HasSliderSetFiles(dir))
+            return true;
+        var suffix = GetSuffixUnder(dir, gameDataPath);
+        if (suffix is null)
+            return false;
+        foreach (var (_, modDir) in enabledMods)
+        {
+            var candidate = Path.Combine(modDir, suffix);
+            // 先用 Exists 挡掉大多数模组（没有 CalienteTools\BodySlide 的）：HasSliderSetFiles
+            // 对不存在的目录靠异常兜底，两千个模组就是两千次异常，纯浪费
+            if (Directory.Exists(candidate) && HasSliderSetFiles(candidate))
+                return true;
+        }
+        return false;
     }
 
     /// <summary>目录下（递归）是否有任何 *.xml / *.osp 滑块组文件。</summary>

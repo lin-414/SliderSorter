@@ -514,6 +514,8 @@ Un fichier par groupe, nommé d'après le groupe : {1}{2} ({3}).
     <sys:String x:Key="L.Core_StepSliderSetsFound">{0}\SliderSets détecté (contient des fichiers de sets) → utilisation du dossier BodySlide.</sys:String>
     <sys:String x:Key="L.Core_StepSliderSetsEmpty">Le SliderSets à côté de BodySlide existe mais ne contient aucun fichier de sets ; ignoré, on poursuit les candidats.</sys:String>
     <sys:String x:Key="L.Core_StepNoSliderSets">Aucun sous-dossier SliderSets à côté de BodySlide ; on poursuit les candidats.</sys:String>
+    <sys:String x:Key="L.Core_StepVirtualAppDirFound">BodySlide est hébergé par un mod (MO2) : {0}\SliderSets contient des slider sets dans la vue fusionnée → scan par couches, comme BodySlide lancé via MO2.</sys:String>
+    <sys:String x:Key="L.Core_StepVirtualAppDirEmpty">Le BodySlide hébergé par un mod n'a non plus aucun slider set dans la vue fusionnée ; on poursuit les candidats.</sys:String>
     <sys:String x:Key="L.Core_StepCandidate">candidat [{0}] {1} → {2}</sys:String>
     <sys:String x:Key="L.Core_Exists">existe</sys:String>
     <sys:String x:Key="L.Core_NotExists">absent</sys:String>

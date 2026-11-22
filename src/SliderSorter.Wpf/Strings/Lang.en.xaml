@@ -521,6 +521,8 @@ One file per group, named after the group: {1}{2} ({3}).
     <sys:String x:Key="L.Core_StepSliderSetsFound">found {0}\SliderSets (holds slider set files) → using the BodySlide folder.</sys:String>
     <sys:String x:Key="L.Core_StepSliderSetsEmpty">SliderSets next to BodySlide exists but holds no slider set files; ignoring it and continuing through the candidates.</sys:String>
     <sys:String x:Key="L.Core_StepNoSliderSets">no SliderSets subfolder next to BodySlide; continuing through the candidates.</sys:String>
+    <sys:String x:Key="L.Core_StepVirtualAppDirFound">BodySlide is hosted by a mod (MO2): {0}\SliderSets has slider sets in the merged view → scanning layers, as BodySlide launched via MO2 would.</sys:String>
+    <sys:String x:Key="L.Core_StepVirtualAppDirEmpty">The mod-hosted BodySlide has no slider sets in the merged view either; continuing through the candidates.</sys:String>
     <sys:String x:Key="L.Core_StepCandidate">candidate [{0}] {1} → {2}</sys:String>
     <sys:String x:Key="L.Core_Exists">exists</sys:String>
     <sys:String x:Key="L.Core_NotExists">missing</sys:String>

@@ -522,6 +522,8 @@
     <sys:String x:Key="L.Core_StepSliderSetsFound">检测到 {0}\SliderSets（含滑块组文件）→ 使用 BodySlide 所在目录。</sys:String>
     <sys:String x:Key="L.Core_StepSliderSetsEmpty">BodySlide 目录旁的 SliderSets 存在但没有滑块组文件，忽略，继续按候选顺序检查。</sys:String>
     <sys:String x:Key="L.Core_StepNoSliderSets">BodySlide 目录旁没有 SliderSets 子目录，继续按候选顺序检查。</sys:String>
+    <sys:String x:Key="L.Core_StepVirtualAppDirFound">BodySlide 由模组托管（MO2）：虚拟视图 {0}\SliderSets 含滑块组文件 → 按 MO2 合并视图分层扫描。</sys:String>
+    <sys:String x:Key="L.Core_StepVirtualAppDirEmpty">模组托管的 BodySlide 在虚拟合并视图里也没有滑块组文件，继续按候选顺序检查。</sys:String>
     <sys:String x:Key="L.Core_StepCandidate">候选 [{0}] {1} → {2}</sys:String>
     <sys:String x:Key="L.Core_Exists">存在</sys:String>
     <sys:String x:Key="L.Core_NotExists">不存在</sys:String>
