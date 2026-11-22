@@ -575,7 +575,11 @@ public partial class MainViewModel : ObservableObject
         RaiseConfigState();
         RaiseLogSummary();
         RefreshTransferState();
-        UpdateMembershipMarks(); // 树节点文本也是代码拼的（同名冲突 / [组内 x/y]），一并换语言
+        // 树节点文本大量由代码拼成：服装行的冲突后缀、模组徽标可以就地重算（UpdateMembershipMarks
+        // 那条路），但被过滤时的模组表头（"匹配 x/y"）在构建期存进了 BaseHeader、筛空的占位行
+        // 也只活在节点上——就地刷新换不动它们，会留下半中半英的一棵树。整树重建才换得干净，
+        // 勾选与展开态都能保住（preserveChecks 与过滤防抖同一条路）；代价只是换语言这一次全量重算。
+        RebuildTree(preserveChecks: true);
         RefreshConflictText();
         UpdateCounts();
         UpdateGroupInfo();

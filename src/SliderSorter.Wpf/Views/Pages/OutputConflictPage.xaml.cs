@@ -673,15 +673,6 @@ public partial class OutputConflictPage : UserControl
         _request?.SetGroupCollapsed(name, collapsed);
     }
 
-    /// <summary>批量改展开态。写回设置是 <see cref="ConflictGroupKey.IsExpanded"/> 的 setter 干的，
-    /// 所以批量动作与逐个点折叠条落盘的是同一样东西；「只看某组」那一屏的键拿到的是空回写通道，
-    /// 于是"只是看一眼"依旧不会抹掉用户原先的收起意图。</summary>
-    private void SetAllGroupsExpanded(bool expanded)
-    {
-        foreach (var key in _groupKeys)
-            key.IsExpanded = expanded;
-    }
-
     /// <summary>「折叠其他」：右键的那一组保持展开（连它一起折了就看不见自己点的是谁），其余全部收起。</summary>
     private void CollapseOtherGroups_Click(object sender, RoutedEventArgs e)
     {

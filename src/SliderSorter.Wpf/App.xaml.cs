@@ -13,22 +13,9 @@ public partial class App : Application
 
     protected override void OnStartup(StartupEventArgs e)
     {
-        // 按设置加载色板与语言。既须在 StartupUri 窗口创建前完成，也须早于下面的单实例提示
-        //（提示文案走 L10n，语言尚未装载时会回落到键名）
-        // 设置里的语言可能是 "system"（跟随系统）：L10n.Apply 在这里一次性解析成具体语言，
-        // 之后全程序只认 L10n.Current，不必再各自判断一次。
-        // 登记为进程共享实例：ViewModel 直接取用，不必再各自 Load 一遍（见 AppSettings.Shared）
-        var settings = Core.AppSettings.Use(Core.AppSettings.Load());
-        ThemeManager.Apply(settings.UiTheme);
-        L10n.Apply(settings.UiLanguage);
-        // 字号档同样要在首窗口创建前生效（改写的是 app 级资源键，晚了首屏就按 100% 画一遍）
-        FontScaleManager.Apply(settings.UiFontScalePercent);
-        // Core 不引用 UI 层，取词函数得由这里注入：日志、诊断报告、分组校验错误才会跟着界面语言走
-        Core.CoreStrings.Localizer = L10n.TrF;
-
-        // 崩溃处理器必须挂在**所有**可能抛异常的启动代码之前：设置装载、主题/语言应用、
-        // 下面的单实例互斥体（权限不足时 UnauthorizedAccessException）都可能在启动早期抛——
-        // 处理器若还没挂上，进程裸崩且不落 crash.log，
+        // 崩溃处理器必须挂在**所有**可能抛异常的启动代码之前：下面的设置装载、主题/语言/字号
+        // 应用（pack URI 装资源字典）、单实例互斥体（权限不足时 UnauthorizedAccessException）
+        // 都可能在启动早期抛——处理器若还没挂上，进程裸崩且不落 crash.log，
         // "程序打不开"恰恰发生在用户最需要诊断信息的时候。
         DispatcherUnhandledException += (_, args) =>
         {
@@ -49,6 +36,19 @@ public partial class App : Application
             CrashLog.Write(args.Exception, isFatal: false);
             args.SetObserved();
         };
+
+        // 按设置加载色板与语言。既须在 StartupUri 窗口创建前完成，也须早于下面的单实例提示
+        //（提示文案走 L10n，语言尚未装载时会回落到键名）
+        // 设置里的语言可能是 "system"（跟随系统）：L10n.Apply 在这里一次性解析成具体语言，
+        // 之后全程序只认 L10n.Current，不必再各自判断一次。
+        // 登记为进程共享实例：ViewModel 直接取用，不必再各自 Load 一遍（见 AppSettings.Shared）
+        var settings = Core.AppSettings.Use(Core.AppSettings.Load());
+        ThemeManager.Apply(settings.UiTheme);
+        L10n.Apply(settings.UiLanguage);
+        // 字号档同样要在首窗口创建前生效（改写的是 app 级资源键，晚了首屏就按 100% 画一遍）
+        FontScaleManager.Apply(settings.UiFontScalePercent);
+        // Core 不引用 UI 层，取词函数得由这里注入：日志、诊断报告、分组校验错误才会跟着界面语言走
+        Core.CoreStrings.Localizer = L10n.TrF;
 
         // 单实例：与 WinForms 版共用同一个名字，两个副本会互相覆盖 settings.json 与分组文件。
         // 构造不需要任何等待/重试：打开已存在的命名互斥体时既不等待也不取得所有权，
