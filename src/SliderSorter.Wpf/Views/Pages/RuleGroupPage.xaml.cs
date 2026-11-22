@@ -64,9 +64,13 @@ public partial class RuleGroupPage : UserControl
         DataContextChanged += (_, _) =>
         {
             if (_vm is not null)
+            {
                 _vm.PropertyChanged -= OnVmPropertyChanged;
+                _vm.Store.Changed -= OnStoreChanged;
+            }
             _vm = (MainViewModel)DataContext;
             _vm.PropertyChanged += OnVmPropertyChanged;
+            _vm.Store.Changed += OnStoreChanged;
             Reload(keepForm: false);
             MarkClean();
         };
@@ -121,6 +125,23 @@ public partial class RuleGroupPage : UserControl
         _ownerMap = null;
         if (IsVisible)
             UpdatePreview(); // 命中数与预览树跟着新一轮的归属重算，别等用户动表单
+    }
+
+    /// <summary>组表在别处变了（右侧组列表新建/改名/删除、新模组弹窗归组、撤销）时重读本页两份列表。
+    ///
+    /// 为什么必须盯着 Store：<see cref="Reload"/> 把 <see cref="GroupStore.Groups"/> 赋给
+    /// 目标组下拉的 ItemsSource，而那是**同一个 List 实例**（Store 就地增删、从不换集合），
+    /// 裸 List 没有变更通知，WPF 对同实例的 ItemsSource 赋值也不做任何事——实测容器与下拉框
+    /// 冻结在**第一次**枚举的内容上（Items.Count 对裸 IList 是活读取，"计数变了"是假象）。
+    /// 页面构造发生在首次扫描之前，Store 当时是空的，于是目标组下拉从启动起就是空的、
+    /// 「执行」也跟着永久置灰，收起再摊开抽屉都救不回来。
+    ///
+    /// keepForm: true：用户可能正改到一半，组表变化不该抹掉表单；收起抽屉再摊开时
+    /// <see cref="OnShown"/> 仍是全量重读的入口。</summary>
+    private void OnStoreChanged()
+    {
+        if (IsVisible)
+            Reload(keepForm: true);
     }
 
     private string GroupName => (GroupCombo.SelectedItem as SliderGroup)?.Name ?? "";
@@ -181,7 +202,9 @@ public partial class RuleGroupPage : UserControl
         var keepGroup = GroupName;
 
         _loading = true;
-        GroupCombo.ItemsSource = _vm.Store.Groups;
+        // 快照而不是原样赋 Store.Groups：那是同一个 List 实例，WPF 对同实例赋值不重枚举
+        //（见 OnStoreChanged 的说明），只有换成新实例下拉框才会真的重建
+        GroupCombo.ItemsSource = _vm.Store.Groups.ToList();
         SelectGroup(keepGroup); // ItemsSource 一换选中就没了，先按名字捞回来
         _rows = RulePresetRow.Build(_vm.Settings.RulePresets);
         PresetList.ItemsSource = _rows;

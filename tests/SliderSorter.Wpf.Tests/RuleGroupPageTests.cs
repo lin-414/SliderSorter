@@ -374,4 +374,88 @@ public class RuleGroupPageTests
             vm?.Settings.RulePresets.Clear();
         }
     }
+
+    /// <summary>目标组下拉必须跟上组表的变化。页面构造发生在首次扫描之前（Store 当时是空的），
+    /// 而 <see cref="GroupStore.Groups"/> 是**同一个 List 实例**、裸 List 没有变更通知，
+    /// WPF 对同实例的 ItemsSource 赋值也不做任何事——实测容器与下拉框冻结在第一次枚举的内容上
+    /// （Items.Count 对裸 IList 是活读取，"计数变了"是假象，不能拿来当刷新判据）。
+    /// 于是目标组下拉从启动起就是空的、「执行」跟着永久置灰，收起再摊开抽屉都救不回来；
+    /// 修法是 Store.Changed 订阅 + Reload 每次赋**快照**，这条用例按生产的形状（构造期空 Store）钉住它。</summary>
+    [Fact]
+    public void GroupComboFollowsStoreChanges()
+    {
+        using var scope = IsolatedUserState.Enter();
+        MainViewModel? vm = null;
+
+        try
+        {
+            var result = WpfHost.WithWindow(() =>
+            {
+                vm = new MainViewModel();
+                return new RuleGroupPage { DataContext = vm }; // 构造期 Store 为空，与生产一致
+            }, host =>
+            {
+                var page = (RuleGroupPage)host;
+                var combo = Field<ComboBox>(page, "GroupCombo");
+                var frozenAtConstruction = combo.Items.Count;
+
+                vm!.Store.Load([new SliderGroup("G1"), new SliderGroup("G2")]);
+                WpfHost.Pump();
+                var afterLoad = combo.Items.Count;
+
+                vm.Store.NewGroup("G3"); // 右侧组列表新建组走的也是这条 Changed
+                WpfHost.Pump();
+                var afterNewGroup = combo.Items.Count;
+                return (frozenAtConstruction, afterLoad, afterNewGroup);
+            });
+
+            Assert.Equal(0, result.frozenAtConstruction);
+            Assert.Equal(2, result.afterLoad);
+            Assert.Equal(3, result.afterNewGroup);
+        }
+        finally
+        {
+            vm?.Settings.RulePresets.Clear();
+        }
+    }
+
+    /// <summary>组表变化重读列表时不能把改到一半的表单抹掉（与切标签页重读同一条规矩）。</summary>
+    [Fact]
+    public void StoreChangeReloadPreservesUnsavedEdits()
+    {
+        using var scope = IsolatedUserState.Enter();
+        MainViewModel? vm = null;
+
+        try
+        {
+            var result = WpfHost.WithWindow(() =>
+            {
+                vm = new MainViewModel();
+                vm.Store.Load([new SliderGroup("G1")]);
+                vm.Settings.RulePresets.Add(Preset("A", "G1"));
+                return new RuleGroupPage { DataContext = vm };
+            }, host =>
+            {
+                var page = (RuleGroupPage)host;
+                Field<ListBox>(page, "PresetList").SelectedIndex = 0;
+                WpfHost.Pump();
+                Field<TextBox>(page, "OutfitIncludeBox").Text = "改到一半";
+
+                vm!.Store.NewGroup("G2"); // 组表变化 → Changed → Reload(keepForm: true)
+                WpfHost.Pump();
+                return (
+                    Outfit: Field<TextBox>(page, "OutfitIncludeBox").Text,
+                    Selected: Field<ListBox>(page, "PresetList").SelectedIndex,
+                    ComboCount: Field<ComboBox>(page, "GroupCombo").Items.Count);
+            });
+
+            Assert.Equal("改到一半", result.Outfit);
+            Assert.Equal(0, result.Selected);
+            Assert.Equal(2, result.ComboCount);
+        }
+        finally
+        {
+            vm?.Settings.RulePresets.Clear();
+        }
+    }
 }
