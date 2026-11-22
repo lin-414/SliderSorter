@@ -274,4 +274,111 @@ public class GroupStoreTests
         Assert.Equal(new[] { "X" }, store.GetGroup("A")!.Members);
         Assert.False(store.Dirty); // 什么都没动就别置脏
     }
+
+    // ── 空操作不占撤销步、不置脏 ──────────────────────────────────────
+    // 把已在组内的服装再"加入"一遍、或把不在组内的再"移出"一遍，组表原样：
+    // 不得出现"未保存"、不得空占一步撤销（撤销按下去像没反应的那种）。
+
+    [Fact]
+    public void NoOpApplyTakesNoUndoStepAndStaysClean()
+    {
+        var store = new GroupStore();
+        store.Load(new List<SliderGroup> { new("UBE", new[] { "A" }) });
+
+        var addAgain = store.ApplyToCurrent(new[] { "A" }, add: true);      // 已在组内
+        var removeAbsent = store.ApplyToCurrent(new[] { "B" }, add: false); // 不在组内
+
+        Assert.Equal((true, null, 0), addAgain);
+        Assert.Equal((true, null, 0), removeAbsent);
+        Assert.False(store.Dirty);
+        Assert.False(store.CanUndo);
+        Assert.Equal(new[] { "A" }, store.Current!.Members);
+    }
+
+    /// <summary>部分重叠的搬运按实际生效数记账：5 个勾选里 2 个已在组内，只新增 3 个。</summary>
+    [Fact]
+    public void ApplyToCurrentCountsOnlyActualChanges()
+    {
+        var store = new GroupStore();
+        store.Load(new List<SliderGroup> { new("UBE", new[] { "A", "B" }) });
+
+        var (_, _, applied) = store.ApplyToCurrent(new[] { "A", "C", "D", "E", "F" }, add: true);
+
+        Assert.Equal(4, applied);
+        Assert.Equal(new[] { "A", "B", "C", "D", "E", "F" }, store.Current!.Members);
+    }
+
+    /// <summary>规则归组 0 命中不占撤销步：按预设批量跑一轮，没命中的规则不该各空占一步。</summary>
+    [Fact]
+    public void NoOpRuleApplyTakesNoUndoStep()
+    {
+        // Load 起步：Dirty=false、撤销栈空，后面"没被空操作弄脏"才断言得出来
+        var store = new GroupStore();
+        store.Load(new List<SliderGroup> { new("UBE") });
+
+        Assert.Equal(0, store.ApplyToGroup("UBE", new[] { "A" }, add: false)); // A 不在组内：移除 0 命中
+        Assert.False(store.Dirty);
+        Assert.False(store.CanUndo);
+
+        store.ApplyToGroup("UBE", new[] { "A" }, add: true); // 真添加
+        Assert.Equal(0, store.ApplyToGroup("UBE", new[] { "A" }, add: true)); // 已在组内：再加 0 命中
+        Assert.Equal(0, store.ApplyToGroup("UBE", new[] { "B" }, add: false)); // B 不在组内：移除 0 命中
+        Assert.True(store.Dirty);
+        Assert.Equal(1, StoreUndoDepth(store)); // 只有添加 A 那一步，空操作都没占位
+    }
+
+    /// <summary>导入一堆与现状完全重复的条目：组表原样，撤销栈不动。</summary>
+    [Fact]
+    public void ImportOfNothingNewTakesNoUndoStep()
+    {
+        var store = new GroupStore();
+        store.Load(new List<SliderGroup> { new("UBE", new[] { "A", "B" }) });
+
+        var (addedGroups, addedMembers) = store.Import(new[]
+        {
+            new SliderGroup("UBE", new[] { "A", "B" }),   // 完全重复
+            new SliderGroup("ube", new[] { "A" }),        // 忽略大小写后同名同成员
+        });
+
+        Assert.Equal((0, 0), (addedGroups, addedMembers));
+        Assert.False(store.Dirty);
+        Assert.False(store.CanUndo);
+    }
+
+    /// <summary>移动两侧都不涉及的名字（from 没有、to 已有）是纯空操作；
+    /// 而"往 to 补了 from 里没有的名字"必须算变更——早先按 moved（只数从 from 移除的）
+    /// 判脏，这种补入会漏置脏、成员缓存也不失效。</summary>
+    [Fact]
+    public void MoveMembersDirtyFollowsActualChange()
+    {
+        var store = new GroupStore();
+        store.Load(new List<SliderGroup>
+        {
+            new("A", new[] { "X" }),
+            new("B", new[] { "Y" }),
+        });
+        Assert.False(store.Dirty);
+
+        // Y：to 已有、from 没有 → 什么都不变
+        Assert.Equal(0, store.MoveMembers("A", "B", new[] { "Y" }));
+        Assert.False(store.Dirty);
+        Assert.False(store.CanUndo);
+
+        // Z：两边都没有 → 会补进 to（moved 记 0，但组表变了，必须置脏并占一步撤销）
+        Assert.Equal(0, store.MoveMembers("A", "B", new[] { "Z" }));
+        Assert.True(store.Dirty);
+        Assert.True(store.CanUndo);
+        Assert.Equal(new[] { "Y", "Z" }, store.GetGroup("B")!.Members);
+        Assert.Equal(new[] { "X" }, store.GetGroup("A")!.Members);
+    }
+
+    /// <summary>撤销栈深度：Load 清栈后逐次压入，数 CanUndo 之前的撤销次数。
+    /// Store 没有直接暴露栈深的口子，用"撤到不能撤"计数。</summary>
+    private static int StoreUndoDepth(GroupStore store)
+    {
+        var depth = 0;
+        while (store.Undo().Ok)
+            depth++;
+        return depth;
+    }
 }

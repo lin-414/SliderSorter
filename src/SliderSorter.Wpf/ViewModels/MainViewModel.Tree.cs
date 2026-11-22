@@ -346,8 +346,10 @@ public partial class MainViewModel
         // 操作真正生效了 → 收掉上一条提示（否则"先勾选服装"会一直挂在那里，
         // 而用户早就勾好并成功搬运过了）
         Banner = null;
-        Store.ApplyToCurrent(names, add);
-        Log(L10n.TrF("L.Log_Applied", names.Count, L10n.Tr(add ? "L.Word_Add" : "L.Word_Remove"), Store.Current!.Name, Store.Current!.Members.Count));
+        // 记实际生效的数而不是勾选数：勾选里可能本来就全在组内（或移除方向全不在），
+        // 组表原样——按勾选数记账会让日志说"加了 12 个"而成员数一个没动
+        var (_, _, applied) = Store.ApplyToCurrent(names, add);
+        Log(L10n.TrF("L.Log_Applied", applied, L10n.Tr(add ? "L.Word_Add" : "L.Word_Remove"), Store.Current!.Name, Store.Current!.Members.Count));
         RefreshTree();
         RefreshGroupsListPreserveSelection();
     }

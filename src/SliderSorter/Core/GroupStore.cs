@@ -117,28 +117,33 @@ public class GroupStore
         return true;
     }
 
-    public (bool Ok, string? Error) ApplyToCurrent(string outfit, bool add)
-    {
-        var group = Current;
-        if (group is null)
-            return (false, CoreStrings.Get("L.Core_GroupNeedSelection"));
-        Snapshot();
-        ApplyMembership(group, outfit, add);
-        MarkDirty();
-        return (true, null);
-    }
+    public (bool Ok, string? Error, int Applied) ApplyToCurrent(string outfit, bool add) =>
+        ApplyToCurrent([outfit], add);
 
-    public (bool Ok, string? Error) ApplyToCurrent(IEnumerable<string> outfits, bool add)
+    /// <summary>Applied = 实际新增/移除的成员数。0 = 这批服装本来就全在（或全不在）组里，
+    /// 组表原样：不占撤销步、不置脏——把已入组的服装再"加入"一遍是常见操作，
+    /// 空转一步撤销、再挂一个"未保存"逼用户保存或拦截退出，都是假的。</summary>
+    public (bool Ok, string? Error, int Applied) ApplyToCurrent(IEnumerable<string> outfits, bool add)
     {
         var group = Current;
         if (group is null)
-            return (false, CoreStrings.Get("L.Core_GroupNeedSelection"));
+            return (false, CoreStrings.Get("L.Core_GroupNeedSelection"), 0);
+        var names = outfits.Distinct(StringComparer.Ordinal).ToList();
+        var applied = CountMembershipChanges(group, names, add);
+        if (applied == 0)
+            return (true, null, 0);
         Snapshot();
-        foreach (var outfit in outfits.Distinct(StringComparer.Ordinal))
+        foreach (var outfit in names)
             ApplyMembership(group, outfit, add);
         MarkDirty();
-        return (true, null);
+        return (true, null, applied);
     }
+
+    /// <summary>这批服装按 add 语义会在组里实际造成多少成员增删。判等口径与
+    /// <see cref="ApplyMembership"/> 一致（逐字节精确），两条路才不会各算各的。</summary>
+    private static int CountMembershipChanges(SliderGroup group, IEnumerable<string> outfits, bool add) =>
+        add ? outfits.Count(o => !group.Members.Contains(o, StringComparer.Ordinal))
+            : outfits.Count(o => group.Members.Contains(o, StringComparer.Ordinal));
 
     /// <summary>把一批服装加入/移出指定名称的组（规则归组用）。
     /// 组名一律按忽略大小写找：<c>GetGroup</c>/<c>GroupNameExists</c>/<c>Current</c> 都是这个口径，
@@ -150,9 +155,14 @@ public class GroupStore
         var group = _groups.FirstOrDefault(g => string.Equals(g.Name, groupName, StringComparison.OrdinalIgnoreCase));
         if (group is null)
             return -1;
+        var names = outfits.Distinct(StringComparer.Ordinal).ToList();
+        // 同 ApplyToCurrent：0 增删的规则执行不入撤销栈——"按预设分组"一轮跑下来，
+        // 没命中的规则也各占一步的话，撤销按下去就像没反应
+        if (CountMembershipChanges(group, names, add) == 0)
+            return 0;
         Snapshot();
         var applied = 0;
-        foreach (var outfit in outfits.Distinct(StringComparer.Ordinal))
+        foreach (var outfit in names)
         {
             if (add)
             {
@@ -177,8 +187,12 @@ public class GroupStore
         var group = GetGroup(groupName);
         if (group is null)
             return (false, CoreStrings.Get("L.Core_GroupTargetMissing"));
+        var list = names.Distinct(StringComparer.Ordinal).ToList();
+        // 没有成员真的会被移除时不入快照不置脏（调用方按勾选批量传，重叠很常见）
+        if (!list.Any(n => group.Members.Contains(n, StringComparer.Ordinal)))
+            return (true, null);
         Snapshot();
-        foreach (var name in names)
+        foreach (var name in list)
             group.Members.RemoveAll(m => m == name);
         MarkDirty();
         return (true, null);
@@ -193,45 +207,40 @@ public class GroupStore
         var to = GetGroup(toName);
         if (from is null || to is null || ReferenceEquals(from, to))
             return -1;
+        var list = names.Distinct(StringComparer.Ordinal).ToList();
+        // 有任何实际增删才入快照。早先无条件快照、再按 moved（只数从 from 移除的）判脏，
+        // 会漏掉"往 to 补了 from 里本来就没有的名字"这类变更——补了成员却不置脏、
+        // 成员缓存也不失效；而两边都不涉及的名字快照白压一步，撤销按下去像没反应。
+        var willChange = list.Any(n => !to.Members.Contains(n, StringComparer.Ordinal)
+                                    || from.Members.Contains(n, StringComparer.Ordinal));
+        if (!willChange)
+            return 0;
         Snapshot();
         var moved = 0;
-        foreach (var name in names.Distinct(StringComparer.Ordinal))
+        foreach (var name in list)
         {
             if (!to.Members.Contains(name, StringComparer.Ordinal))
                 to.Members.Add(name);
             if (from.Members.RemoveAll(m => m == name) > 0)
                 moved++;
         }
-        if (moved > 0)
-            MarkDirty();
+        MarkDirty();
         return moved;
     }
 
     public (int AddedGroups, int AddedMembers) Import(IEnumerable<SliderGroup> imported)
     {
+        var incoming = imported.ToList();
+        // 先在克隆上把合并干跑一遍，数出确切增量：什么都不会进的导入不占撤销步、不置脏。
+        // 不干跑就先压快照的话，"导入了一堆重复条目"也会空占一步撤销。
+        // 干跑而不是直接改再回滚，是因为同名导入要合并进刚建的那份组，增量只有跑过才知道。
+        var simulation = _groups.Select(g => g.Clone()).ToList();
+        SliderGroupFile.Merge(simulation, incoming, out var addedGroups, out var addedMembers);
+        if (addedGroups + addedMembers == 0)
+            return (0, 0);
         Snapshot();
-        int addedGroups = 0, addedMembers = 0;
-        foreach (var incoming in imported)
-        {
-            var existing = _groups.FirstOrDefault(g =>
-                string.Equals(g.Name, incoming.Name, StringComparison.OrdinalIgnoreCase));
-            if (existing is null)
-            {
-                existing = new SliderGroup(incoming.Name);
-                _groups.Add(existing);
-                addedGroups++;
-            }
-            foreach (var member in incoming.Members)
-            {
-                if (!existing.Members.Contains(member, StringComparer.Ordinal))
-                {
-                    existing.Members.Add(member);
-                    addedMembers++;
-                }
-            }
-        }
-        if (addedGroups + addedMembers > 0)
-            MarkDirty();
+        SliderGroupFile.Merge(_groups, incoming, out _, out _);
+        MarkDirty();
         return (addedGroups, addedMembers);
     }
 
